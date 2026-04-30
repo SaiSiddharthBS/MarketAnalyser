@@ -79,6 +79,7 @@ def init_db():
     
     # For simplicity in migration, we use the same schema but adapted
     # Portfolio holdings
+    now_func = "CURRENT_TIMESTAMP" if DATABASE_URL else "datetime('now')"
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS holdings (
             id {id_type},
@@ -92,8 +93,8 @@ def init_db():
             invested_amount REAL NOT NULL,
             scheme_code TEXT,
             notes TEXT,
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now')),
+            created_at TEXT DEFAULT ({now_func}),
+            updated_at TEXT DEFAULT ({now_func}),
             {"PRIMARY KEY (id)" if DATABASE_URL else ""}
         )
     """)
@@ -137,7 +138,7 @@ def init_db():
             position_size_pct REAL,
             reasoning TEXT,
             factors TEXT,
-            created_at TEXT DEFAULT (datetime('now')),
+            created_at TEXT DEFAULT ({now_func}),
             expiry_date TEXT,
             status TEXT DEFAULT 'active',
             {"PRIMARY KEY (id)" if DATABASE_URL else ""}
@@ -155,7 +156,7 @@ def init_db():
             prob_down REAL NOT NULL,
             expected_return REAL,
             feature_importance TEXT,
-            created_at TEXT DEFAULT (datetime('now')),
+            created_at TEXT DEFAULT ({now_func}),
             {"PRIMARY KEY (id)" if DATABASE_URL else ""}
         )
     """)
@@ -169,7 +170,7 @@ def init_db():
             quantity REAL NOT NULL,
             price REAL NOT NULL,
             fees REAL NOT NULL,
-            trade_date TEXT DEFAULT (datetime('now')),
+            trade_date TEXT DEFAULT ({now_func}),
             status TEXT DEFAULT 'OPEN',
             pnl REAL DEFAULT 0,
             notes TEXT,
@@ -192,24 +193,26 @@ def init_db():
     """)
 
     # Watchlist
-    cursor.execute("""
+    cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS watchlist (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             symbol TEXT NOT NULL UNIQUE,
             name TEXT,
-            added_at TEXT DEFAULT (datetime('now')),
-            notes TEXT
+            added_at TEXT DEFAULT ({now_func}),
+            notes TEXT,
+            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
         )
     """)
 
     # Market data cache (indices, macro)
-    cursor.execute("""
+    cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS market_data (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             indicator TEXT NOT NULL,
             date TEXT NOT NULL,
             value REAL NOT NULL,
             source TEXT,
+            {"PRIMARY KEY (id)," if DATABASE_URL else ""}
             UNIQUE(indicator, date)
         )
     """)
