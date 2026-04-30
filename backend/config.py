@@ -45,17 +45,17 @@ NIFTY_50_SYMBOLS = [
 
 # User's MF Scheme Codes (from AMFI)
 USER_MF_HOLDINGS = {
-    "ICICI Prudential Nifty 50 Index Fund - Direct Plan": {
+    "ICICI Prudential Nifty 50 Index Fund": {
         "scheme_code": "120620",
         "invested": 40998,
         "units": 161.7885,
     },
-    "SBI Gold Fund - Direct Plan - Growth": {
+    "SBI Gold Fund": {
         "scheme_code": "119788",
         "invested": 35998,
         "units": 718.7280,
     },
-    "ICICI Prudential Multi-Asset Fund - Direct Plan - Growth": {
+    "ICICI Prudential Multi Asset Fund": {
         "scheme_code": "120334",
         "invested": 27999,
         "units": 31.1605,
