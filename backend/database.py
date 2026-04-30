@@ -4,33 +4,87 @@ Database Module — SQLite setup and operations
 """
 import sqlite3
 import json
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from pathlib import Path
 from datetime import datetime
 from config import DB_PATH
 
+# Load DATABASE_URL from env if available (for cloud)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 
 def get_connection():
-    """Get a SQLite connection with row factory."""
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
+    """Get a connection (Postgres or SQLite)."""
+    if DATABASE_URL:
+        # PostgreSQL Connection (Cloud)
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn
+    else:
+        # SQLite Connection (Local)
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        return conn
 
+def get_cursor(conn):
+    """Get a cursor (RealDictCursor for Postgres, standard for SQLite)."""
+    if DATABASE_URL:
+        return conn.cursor(cursor_factory=RealDictCursor)
+    return conn.cursor()
+
+def db_execute(query, params=None):
+    """Execute a query safely across SQLite and Postgres."""
+    conn = get_connection()
+    cur = get_cursor(conn)
+    
+    # Convert '?' to '%s' for Postgres
+    if DATABASE_URL and query:
+        query = query.replace("?", "%s")
+        # Convert INSERT OR REPLACE to Postgres ON CONFLICT
+        if "INSERT OR REPLACE INTO price_cache" in query:
+             query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (symbol, date) DO UPDATE SET open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low, close=EXCLUDED.close, volume=EXCLUDED.volume"
+        elif "INSERT OR REPLACE INTO mf_nav_cache" in query:
+             query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (scheme_code, date) DO UPDATE SET nav=EXCLUDED.nav"
+             
+        if "datetime('now')" in query:
+            query = query.replace("datetime('now')", "CURRENT_TIMESTAMP")
+             
+    try:
+        if params:
+            cur.execute(query, params)
+        else:
+            cur.execute(query)
+        
+        if query.strip().upper().startswith("SELECT"):
+            res = cur.fetchall()
+            return [dict(r) for r in res]
+        else:
+            conn.commit()
+            return True
+    finally:
+        cur.close()
+        conn.close()
 
 def init_db():
     """Initialize all database tables."""
     conn = get_connection()
-    cursor = conn.cursor()
-
-    # Portfolio holdings (stocks + MFs)
-    cursor.execute("""
+    cursor = get_cursor(conn)
+    
+    # Use SERIAL for Postgres, AUTOINCREMENT for SQLite
+    id_type = "SERIAL" if DATABASE_URL else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    pk_constraint = "" if DATABASE_URL else "" # Handled by id_type
+    
+    # For simplicity in migration, we use the same schema but adapted
+    # Portfolio holdings
+    cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS holdings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             symbol TEXT NOT NULL,
             name TEXT NOT NULL,
-            asset_type TEXT NOT NULL CHECK(asset_type IN ('stock', 'mf', 'etf', 'bond', 'gold')),
+            asset_type TEXT NOT NULL,
             exchange TEXT DEFAULT 'NSE',
             quantity REAL NOT NULL,
             buy_price REAL NOT NULL,
@@ -39,40 +93,43 @@ def init_db():
             scheme_code TEXT,
             notes TEXT,
             created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now'))
+            updated_at TEXT DEFAULT (datetime('now')),
+            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
         )
     """)
 
     # Price cache for stocks/indices
-    cursor.execute("""
+    cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS price_cache (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             symbol TEXT NOT NULL,
             date TEXT NOT NULL,
             open REAL, high REAL, low REAL, close REAL,
             volume INTEGER,
             source TEXT DEFAULT 'yfinance',
+            {"PRIMARY KEY (id)," if DATABASE_URL else ""}
             UNIQUE(symbol, date)
         )
     """)
 
     # MF NAV cache
-    cursor.execute("""
+    cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS mf_nav_cache (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             scheme_code TEXT NOT NULL,
             date TEXT NOT NULL,
             nav REAL NOT NULL,
+            {"PRIMARY KEY (id)," if DATABASE_URL else ""}
             UNIQUE(scheme_code, date)
         )
     """)
 
     # Signals generated by the system
-    cursor.execute("""
+    cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS signals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             symbol TEXT NOT NULL,
-            signal_type TEXT NOT NULL CHECK(signal_type IN ('STRONG_BUY', 'BUY', 'HOLD', 'SELL', 'STRONG_SELL')),
+            signal_type TEXT NOT NULL,
             confidence REAL NOT NULL,
             entry_price REAL,
             target_price REAL,
@@ -82,14 +139,15 @@ def init_db():
             factors TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             expiry_date TEXT,
-            status TEXT DEFAULT 'active' CHECK(status IN ('active', 'hit_target', 'hit_stoploss', 'expired', 'cancelled'))
+            status TEXT DEFAULT 'active',
+            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
         )
     """)
 
     # ML Predictions
-    cursor.execute("""
+    cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS ml_predictions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             symbol TEXT NOT NULL,
             prediction_date TEXT NOT NULL,
             target_horizon_days INTEGER NOT NULL,
@@ -97,49 +155,39 @@ def init_db():
             prob_down REAL NOT NULL,
             expected_return REAL,
             feature_importance TEXT,
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (datetime('now')),
+            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
         )
     """)
 
     # Paper Trades (Simulated Portfolio)
-    cursor.execute("""
+    cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS paper_trades (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             symbol TEXT NOT NULL,
-            trade_type TEXT NOT NULL CHECK(trade_type IN ('BUY', 'SELL')),
+            trade_type TEXT NOT NULL,
             quantity REAL NOT NULL,
             price REAL NOT NULL,
             fees REAL NOT NULL,
             trade_date TEXT DEFAULT (datetime('now')),
-            status TEXT DEFAULT 'OPEN' CHECK(status IN ('OPEN', 'CLOSED')),
+            status TEXT DEFAULT 'OPEN',
             pnl REAL DEFAULT 0,
-            notes TEXT
+            notes TEXT,
+            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
         )
     """)
-
-    # Signal accuracy tracking
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS signal_outcomes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            signal_id INTEGER NOT NULL,
-            outcome TEXT CHECK(outcome IN ('profit', 'loss', 'breakeven', 'pending')),
-            actual_return_pct REAL,
-            days_held INTEGER,
-            closed_at TEXT,
-            FOREIGN KEY (signal_id) REFERENCES signals(id)
-        )
-    """)
-
-    # Daily portfolio snapshots
-    cursor.execute("""
+    
+    # Portfolio snapshots
+    cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS portfolio_snapshots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             date TEXT NOT NULL UNIQUE,
             total_invested REAL NOT NULL,
             total_current REAL NOT NULL,
             total_return_pct REAL NOT NULL,
             holdings_json TEXT NOT NULL,
-            market_data_json TEXT
+            market_data_json TEXT,
+            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
         )
     """)
 
@@ -175,73 +223,55 @@ def init_db():
 
 def add_holding(symbol, name, asset_type, quantity, buy_price, buy_date, invested_amount, exchange="NSE", scheme_code=None, notes=None):
     """Add a new holding to the portfolio."""
-    conn = get_connection()
-    conn.execute(
+    db_execute(
         """INSERT INTO holdings (symbol, name, asset_type, exchange, quantity, buy_price, buy_date, invested_amount, scheme_code, notes)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (symbol, name, asset_type, exchange, quantity, buy_price, buy_date, invested_amount, scheme_code, notes),
     )
-    conn.commit()
-    conn.close()
 
 
 def get_holdings(asset_type=None):
     """Get all holdings, optionally filtered by type."""
-    conn = get_connection()
     if asset_type:
-        rows = conn.execute("SELECT * FROM holdings WHERE asset_type = ?", (asset_type,)).fetchall()
+        return db_execute("SELECT * FROM holdings WHERE asset_type = ?", (asset_type,))
     else:
-        rows = conn.execute("SELECT * FROM holdings ORDER BY asset_type, invested_amount DESC").fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+        return db_execute("SELECT * FROM holdings ORDER BY asset_type, invested_amount DESC")
 
 
 def update_holding(holding_id, **kwargs):
     """Update a holding's fields."""
-    conn = get_connection()
     allowed = {"quantity", "buy_price", "invested_amount", "notes"}
     updates = {k: v for k, v in kwargs.items() if k in allowed}
     if updates:
         set_clause = ", ".join(f"{k} = ?" for k in updates)
         values = list(updates.values()) + [holding_id]
-        conn.execute(f"UPDATE holdings SET {set_clause}, updated_at = datetime('now') WHERE id = ?", values)
-        conn.commit()
-    conn.close()
+        db_execute(f"UPDATE holdings SET {set_clause}, updated_at = datetime('now') WHERE id = ?", values)
 
 
 def delete_holding(holding_id):
     """Remove a holding."""
-    conn = get_connection()
-    conn.execute("DELETE FROM holdings WHERE id = ?", (holding_id,))
-    conn.commit()
-    conn.close()
+    db_execute("DELETE FROM holdings WHERE id = ?", (holding_id,))
 
 
 # ── Paper Trading Operations ──────────────────────────────────────────
 
 def add_paper_trade(symbol, trade_type, quantity, price, fees, notes=None):
     """Record a paper trade."""
-    conn = get_connection()
-    conn.execute(
+    db_execute(
         """INSERT INTO paper_trades (symbol, trade_type, quantity, price, fees, notes)
            VALUES (?, ?, ?, ?, ?, ?)""",
         (symbol, trade_type, quantity, price, fees, notes)
     )
-    conn.commit()
-    conn.close()
 
 def get_paper_portfolio():
     """Calculate current paper trading positions and history."""
-    conn = get_connection()
-    trades = conn.execute("SELECT * FROM paper_trades ORDER BY trade_date ASC").fetchall()
-    conn.close()
+    trades = db_execute("SELECT * FROM paper_trades ORDER BY trade_date ASC")
     
     positions = {}
     total_realized_pnl = 0
     total_fees = 0
     
     for t in trades:
-        t = dict(t)
         sym = t["symbol"]
         qty = t["quantity"]
         price = t["price"]
@@ -279,7 +309,7 @@ def get_paper_portfolio():
     
     return {
         "positions": active_positions,
-        "history": [dict(t) for t in trades][::-1], # Reverse chronological
+        "history": trades[::-1], # Reverse chronological
         "metrics": {
             "realized_pnl": total_realized_pnl,
             "total_fees": total_fees,
@@ -290,46 +320,43 @@ def get_paper_portfolio():
 
 def save_signal(symbol, signal_type, confidence, entry_price=None, target_price=None, stop_loss=None, position_size_pct=None, reasoning=None, factors=None, expiry_date=None):
     """Save a generated signal."""
-    conn = get_connection()
-    conn.execute(
+    db_execute(
         """INSERT INTO signals (symbol, signal_type, confidence, entry_price, target_price, stop_loss, position_size_pct, reasoning, factors, expiry_date)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (symbol, signal_type, confidence, entry_price, target_price, stop_loss, position_size_pct, reasoning, json.dumps(factors) if factors else None, expiry_date),
     )
-    conn.commit()
-    conn.close()
 
 
 def get_active_signals():
     """Get all currently active signals."""
-    conn = get_connection()
-    rows = conn.execute("SELECT * FROM signals WHERE status = 'active' ORDER BY confidence DESC").fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    return db_execute("SELECT * FROM signals WHERE status = 'active' ORDER BY confidence DESC")
 
 
 def cache_price(symbol, date, open_p, high, low, close, volume, source="yfinance"):
     """Cache a price data point."""
-    conn = get_connection()
-    conn.execute(
+    db_execute(
         """INSERT OR REPLACE INTO price_cache (symbol, date, open, high, low, close, volume, source)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
         (symbol, date, open_p, high, low, close, volume, source),
     )
-    conn.commit()
-    conn.close()
 
 
 def save_portfolio_snapshot(date, total_invested, total_current, total_return_pct, holdings_json, market_data_json=None):
-    """Save daily portfolio snapshot."""
-    conn = get_connection()
-    conn.execute(
+    """Save a daily snapshot of the portfolio."""
+    db_execute(
         """INSERT OR REPLACE INTO portfolio_snapshots (date, total_invested, total_current, total_return_pct, holdings_json, market_data_json)
            VALUES (?, ?, ?, ?, ?, ?)""",
-        (date, total_invested, total_current, total_return_pct, json.dumps(holdings_json), json.dumps(market_data_json) if market_data_json else None),
+        (date, total_invested, total_current, total_return_pct, holdings_json, market_data_json)
     )
-    conn.commit()
-    conn.close()
+
+def get_latest_portfolio_snapshot():
+    """Get the most recent portfolio snapshot."""
+    rows = db_execute("SELECT * FROM portfolio_snapshots ORDER BY date DESC LIMIT 1")
+    return rows[0] if rows else None
+
+def get_portfolio_history(days=30):
+    """Get portfolio history for charting."""
+    return db_execute("SELECT date, total_current, total_return_pct FROM portfolio_snapshots ORDER BY date ASC LIMIT ?", (days,))
 
 
 if __name__ == "__main__":
