@@ -53,4 +53,8 @@ const api = {
     getMfDetail: (code) => api.get(`/mf/${code}`),
     addHolding: (data) => api.post('/portfolio/add', data),
     removeHolding: (id) => api.del(`/portfolio/${id}`),
+    
+    // Paper Trading
+    getPaperPortfolio: () => api.get('/paper/portfolio'),
+    executePaperTrade: (data) => api.post('/paper/trade', data),
 };

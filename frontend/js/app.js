@@ -46,6 +46,7 @@ function switchPage(page) {
     const loaders = {
         dashboard: loadDashboard,
         portfolio: loadPortfolio,
+        paper: loadPaperTrading,
         screener: () => {},
         signals: loadSignals,
         analysis: () => {},
@@ -66,6 +67,12 @@ function setupButtonHandlers() {
         const el = document.getElementById(id);
         if (el) el.addEventListener('click', fn);
     });
+
+    // Paper Trading Buttons
+    const btnBuy = document.getElementById('btn-paper-buy');
+    const btnSell = document.getElementById('btn-paper-sell');
+    if (btnBuy) btnBuy.addEventListener('click', () => executeTrade('BUY'));
+    if (btnSell) btnSell.addEventListener('click', () => executeTrade('SELL'));
 
     const searchInput = document.getElementById('analysis-search');
     if (searchInput) {
@@ -354,6 +361,72 @@ function renderSignalCards(signals) {
             </div>
         `;
     }).join('');
+}
+
+/* ─── Paper Trading ──────────────────────────────────── */
+async function loadPaperTrading() {
+    const data = await api.getPaperPortfolio();
+    if (!data) return;
+
+    renderPaperMetrics(data.metrics);
+    renderPaperPositions(data.positions);
+}
+
+function renderPaperMetrics(m) {
+    const pnlEl = document.getElementById('paper-pnl');
+    const feesEl = document.getElementById('paper-fees');
+    if (pnlEl) {
+        pnlEl.textContent = `₹${formatNumber(m.net_realized_pnl)}`;
+        pnlEl.className = 'card-value ' + (m.net_realized_pnl >= 0 ? 'positive' : 'negative');
+    }
+    if (feesEl) feesEl.textContent = `₹${formatNumber(m.total_fees)}`;
+}
+
+function renderPaperPositions(positions) {
+    const tbody = document.getElementById('paper-positions-body');
+    if (!tbody) return;
+    
+    if (!positions || positions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">No active positions. Find a signal and trade! 🚀</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = positions.map(p => `
+        <tr>
+            <td><strong>${p.symbol}</strong></td>
+            <td>${p.quantity}</td>
+            <td>₹${formatNumber(p.avg_price)}</td>
+            <td>₹${formatNumber(p.invested)}</td>
+        </tr>
+    `).join('');
+}
+
+async function executeTrade(type) {
+    const symbol = document.getElementById('paper-symbol').value.toUpperCase().trim();
+    const quantity = parseFloat(document.getElementById('paper-qty').value);
+    const price = parseFloat(document.getElementById('paper-price').value) || null;
+    const msg = document.getElementById('paper-msg');
+
+    if (!symbol || !quantity || quantity <= 0) {
+        if (msg) msg.textContent = '❌ Please enter a valid symbol and quantity';
+        return;
+    }
+
+    if (msg) msg.textContent = '⏳ Executing trade...';
+
+    const result = await api.executePaperTrade({
+        symbol,
+        trade_type: type,
+        quantity,
+        price
+    });
+
+    if (result && result.status === 'ok') {
+        if (msg) msg.textContent = `✅ ${type} ${quantity} ${symbol} at ₹${result.price.toFixed(2)}`;
+        loadPaperTrading();
+    } else {
+        if (msg) msg.textContent = '❌ Trade failed. Check if symbol is valid.';
+    }
 }
 
 /* ─── Stock Analysis ─────────────────────────────────── */

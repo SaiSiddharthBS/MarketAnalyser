@@ -257,6 +257,35 @@ async def generate_signals():
     return {"generated": len(signals), "signals": signals}
 
 
+# ─── Paper Trading ───────────────────────────────────────
+
+class TradeCreate(BaseModel):
+    symbol: str
+    trade_type: str
+    quantity: float
+    price: Optional[float] = None
+    fees: float = 0
+    notes: Optional[str] = None
+
+@app.get("/api/paper/portfolio")
+async def get_paper_portfolio():
+    """Get paper trading positions and metrics."""
+    return db.get_paper_portfolio()
+
+@app.post("/api/paper/trade")
+async def execute_paper_trade(t: TradeCreate):
+    """Execute a simulated trade."""
+    price = t.price or get_ltp(t.symbol)
+    if not price:
+        raise HTTPException(400, f"Could not get current price for {t.symbol}")
+    
+    # Calculate 0.1% fees if not provided
+    fees = t.fees or (price * t.quantity * 0.001)
+    
+    db.add_paper_trade(t.symbol.upper(), t.trade_type.upper(), t.quantity, price, fees, t.notes)
+    return {"status": "ok", "price": price, "fees": fees}
+
+
 # ─── Health ──────────────────────────────────────────────
 
 @app.get("/api/health")
