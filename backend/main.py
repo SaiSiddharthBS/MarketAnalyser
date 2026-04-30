@@ -1,0 +1,270 @@
+"""
+MarketPulse — Agent Alpha
+Main FastAPI Application
+"""
+import sys
+import os
+from pathlib import Path
+
+# Add backend to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+import database as db
+from data.stock_fetcher import (
+    get_stock_data, get_stock_info, get_market_overview,
+    get_ltp, get_bulk_ltp
+)
+from data.mf_fetcher import get_mf_nav, get_mf_historical, get_mf_portfolio_value
+from data.news_fetcher import get_market_sentiment, get_stock_news
+from analysis.technical import get_technical_analysis, screen_stocks
+from config import NIFTY_50_SYMBOLS, USER_MF_HOLDINGS
+
+app = FastAPI(title="MarketPulse - Agent Alpha", version="1.0.0")
+
+# CORS for frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Serve frontend static files
+FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
+if FRONTEND_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+
+
+@app.on_event("startup")
+async def startup():
+    db.init_db()
+    _seed_portfolio()
+
+
+def _seed_portfolio():
+    """Pre-load user's MF holdings if DB is empty."""
+    holdings = db.get_holdings()
+    if not holdings:
+        for name, info in USER_MF_HOLDINGS.items():
+            db.add_holding(
+                symbol=info["scheme_code"],
+                name=name,
+                asset_type="mf",
+                quantity=0,
+                buy_price=0,
+                buy_date="2025-01-01",
+                invested_amount=info["invested"],
+                scheme_code=info["scheme_code"],
+            )
+        print("✅ Pre-loaded user MF holdings")
+
+
+# ─── Frontend Routes ─────────────────────────────────────
+
+@app.get("/")
+async def serve_frontend():
+    index = FRONTEND_DIR / "index.html"
+    if index.exists():
+        return FileResponse(str(index))
+    return {"message": "MarketPulse API is running. Frontend not found."}
+
+
+# ─── Market Overview ─────────────────────────────────────
+
+@app.get("/api/market/overview")
+async def market_overview():
+    """Get current market snapshot — indices, commodities, sentiment."""
+    overview = get_market_overview()
+    sentiment = get_market_sentiment()
+    return {
+        "timestamp": datetime.now().isoformat(),
+        "indices": overview,
+        "sentiment": {
+            "score": sentiment["score"],
+            "label": sentiment["label"],
+            "positive_pct": sentiment["positive_pct"],
+            "negative_pct": sentiment["negative_pct"],
+        },
+        "news": sentiment["articles"][:10],
+    }
+
+
+@app.get("/api/market/index/{symbol}")
+async def index_data(symbol: str, period: str = "6mo"):
+    """Get index chart data."""
+    data = get_stock_data(symbol, period=period, exchange="")
+    if not data:
+        raise HTTPException(404, f"No data for {symbol}")
+    return {"symbol": symbol, "data": data}
+
+
+# ─── Stock Analysis ──────────────────────────────────────
+
+@app.get("/api/stock/{symbol}")
+async def stock_detail(symbol: str):
+    """Get full analysis for a stock."""
+    info = get_stock_info(symbol)
+    ta_result = get_technical_analysis(symbol)
+    news = get_stock_news(symbol)
+    return {
+        "info": info,
+        "technical": ta_result,
+        "news": news[:5],
+    }
+
+
+@app.get("/api/stock/{symbol}/chart")
+async def stock_chart(symbol: str, period: str = "1y"):
+    """Get price chart data."""
+    data = get_stock_data(symbol, period=period)
+    if not data:
+        raise HTTPException(404, f"No data for {symbol}")
+    return {"symbol": symbol, "period": period, "data": data}
+
+
+# ─── Screener ────────────────────────────────────────────
+
+@app.get("/api/screener/top")
+async def screener_top(n: int = 10):
+    """Get top N stocks by technical score from Nifty 50."""
+    results = screen_stocks(NIFTY_50_SYMBOLS, top_n=n)
+    return {"count": len(results), "stocks": results}
+
+
+# ─── Portfolio ───────────────────────────────────────────
+
+@app.get("/api/portfolio")
+async def get_portfolio():
+    """Get user's complete portfolio with current values."""
+    holdings = db.get_holdings()
+    mf_holdings = [h for h in holdings if h["asset_type"] == "mf"]
+    stock_holdings = [h for h in holdings if h["asset_type"] == "stock"]
+
+    # Calculate MF values
+    mf_data = None
+    if mf_holdings:
+        mf_list = [{"scheme_code": h["scheme_code"], "invested": h["invested_amount"], "units": h["quantity"]} for h in mf_holdings]
+        mf_data = get_mf_portfolio_value(mf_list)
+
+    # Calculate stock values
+    stock_data = []
+    total_stock_invested = 0
+    total_stock_current = 0
+    for h in stock_holdings:
+        ltp = get_ltp(h["symbol"])
+        if ltp:
+            current_val = h["quantity"] * ltp
+            stock_data.append({
+                **h,
+                "ltp": ltp,
+                "current_value": round(current_val, 2),
+                "returns": round(current_val - h["invested_amount"], 2),
+                "returns_pct": round(((current_val - h["invested_amount"]) / h["invested_amount"]) * 100, 2),
+            })
+            total_stock_invested += h["invested_amount"]
+            total_stock_current += current_val
+
+    total_invested = (mf_data["total_invested"] if mf_data else 0) + total_stock_invested
+    total_current = (mf_data["total_current"] if mf_data else 0) + total_stock_current
+
+    return {
+        "summary": {
+            "total_invested": total_invested,
+            "total_current": round(total_current, 2),
+            "total_returns": round(total_current - total_invested, 2),
+            "total_returns_pct": round(((total_current - total_invested) / total_invested) * 100, 2) if total_invested else 0,
+        },
+        "mutual_funds": mf_data,
+        "stocks": stock_data,
+    }
+
+
+class HoldingCreate(BaseModel):
+    symbol: str
+    name: str
+    asset_type: str = "stock"
+    exchange: str = "NSE"
+    quantity: float = 0
+    buy_price: float = 0
+    buy_date: str = ""
+    invested_amount: float = 0
+    scheme_code: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@app.post("/api/portfolio/add")
+async def add_holding(h: HoldingCreate):
+    """Add a new holding."""
+    db.add_holding(h.symbol, h.name, h.asset_type, h.quantity, h.buy_price,
+                   h.buy_date or datetime.now().strftime("%Y-%m-%d"),
+                   h.invested_amount, h.exchange, h.scheme_code, h.notes)
+    return {"status": "ok", "message": f"Added {h.name}"}
+
+
+@app.delete("/api/portfolio/{holding_id}")
+async def remove_holding(holding_id: int):
+    """Remove a holding."""
+    db.delete_holding(holding_id)
+    return {"status": "ok"}
+
+
+# ─── Mutual Funds ────────────────────────────────────────
+
+@app.get("/api/mf/{scheme_code}")
+async def mf_detail(scheme_code: str):
+    """Get mutual fund details + historical NAV."""
+    nav = get_mf_nav(scheme_code)
+    history = get_mf_historical(scheme_code, days=365)
+    if not nav:
+        raise HTTPException(404, f"MF {scheme_code} not found")
+    return {"current": nav, "history": history}
+
+
+# ─── Signals ─────────────────────────────────────────────
+
+@app.get("/api/signals")
+async def get_signals():
+    """Get all active signals."""
+    return {"signals": db.get_active_signals()}
+
+
+@app.get("/api/signals/generate")
+async def generate_signals():
+    """Generate fresh signals from top screener picks."""
+    results = screen_stocks(NIFTY_50_SYMBOLS, top_n=5)
+    signals = []
+    for r in results:
+        if r["score"] >= 60:
+            db.save_signal(
+                symbol=r["symbol"],
+                signal_type=r["signal"],
+                confidence=r["score"],
+                entry_price=r["entry"],
+                target_price=r["target"],
+                stop_loss=r["stop_loss"],
+                reasoning="; ".join(f"{s['indicator']}: {s['signal']}" for s in r["signals"]),
+            )
+            signals.append(r)
+    return {"generated": len(signals), "signals": signals}
+
+
+# ─── Health ──────────────────────────────────────────────
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok", "timestamp": datetime.now().isoformat(), "name": "Agent Alpha"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    from config import HOST, PORT
+    uvicorn.run("main:app", host=HOST, port=PORT, reload=True)

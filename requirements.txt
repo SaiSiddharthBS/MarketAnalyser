@@ -1,0 +1,36 @@
+# MarketPulse - Agent Alpha
+# Core
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+python-dotenv==1.0.1
+
+# Data
+yfinance==0.2.40
+mftool==2.7
+requests==2.32.0
+beautifulsoup4==4.12.3
+
+# Analysis
+pandas==2.2.2
+numpy==1.26.4
+pandas-ta==0.3.14b1
+
+# ML (Phase 2)
+scikit-learn==1.5.1
+xgboost==2.1.0
+lightgbm==4.4.0
+optuna==3.6.1
+shap==0.45.1
+
+# Telegram Bot (Phase 3)
+python-telegram-bot[job-queue]==21.4
+
+# Scheduling
+apscheduler==3.10.4
+
+# Sentiment
+vaderSentiment==3.3.2
+feedparser==6.0.11
+
+# Database
+aiosqlite==0.20.0
