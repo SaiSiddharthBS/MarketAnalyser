@@ -5,6 +5,10 @@ Uses Google News RSS + VADER for free sentiment analysis.
 import feedparser
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from datetime import datetime
+import ssl
+
+# Fix Mac SSL issue
+ssl._create_default_https_context = ssl._create_unverified_context
 
 analyzer = SentimentIntensityAnalyzer()
 

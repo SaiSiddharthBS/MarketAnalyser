@@ -70,8 +70,8 @@ async def send_daily_alert():
     msg += "*🎯 Top 3 Actionable Stocks Today*\n"
     for r in results:
         signal_icon = "🟢" if "BUY" in r['signal'] else "🔴" if "SELL" in r['signal'] else "🟡"
-        msg += f"{signal_icon} *{r['symbol']}* ({r['score']}/100)\n"
-        msg += f"Entry: ₹{r['entry']} | Target: ₹{r['target']}\n\n"
+        msg += f"{signal_icon} *{r['symbol']}* (AI Score: {r['score']}/100)\n"
+        msg += f"👉 Buy at: ₹{r['entry']} | Target (Sell): ₹{r['target']}\n\n"
 
     # 4. Agent's Advice (What to do)
     msg += "💡 *Agent's Advice for You*\n"
