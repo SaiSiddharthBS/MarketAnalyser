@@ -53,7 +53,7 @@ def get_market_sentiment():
             all_articles.append(a)
 
     if not all_scores:
-        return {"score": 0, "label": "neutral", "articles": []}
+        return {"score": 0, "label": "Neutral", "positive_pct": 0, "negative_pct": 0, "articles": []}
 
     avg_score = sum(all_scores) / len(all_scores)
     positive = sum(1 for s in all_scores if s > 0.05)
