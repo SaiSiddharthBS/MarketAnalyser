@@ -32,11 +32,18 @@ async def send_daily_alert():
     sentiment = get_market_sentiment()
     
     nifty = overview.get("NIFTY_50", {})
-    nifty_change = "🟢" if nifty.get("change", 0) >= 0 else "🔴"
+    is_holiday = not nifty or nifty.get("change") == 0
+    
+    nifty_change = "🟢" if nifty.get("change", 0) > 0 else "🔴" if nifty.get("change", 0) < 0 else "⚪"
     
     msg = f"🌅 *Agent Alpha Daily Briefing*\n\n"
-    msg += f"{nifty_change} *NIFTY 50*: {nifty.get('value', 'N/A')} ({nifty.get('change_pct', 0):.2f}%)\n"
-    msg += f"🧠 *Sentiment*: {sentiment['label']} (Score: {sentiment['score']:.2f})\n\n"
+    
+    if is_holiday:
+        msg += "☕ *Market is CLOSED Today*\n"
+        msg += "Enjoy your holiday! I'll still keep an eye on your portfolio and global cues.\n\n"
+    else:
+        msg += f"{nifty_change} *NIFTY 50*: {nifty.get('value', 'N/A')} ({nifty.get('change_pct', 0):.2f}%)\n"
+        msg += f"🧠 *Sentiment*: {sentiment['label']} (Score: {sentiment['score']:.2f})\n\n"
     
     # 2. Portfolio Update (Stateless via config)
     print("Fetching portfolio data...")

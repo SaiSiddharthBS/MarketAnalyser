@@ -302,6 +302,26 @@ async def trigger_telegram_alert():
 async def health():
     return {"status": "ok", "timestamp": datetime.now().isoformat(), "name": "Agent Alpha"}
 
+@app.on_event("startup")
+async def start_keep_alive():
+    """Self-ping to prevent Render from sleeping on free tier."""
+    import httpx
+    import asyncio
+    
+    async def ping_self():
+        url = os.getenv("RENDER_EXTERNAL_URL")
+        if not url:
+            return
+        async with httpx.AsyncClient() as client:
+            while True:
+                try:
+                    await client.get(f"{url}/api/health")
+                except Exception:
+                    pass
+                await asyncio.sleep(600) # Every 10 mins
+    
+    asyncio.create_task(ping_self())
+
 
 if __name__ == "__main__":
     import uvicorn
