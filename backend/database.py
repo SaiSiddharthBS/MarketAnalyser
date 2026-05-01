@@ -6,21 +6,30 @@ import sqlite3
 import json
 import os
 import psycopg2
-from psycopg2.extras import RealDictCursor
+import psycopg2.extras
+from psycopg2.pool import SimpleConnectionPool
 from pathlib import Path
 from datetime import datetime
 from config import DB_PATH
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Load DATABASE_URL from env if available (for cloud)
 DATABASE_URL = os.getenv("DATABASE_URL")
+pool = None
 
+if DATABASE_URL:
+    try:
+        pool = SimpleConnectionPool(1, 20, DATABASE_URL)
+        print("✅ Postgres Connection Pool initialized")
+    except Exception as e:
+        print(f"❌ Failed to initialize connection pool: {e}")
 
 def get_connection():
     """Get a connection (Postgres or SQLite)."""
     if DATABASE_URL:
-        # PostgreSQL Connection (Cloud)
-        conn = psycopg2.connect(DATABASE_URL)
-        return conn
+        return pool.getconn()
     else:
         # SQLite Connection (Local)
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -29,10 +38,17 @@ def get_connection():
         conn.execute("PRAGMA journal_mode=WAL")
         return conn
 
+def put_connection(conn):
+    """Return a connection to the pool or close it."""
+    if DATABASE_URL:
+        pool.putconn(conn)
+    else:
+        conn.close()
+
 def get_cursor(conn):
     """Get a cursor (RealDictCursor for Postgres, standard for SQLite)."""
     if DATABASE_URL:
-        return conn.cursor(cursor_factory=RealDictCursor)
+        return conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     return conn.cursor()
 
 def db_execute(query, params=None):
@@ -66,7 +82,7 @@ def db_execute(query, params=None):
             return True
     finally:
         cur.close()
-        conn.close()
+        put_connection(conn)
 
 def init_db():
     """Initialize all database tables."""
