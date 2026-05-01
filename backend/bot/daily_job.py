@@ -3,6 +3,10 @@ import asyncio
 import sys
 from pathlib import Path
 from telegram import Bot
+import ssl
+
+# Fix SSL issues
+ssl._create_default_https_context = ssl._create_unverified_context
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 

@@ -61,6 +61,7 @@ function setupButtonHandlers() {
         'btn-run-screener': runScreener,
         'btn-generate-signals': generateSignals,
         'btn-analyse': () => analyseStock(document.getElementById('analysis-search').value.trim()),
+        'btn-send-alert': sendTelegramAlert,
     };
 
     Object.entries(handlers).forEach(([id, fn]) => {
@@ -582,4 +583,20 @@ function formatNumber(n) {
     if (Math.abs(n) >= 10000000) return (n / 10000000).toFixed(2) + ' Cr';
     if (Math.abs(n) >= 100000) return (n / 100000).toFixed(2) + ' L';
     return n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+async function sendTelegramAlert() {
+    const btn = document.getElementById('btn-send-alert');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Sending...';
+    }
+    
+    const res = await api.sendTelegramAlert();
+    
+    if (btn) {
+        btn.disabled = false;
+        btn.textContent = res ? '✅ Sent!' : '❌ Failed';
+        setTimeout(() => { btn.textContent = '📱 Send Telegram Alert'; }, 3000);
+    }
 }

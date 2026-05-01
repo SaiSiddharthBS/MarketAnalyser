@@ -4,6 +4,10 @@ Uses mftool + MFAPI.in for Indian mutual fund data.
 """
 import requests
 from datetime import datetime
+import ssl
+
+# Fix Mac SSL issue
+ssl._create_default_https_context = ssl._create_unverified_context
 
 MFAPI_BASE = "https://api.mfapi.in/mf"
 

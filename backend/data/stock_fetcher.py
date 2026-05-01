@@ -5,6 +5,10 @@ Uses yfinance for NSE/BSE/Global market data.
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
+import ssl
+
+# Fix Mac SSL issue
+ssl._create_default_https_context = ssl._create_unverified_context
 
 
 def get_stock_data(symbol, period="1y", interval="1d", exchange="NS"):

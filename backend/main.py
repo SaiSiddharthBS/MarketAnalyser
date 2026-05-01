@@ -285,6 +285,16 @@ async def execute_paper_trade(t: TradeCreate):
     db.add_paper_trade(t.symbol.upper(), t.trade_type.upper(), t.quantity, price, fees, t.notes)
     return {"status": "ok", "price": price, "fees": fees}
 
+@app.post("/api/bot/alert")
+async def trigger_telegram_alert():
+    """Manually trigger the daily Telegram briefing."""
+    from bot.daily_job import send_daily_alert
+    try:
+        await send_daily_alert()
+        return {"status": "ok"}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 
 # ─── Health ──────────────────────────────────────────────
 

@@ -54,6 +54,9 @@ const api = {
     addHolding: (data) => api.post('/portfolio/add', data),
     removeHolding: (id) => api.del(`/portfolio/${id}`),
     
+    // Telegram Alert
+    sendTelegramAlert: () => api.post('/bot/alert', {}),
+    
     // Paper Trading
     getPaperPortfolio: () => api.get('/paper/portfolio'),
     executePaperTrade: (data) => api.post('/paper/trade', data),
