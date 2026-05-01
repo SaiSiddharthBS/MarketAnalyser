@@ -90,13 +90,37 @@ function updateMarketStatus() {
     const mins = now.getMinutes();
     const day = now.getDay();
     const time = hours * 60 + mins;
-    const isOpen = day >= 1 && day <= 5 && time >= 555 && time <= 930; // 9:15-15:30
+    
+    // Check for holidays (YYYY-MM-DD)
+    const holidays2026 = [
+        '2026-01-26', // Republic Day
+        '2026-03-03', // Maha Shivaratri
+        '2026-03-20', // Holi
+        '2026-04-03', // Good Friday
+        '2026-04-14', // Ambedkar Jayanti
+        '2026-05-01', // Maharashtra Day
+        '2026-08-15', // Independence Day
+        '2026-09-17', // Ganesh Chaturthi
+        '2026-10-02', // Gandhi Jayanti
+        '2026-10-20', // Dussehra
+        '2026-11-09', // Diwali
+        '2026-12-25'  // Christmas
+    ];
+    
+    // Format current date as YYYY-MM-DD
+    const dateStr = now.getFullYear() + '-' + 
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(now.getDate()).padStart(2, '0');
+    
+    const isHoliday = holidays2026.includes(dateStr);
+    const isTradingHours = day >= 1 && day <= 5 && time >= 555 && time <= 930; // 9:15-15:30
+    const isOpen = isTradingHours && !isHoliday;
 
     const dot = document.querySelector('.status-dot');
     const text = document.querySelector('.market-status span:last-child');
     if (dot && text) {
         dot.className = `status-dot ${isOpen ? 'open' : 'closed'}`;
-        text.textContent = isOpen ? 'Market Open' : 'Market Closed';
+        text.textContent = isHoliday ? 'Market Closed (Holiday)' : (isOpen ? 'Market Open' : 'Market Closed');
     }
 
     const timeEl = document.getElementById('dashboard-time');
