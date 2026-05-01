@@ -6,10 +6,12 @@ services:
     startCommand: gunicorn backend.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     envVars:
       - key: DATABASE_URL
-        sync: false # User will set this in Render UI
+        fromDatabase:
+          name: marketpulse-db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.12.3
       - key: TELEGRAM_BOT_TOKEN
         sync: false # User will set this in Render UI
       - key: TELEGRAM_CHAT_ID
         sync: false # User will set this in Render UI
-      - key: PYTHON_VERSION
-        value: 3.10.12
