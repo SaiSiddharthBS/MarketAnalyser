@@ -13,11 +13,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.concurrency import run_in_threadpool
+import uvicorn
+import asyncio
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
 import database as db
+from data import stock_fetcher, news_fetcher
 from data.stock_fetcher import (
     get_stock_data, get_stock_info, get_market_overview,
     get_ltp, get_bulk_ltp
@@ -82,19 +86,24 @@ async def serve_frontend():
 
 @app.get("/api/market/overview")
 async def market_overview():
-    """Get current market snapshot — indices, commodities, sentiment."""
-    overview = get_market_overview()
-    sentiment = get_market_sentiment()
+    """Get Nifty 50, Sensex and Global Market status."""
+    # Fetch in parallel to prevent timeouts
+    indices_task = run_in_threadpool(stock_fetcher.get_market_overview)
+    news_task = run_in_threadpool(news_fetcher.get_market_news)
+    sentiment_task = run_in_threadpool(news_fetcher.get_market_sentiment)
+    
+    indices, news, sentiment = await asyncio.gather(indices_task, news_task, sentiment_task)
+    
     return {
         "timestamp": datetime.now().isoformat(),
-        "indices": overview,
+        "indices": indices,
         "sentiment": {
             "score": sentiment["score"],
             "label": sentiment["label"],
             "positive_pct": sentiment["positive_pct"],
             "negative_pct": sentiment["negative_pct"],
         },
-        "news": sentiment["articles"][:10],
+        "news": news[:10],
     }
 
 
@@ -324,6 +333,8 @@ async def start_keep_alive():
 
 
 if __name__ == "__main__":
+    # startCommand: gunicorn backend.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120
+    # envVars:
     import uvicorn
     from config import HOST, PORT
     uvicorn.run("main:app", host=HOST, port=PORT, reload=True)
