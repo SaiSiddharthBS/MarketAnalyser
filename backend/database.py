@@ -61,8 +61,12 @@ def get_cursor(conn):
     return conn.cursor()
 
 def db_execute(query, params=None):
-    """Execute a query safely across SQLite and Postgres."""
+    """Universal executor for both SQLite and Postgres."""
     conn = get_connection()
+    if not conn:
+        print(f"⚠️ Skipping query (no connection): {query[:50]}...")
+        return [] if query.strip().upper().startswith("SELECT") else None
+        
     cur = get_cursor(conn)
     
     # Convert '?' to '%s' for Postgres
