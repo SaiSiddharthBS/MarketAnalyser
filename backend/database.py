@@ -21,15 +21,21 @@ pool = None
 
 if DATABASE_URL:
     try:
-        pool = SimpleConnectionPool(1, 20, DATABASE_URL)
+        # Reduced to 5 to stay within Neon.tech free tier limits
+        pool = SimpleConnectionPool(1, 5, DATABASE_URL)
         print("✅ Postgres Connection Pool initialized")
     except Exception as e:
         print(f"❌ Failed to initialize connection pool: {e}")
+        pool = None # Ensure it's explicitly None
 
 def get_connection():
     """Get a connection (Postgres or SQLite)."""
-    if DATABASE_URL:
-        return pool.getconn()
+    if DATABASE_URL and pool:
+        try:
+            return pool.getconn()
+        except Exception as e:
+            print(f"❌ Pool getconn error: {e}")
+            return None
     else:
         # SQLite Connection (Local)
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -40,9 +46,12 @@ def get_connection():
 
 def put_connection(conn):
     """Return a connection to the pool or close it."""
-    if DATABASE_URL:
-        pool.putconn(conn)
-    else:
+    if DATABASE_URL and pool and conn:
+        try:
+            pool.putconn(conn)
+        except Exception:
+            pass
+    elif conn:
         conn.close()
 
 def get_cursor(conn):
