@@ -1,50 +1,58 @@
-# Agent Alpha - Technical Handover Document
+# Agent Alpha - THE ULTIMATE HANDOVER DOCUMENT (Master File)
 
-## Project Overview
-Agent Alpha is a high-performance market analysis and paper trading platform built for stability in cloud environments. It integrates live market data, sentiment analysis, and automated Telegram alerts.
+## 1. INFRASTRUCTURE & ACCOUNTS
+- **GitHub Account**: `SaiSiddharthBS`
+- **GitHub Repository**: `https://github.com/SaiSiddharthBS/MarketAnalyser`
+- **Render Service**: `marketpulse-agent` (onrender.com)
+- **Database**: Neon.tech (PostgreSQL)
+- **Notifications**: Telegram Bot API
 
-## Tech Stack
-- **Backend**: FastAPI (Python 3.12.3)
-- **Web Server**: Gunicorn + UvicornWorker (Timeout: 120s)
-- **Database**: 
-  - **Local**: SQLite (WAL mode enabled)
-  - **Cloud**: PostgreSQL (Neon.tech)
-  - **Abstraction**: `backend/database.py` provides a universal `db_execute` wrapper.
-- **Frontend**: Vanilla HTML5, CSS3, ES6 Javascript.
-- **Deployment**: Render.com (Auto-deploy from GitHub).
-- **CI/CD**: GitHub Actions for daily automated briefings.
-
-## Environment Secrets & Credentials
-For any new deployment or local setup, use these exact values:
+## 2. MASTER CREDENTIALS (SENSITIVE)
+Use these exact values for any new environment setup:
 
 - **DATABASE_URL**: `postgresql://neondb_owner:npg_EUo9iduM3Oza@ep-aged-pond-anltyrzf.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require`
 - **TELEGRAM_BOT_TOKEN**: `8433034119:AAHLKY3I5nra9vCQ1UirdCsoiTF6RUvatdk`
 - **TELEGRAM_CHAT_ID**: `1186289837`
 - **PYTHON_VERSION**: `3.12.3`
 
-## Critical Stability Features (Don't Remove!)
-1. **Cloud IP Bypass**: `backend/data/stock_fetcher.py` uses a custom `requests.Session` with browser headers to prevent Yahoo Finance from blocking Render IPs.
-2. **Parallel Fetching**: `backend/main.py` uses `asyncio.gather` and `run_in_threadpool` to fetch market data in parallel, preventing 502 Bad Gateway timeouts.
-3. **Neon Connection Pool**: PostgreSQL pool is limited to **5 connections** to prevent "Connection Refused" errors on Neon.tech Free Tier.
-4. **Holiday Detection**: `backend/bot/daily_job.py` detects zero-change days (holidays) and sends an appropriate greeting instead of empty data.
-5. **Keep-Alive**: `main.py` contains a self-ping background task to prevent Render Free Tier from sleeping.
+## 3. CHRONOLOGICAL PROJECT TIMELINE & CRITICAL FIXES
+Here is exactly what we did since yesterday to make this project work:
 
-## Code Architecture
-- `backend/main.py`: Entry point, API routes, and keep-alive logic.
-- `backend/database.py`: Core DB operations and universal SQL translator.
-- `backend/data/`:
-    - `stock_fetcher.py`: yfinance integration with anti-blocking.
-    - `news_fetcher.py`: News scraping and VADER sentiment analysis.
-- `backend/bot/daily_job.py`: Logic for the Telegram briefing.
-- `frontend/`: 
-    - `js/api.js`: Centralized API client.
-    - `js/app.js`: UI logic and state management.
+### Phase 1: Local Setup & SSL Fixes
+- **The Problem**: On macOS, `yfinance` and `urllib` were crashing with "SSL Certificate Verify Failed".
+- **The Fix**: Injected `ssl._create_default_https_context = ssl._create_unverified_context` globally in `stock_fetcher.py`, `mf_fetcher.py`, and `daily_job.py`.
 
-## Future Roadmap (Phase 2)
-- **ML Integration**: `backend/analysis/ml_engine.py` is ready for advanced prediction models.
-- **Screener Expansion**: Add more technical indicators to the automated scanner.
-- **Portfolio Analytics**: Add XIRR and CAGR calculations to the Paper Trading module.
+### Phase 2: Cloud Migration (Render & Neon)
+- **The Problem**: SQLite doesn't work on Render (it's read-only/ephemeral).
+- **The Fix**: Migrated to Neon.tech Postgres. Created a **Universal Database Wrapper** in `backend/database.py` that translates SQLite syntax (like `?`) to Postgres syntax (like `%s`) automatically.
+
+### Phase 3: Bypassing Yahoo Finance Blocks
+- **The Problem**: Yahoo Finance blocks cloud server IPs (Render/Heroku), causing "Expecting value: line 1" errors.
+- **The Fix**: Implemented a **Custom requests.Session** in `stock_fetcher.py`. It uses browser-mimicking User-Agent headers to trick Yahoo into thinking Render is a home computer.
+
+### Phase 4: Fixing Render Deployment Hangs
+- **The Problem**: Render deployment was hanging on "Application Loading".
+- **The Fix**: 
+    1. Added `runtime.txt` and updated `render.yaml` to force Python 3.12.3.
+    2. Reduced Postgres pool size to **5** to stay within Neon.tech free tier limits.
+    3. Added a safety check in `db_execute` so the app doesn't crash if the DB is slow to wake up.
+
+### Phase 5: Solving 502 Bad Gateway Timeouts
+- **The Problem**: The Dashboard was too slow, causing Render to time out (502).
+- **The Fix**: 
+    1. Implemented **Parallel Async Fetching** using `asyncio.gather`.
+    2. Increased Gunicorn timeout to **120 seconds** in `render.yaml`.
+
+## 4. BOT & AUTOMATION
+- **GitHub Action**: `.github/workflows/daily_alert.yml` runs every morning at 8:00 AM IST.
+- **Holiday Detection**: The bot is programmed to send a "Market is CLOSED" message on holidays instead of failing.
+- **Manual Alert**: Added a button on the Dashboard top-right to manually trigger the Telegram alert.
 
 ---
-**Handover Note for the Next AI**: 
-This system is highly optimized for cloud hosting. Do not change the `session` headers in `stock_fetcher.py` or the `pool` size in `database.py` without testing on Render first.
+## 5. INSTRUCTIONS FOR THE NEXT AI
+1. **READ THIS FILE FIRST**.
+2. Do not change the `session` headers in `stock_fetcher.py`. They are required to bypass the Yahoo block.
+3. Keep the DB connection pool at `maxconn=5`.
+4. Always use `run_in_threadpool` for synchronous fetchers in `main.py` to avoid blocking the event loop.
+
+**JAI SHRI RAM! 🙏🏻**
