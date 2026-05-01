@@ -14,19 +14,20 @@ Agent Alpha is a high-performance market analysis and paper trading platform bui
 - **Deployment**: Render.com (Auto-deploy from GitHub).
 - **CI/CD**: GitHub Actions for daily automated briefings.
 
+## Environment Secrets & Credentials
+For any new deployment or local setup, use these exact values:
+
+- **DATABASE_URL**: `postgresql://neondb_owner:npg_EUo9iduM3Oza@ep-aged-pond-anltyrzf.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require`
+- **TELEGRAM_BOT_TOKEN**: `8433034119:AAHLKY3I5nra9vCQ1UirdCsoiTF6RUvatdk`
+- **TELEGRAM_CHAT_ID**: `1186289837`
+- **PYTHON_VERSION**: `3.12.3`
+
 ## Critical Stability Features (Don't Remove!)
 1. **Cloud IP Bypass**: `backend/data/stock_fetcher.py` uses a custom `requests.Session` with browser headers to prevent Yahoo Finance from blocking Render IPs.
 2. **Parallel Fetching**: `backend/main.py` uses `asyncio.gather` and `run_in_threadpool` to fetch market data in parallel, preventing 502 Bad Gateway timeouts.
 3. **Neon Connection Pool**: PostgreSQL pool is limited to **5 connections** to prevent "Connection Refused" errors on Neon.tech Free Tier.
 4. **Holiday Detection**: `backend/bot/daily_job.py` detects zero-change days (holidays) and sends an appropriate greeting instead of empty data.
 5. **Keep-Alive**: `main.py` contains a self-ping background task to prevent Render Free Tier from sleeping.
-
-## Environment Secrets
-Ensure these are set in both Render Dashboard and GitHub Secrets:
-- `DATABASE_URL`: PostgreSQL connection string.
-- `TELEGRAM_BOT_TOKEN`: Telegram bot credentials.
-- `TELEGRAM_CHAT_ID`: User's telegram ID.
-- `PYTHON_VERSION`: 3.12.3
 
 ## Code Architecture
 - `backend/main.py`: Entry point, API routes, and keep-alive logic.
