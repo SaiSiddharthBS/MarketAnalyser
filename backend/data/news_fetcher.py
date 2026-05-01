@@ -92,6 +92,28 @@ def get_market_sentiment():
     }
 
 
+def get_market_news(max_results=20):
+    """Get latest market news from multiple sources (deduplicated)."""
+    queries = [
+        "Indian stock market today",
+        "Nifty Sensex today",
+        "BSE NSE market news",
+    ]
+    all_articles = []
+    seen_titles = set()
+
+    for q in queries:
+        articles = fetch_news(q, max_results=10)
+        for a in articles:
+            if a["title"] not in seen_titles:
+                seen_titles.add(a["title"])
+                all_articles.append(a)
+
+    # Sort by absolute sentiment score (most opinionated first)
+    all_articles.sort(key=lambda x: abs(x.get("sentiment_score", 0)), reverse=True)
+    return all_articles[:max_results]
+
+
 def get_stock_news(symbol):
     """Get news for a specific stock."""
     return fetch_news(f"{symbol} NSE stock", max_results=10)

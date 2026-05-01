@@ -1,6 +1,35 @@
+# Virtual Environment
 venv/
+.venv/
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment
 .env
+
+# Database
 data/marketpulse.db
+backend/data/marketpulse.db
+*.db
+
+# ML Models (regenerated at runtime)
+data/models/*.joblib
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Debug
+backend/debug_output.txt

@@ -77,6 +77,8 @@ def db_execute(query, params=None):
              query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (symbol, date) DO UPDATE SET open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low, close=EXCLUDED.close, volume=EXCLUDED.volume"
         elif "INSERT OR REPLACE INTO mf_nav_cache" in query:
              query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (scheme_code, date) DO UPDATE SET nav=EXCLUDED.nav"
+        elif "INSERT OR REPLACE INTO portfolio_snapshots" in query:
+             query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (date) DO UPDATE SET total_invested=EXCLUDED.total_invested, total_current=EXCLUDED.total_current, total_return_pct=EXCLUDED.total_return_pct, holdings_json=EXCLUDED.holdings_json, market_data_json=EXCLUDED.market_data_json"
              
         if "datetime('now')" in query:
             query = query.replace("datetime('now')", "CURRENT_TIMESTAMP")
@@ -247,7 +249,7 @@ def init_db():
     """)
 
     conn.commit()
-    conn.close()
+    put_connection(conn)
     print("✅ Database initialized successfully")
 
 
@@ -276,8 +278,9 @@ def update_holding(holding_id, **kwargs):
     updates = {k: v for k, v in kwargs.items() if k in allowed}
     if updates:
         set_clause = ", ".join(f"{k} = ?" for k in updates)
+        now_func = "CURRENT_TIMESTAMP" if DATABASE_URL else "datetime('now')"
         values = list(updates.values()) + [holding_id]
-        db_execute(f"UPDATE holdings SET {set_clause}, updated_at = datetime('now') WHERE id = ?", values)
+        db_execute(f"UPDATE holdings SET {set_clause}, updated_at = {now_func} WHERE id = ?", values)
 
 
 def delete_holding(holding_id):

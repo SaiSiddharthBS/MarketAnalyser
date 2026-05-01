@@ -737,6 +737,24 @@ body::before {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ─── Error State ──────────────────────────────────── */
+.error-state {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.error-state p {
+    margin-bottom: 16px;
+    font-size: 15px;
+}
+
+.error-state .btn {
+    font-size: 13px;
+    padding: 8px 20px;
+}
+
 /* ─── Score Badge ───────────────────────────────────── */
 .score-badge {
     display: inline-flex;

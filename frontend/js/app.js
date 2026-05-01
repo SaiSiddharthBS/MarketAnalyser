@@ -110,18 +110,42 @@ function updateMarketStatus() {
 
 /* ─── Dashboard ──────────────────────────────────────── */
 async function loadDashboard() {
+    // Show loading state
+    const grid = document.getElementById('indices-grid');
+    if (grid) grid.innerHTML = '<div class="loading-skeleton"><span class="spinner"></span> Loading market data...</div>';
+
     const data = await api.getMarketOverview();
-    if (!data) return;
+    if (!data) {
+        if (grid) grid.innerHTML = '<div class="error-state"><p>⚠️ Could not load market data</p><button class="btn btn-primary" onclick="loadDashboard()">↻ Retry</button></div>';
+        return;
+    }
 
     renderIndices(data.indices);
     renderSentiment(data.sentiment);
     renderNewsItems(data.news, 'news-feed', 5);
     loadNiftyChart();
+
+    // Auto-refresh every 5 minutes during market hours
+    if (!window._dashboardRefreshTimer) {
+        window._dashboardRefreshTimer = setInterval(() => {
+            const now = new Date();
+            const time = now.getHours() * 60 + now.getMinutes();
+            const day = now.getDay();
+            if (day >= 1 && day <= 5 && time >= 555 && time <= 930) {
+                loadDashboard();
+            }
+        }, 300000);
+    }
 }
 
 function renderIndices(indices) {
     const grid = document.getElementById('indices-grid');
     if (!grid || !indices) return;
+
+    if (Object.keys(indices).length === 0) {
+        grid.innerHTML = '<div class="index-card" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted);"><div class="card-value" style="font-size: 16px;">Market Data Unavailable</div><div class="card-label">Market may be closed today, or data feed is temporarily offline.</div></div>';
+        return;
+    }
 
     const displayNames = {
         'NIFTY_50': 'Nifty 50', 'SENSEX': 'Sensex', 'NIFTY_BANK': 'Bank Nifty',
@@ -166,9 +190,19 @@ function renderSentiment(sentiment) {
 }
 
 async function loadNiftyChart() {
-    const data = await api.getIndexData('^NSEI', '6mo');
-    if (data && data.data) {
-        Charts.createAreaChart('nifty-chart', data.data, '#3b82f6');
+    const container = document.getElementById('nifty-chart');
+    if (container) container.innerHTML = '<div class="loading-skeleton"><span class="spinner"></span> Loading chart...</div>';
+    
+    try {
+        const data = await api.getIndexData('^NSEI', '6mo');
+        if (data && data.data && data.data.length > 0) {
+            if (container) container.innerHTML = '';
+            Charts.createAreaChart('nifty-chart', data.data, '#3b82f6');
+        } else {
+            if (container) container.innerHTML = '<div class="error-state"><p>Chart data unavailable for today.</p></div>';
+        }
+    } catch (e) {
+        if (container) container.innerHTML = '<div class="error-state"><p>Chart data unavailable for today.</p></div>';
     }
 }
 
@@ -260,9 +294,13 @@ async function runScreener() {
     const data = await api.getScreenerTop(50);
 
     if (btn) btn.disabled = false;
-    if (info) info.textContent = `Found ${data ? data.count : 0} stocks`;
 
-    if (!data || !data.stocks) return;
+    if (!data || !data.stocks || data.stocks.length === 0) {
+        if (info) info.innerHTML = data?.error ? `⚠️ ${data.error}` : '⚠️ No results. <button class="btn btn-primary" style="padding:4px 12px;font-size:12px" onclick="runScreener()">Retry</button>';
+        return;
+    }
+
+    if (info) info.textContent = `Found ${data.count} stocks`;
 
     const tbody = document.getElementById('screener-table-body');
     if (!tbody) return;

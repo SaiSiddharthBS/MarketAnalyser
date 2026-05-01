@@ -102,6 +102,8 @@ def get_market_overview():
 
     for name, symbol in all_symbols.items():
         try:
+            # Note: yf.Ticker().history() uses its own curl_cffi session internally
+            # Do NOT pass requests.Session here — it causes errors in yfinance 0.2.40+
             ticker = yf.Ticker(symbol)
             hist = ticker.history(period="2d")
             if hist.empty:
@@ -125,7 +127,7 @@ def get_ltp(symbol, exchange="NS"):
     """Get last traded price for a stock."""
     ticker = f"{symbol}.{exchange}" if exchange else symbol
     try:
-        stock = yf.Ticker(ticker, session=session)
+        stock = yf.Ticker(ticker)
         hist = stock.history(period="1d")
         if hist.empty:
             return None
