@@ -103,7 +103,7 @@ async def market_overview():
         try:
             indices, news, sentiment = await asyncio.wait_for(
                 asyncio.gather(indices_task, news_task, sentiment_task, return_exceptions=True),
-                timeout=8.0
+                timeout=45.0
             )
         except asyncio.TimeoutError:
             print("⚠️ Market overview fetch timed out!")
