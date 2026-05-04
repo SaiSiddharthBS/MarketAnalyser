@@ -6,15 +6,14 @@ import pandas as pd
 import ta
 import yfinance as yf
 
-# Use the same custom session that bypasses Yahoo cloud IP blocks
-from data.stock_fetcher import session as yf_session
+# yfinance handles its own sessions internally
 
 
 def get_technical_analysis(symbol, exchange="NS", period="1y"):
     """Run full technical analysis on a stock and return indicators + signals."""
     ticker = f"{symbol}.{exchange}" if exchange else symbol
     try:
-        df = yf.download(ticker, period=period, interval="1d", progress=False, session=yf_session)
+        df = yf.download(ticker, period=period, interval="1d", progress=False)
         if df.empty or len(df) < 50:
             return None
         if isinstance(df.columns, pd.MultiIndex):
