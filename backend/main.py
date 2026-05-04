@@ -376,6 +376,7 @@ async def execute_paper_trade(t: TradeCreate):
     db.add_paper_trade(t.symbol.upper(), t.trade_type.upper(), t.quantity, price, fees, t.notes)
     return {"status": "ok", "price": price, "fees": fees}
 
+@app.get("/api/bot/alert")
 @app.post("/api/bot/alert")
 async def trigger_telegram_alert(background_tasks: BackgroundTasks):
     """Manually trigger the daily Telegram briefing as a background task."""
