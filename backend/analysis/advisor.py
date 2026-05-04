@@ -14,7 +14,7 @@ except ImportError:
 
 def generate_financial_advice(portfolio_data, market_data, news_data):
     """Generate personalized financial advice using Gemini."""
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
     
     if not HAS_GENAI or not api_key:
         return "⚠️ Gemini API Key not found or `google-genai` not installed. Please add GEMINI_API_KEY to your Render environment variables to activate your Personal AI Advisor."
