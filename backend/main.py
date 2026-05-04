@@ -378,19 +378,76 @@ async def execute_paper_trade(t: TradeCreate):
 
 @app.get("/api/bot/alert")
 @app.post("/api/bot/alert")
-async def trigger_telegram_alert(background_tasks: BackgroundTasks):
-    """Manually trigger the daily Telegram briefing as a background task."""
+async def trigger_telegram_alert():
+    """Trigger the daily Telegram briefing synchronously so we can see errors."""
     from bot.daily_job import send_daily_alert
+    import traceback
     
-    # Define a sync wrapper for the async job since background tasks can handle async, but sometimes need wrapper
-    async def run_job():
+    try:
+        result = await run_in_threadpool(_run_daily_alert_sync)
+        return {"status": "completed", "result": result}
+    except Exception as e:
+        error_detail = traceback.format_exc()
+        print(f"❌ Alert endpoint error: {error_detail}")
+        return {"status": "error", "error": str(e), "traceback": error_detail}
+
+
+def _run_daily_alert_sync():
+    """Run the daily alert synchronously in a thread."""
+    import asyncio
+    from bot.daily_job import send_daily_alert
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(send_daily_alert())
+    finally:
+        loop.close()
+
+
+@app.get("/api/debug")
+async def debug_env():
+    """Debug endpoint to check environment configuration on Render."""
+    import requests as req
+    
+    gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
+    telegram_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+    telegram_chat = os.getenv("TELEGRAM_CHAT_ID", "").strip()
+    
+    results = {
+        "gemini_key_exists": bool(gemini_key),
+        "gemini_key_length": len(gemini_key),
+        "gemini_key_preview": f"{gemini_key[:8]}...{gemini_key[-4:]}" if len(gemini_key) > 12 else "TOO_SHORT",
+        "telegram_token_exists": bool(telegram_token),
+        "telegram_token_length": len(telegram_token),
+        "telegram_chat_id": telegram_chat,
+    }
+    
+    # Test Gemini
+    try:
+        from google import genai
+        client = genai.Client(api_key=gemini_key)
+        resp = client.models.generate_content(model='gemini-2.0-flash', contents='Say: OK')
+        results["gemini_status"] = "OK"
+        results["gemini_response"] = resp.text[:100]
+    except ImportError:
+        results["gemini_status"] = "google-genai NOT INSTALLED"
+    except Exception as e:
+        results["gemini_status"] = f"FAILED: {str(e)[:200]}"
+    
+    # Test Telegram
+    if telegram_token and telegram_chat:
         try:
-            await send_daily_alert()
+            url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
+            payload = {"chat_id": telegram_chat, "text": f"🔧 Debug ping at {datetime.now().isoformat()}"}
+            r = req.post(url, json=payload, timeout=10)
+            results["telegram_status"] = f"HTTP {r.status_code}"
+            if r.status_code != 200:
+                results["telegram_error"] = r.text[:200]
         except Exception as e:
-            print(f"❌ Background Telegram alert error: {e}")
-            
-    background_tasks.add_task(run_job)
-    return {"status": "queued", "message": "Daily alert triggered in background."}
+            results["telegram_status"] = f"FAILED: {str(e)}"
+    else:
+        results["telegram_status"] = "MISSING CREDENTIALS"
+    
+    return results
 
 
 # ─── Health ──────────────────────────────────────────────

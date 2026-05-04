@@ -52,21 +52,26 @@ def send_telegram_sync(msg):
 async def send_daily_alert():
     """Fetches data, generates AI advice, and sends the daily Telegram briefing."""
     print("🚀 Triggering Agent Alpha AI Briefing...")
+    result = {"steps": []}
     
     try:
         # 1. Fetch Market Context
         try:
             market_data = get_market_overview()
             market_text = "\n".join([f"{k}: {v['value']} ({v['change_pct']}%)" for k, v in market_data.items() if v])
-        except Exception:
+            result["steps"].append(f"✅ Market data: {len(market_data)} indices")
+        except Exception as e:
             market_text = "Market data temporarily unavailable."
+            result["steps"].append(f"⚠️ Market data failed: {e}")
 
         # 2. Fetch News
         try:
             news = get_market_news(max_results=5)
             news_text = "\n".join([f"- {n['title']} (Sentiment: {n['sentiment']})" for n in news])
-        except Exception:
+            result["steps"].append(f"✅ News: {len(news)} articles")
+        except Exception as e:
             news_text = "News data temporarily unavailable."
+            result["steps"].append(f"⚠️ News failed: {e}")
 
         # 3. Fetch Portfolio
         try:
@@ -74,24 +79,36 @@ async def send_daily_alert():
             portfolio_text = "\n".join([f"- {h['name']} ({h['asset_type']}): {h['quantity']} units @ {h['buy_price']}" for h in holdings])
             if not portfolio_text:
                 portfolio_text = "Portfolio is currently empty."
-        except Exception:
+            result["steps"].append(f"✅ Portfolio: {len(holdings)} holdings")
+        except Exception as e:
             portfolio_text = "Portfolio data temporarily unavailable."
+            result["steps"].append(f"⚠️ Portfolio failed: {e}")
 
         # 4. Generate AI Advice
         advice_markdown = generate_financial_advice(portfolio_text, market_text, news_text)
+        result["steps"].append(f"✅ AI advice generated: {len(advice_markdown)} chars")
+        result["advice_preview"] = advice_markdown[:200]
 
         # 5. Send to Telegram
         success = send_telegram_sync(advice_markdown)
         if success:
             print("✅ Daily AI briefing sent successfully.")
+            result["steps"].append("✅ Telegram sent successfully")
+            result["status"] = "success"
         else:
             print("❌ Failed to send Telegram message.")
+            result["steps"].append("❌ Telegram send FAILED")
+            result["status"] = "telegram_failed"
             
     except Exception as e:
         # DEAD MAN'S SWITCH / FALLBACK
         print(f"❌ FATAL ERROR in daily_job: {traceback.format_exc()}")
-        fallback_msg = f"⚠️ *Agent Alpha Alert*\nI encountered a critical error while trying to generate your daily financial plan. I am still online, but my data feeds or AI engine timed out.\n\n`{str(e)}`"
+        result["steps"].append(f"❌ FATAL: {e}")
+        result["status"] = "fatal_error"
+        fallback_msg = f"⚠️ Agent Alpha Alert\nI encountered a critical error while trying to generate your daily financial plan.\n\n{str(e)}"
         send_telegram_sync(fallback_msg)
+    
+    return result
 
 if __name__ == "__main__":
     asyncio.run(send_daily_alert())

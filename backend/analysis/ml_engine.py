@@ -12,8 +12,7 @@ from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from datetime import datetime
 
-# Use the same custom session that bypasses Yahoo cloud IP blocks
-from data.stock_fetcher import session as yf_session
+# yfinance handles its own sessions internally
 
 # Setup models directory
 MODELS_DIR = Path(__file__).parent.parent.parent / "data" / "models"
@@ -68,7 +67,7 @@ def fetch_and_prepare_data(symbol, exchange="NS", period="5y"):
     """Fetch history, generate features, and create target."""
     ticker = f"{symbol}.{exchange}" if exchange else symbol
     try:
-        df = yf.download(ticker, period=period, progress=False, session=yf_session)
+        df = yf.download(ticker, period=period, progress=False)
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
             

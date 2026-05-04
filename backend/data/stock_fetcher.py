@@ -22,7 +22,7 @@ def get_stock_data(symbol, period="1y", interval="1d", exchange="NS"):
     """Fetch OHLCV data for a stock."""
     ticker = f"{symbol}.{exchange}" if exchange else symbol
     try:
-        data = yf.download(ticker, period=period, interval=interval, progress=False, session=session)
+        data = yf.download(ticker, period=period, interval=interval, progress=False)
         if data.empty:
             return None
         # Flatten multi-level columns if present
@@ -69,7 +69,7 @@ def get_stock_info(symbol, exchange="NS"):
 def get_index_data(index_symbol, period="6mo"):
     """Fetch index data. Common indices: ^NSEI (Nifty50), ^BSESN (Sensex)."""
     try:
-        data = yf.download(index_symbol, period=period, interval="1d", progress=False, session=session)
+        data = yf.download(index_symbol, period=period, interval="1d", progress=False)
         if data.empty:
             return None
         if isinstance(data.columns, pd.MultiIndex):
@@ -157,7 +157,7 @@ def get_bulk_ltp(symbols, exchange="NS"):
     """Get LTP for multiple stocks at once."""
     tickers = [f"{s}.{exchange}" for s in symbols]
     try:
-        data = yf.download(tickers, period="1d", progress=False, session=session)
+        data = yf.download(tickers, period="1d", progress=False)
         if data.empty:
             return {}
         result = {}

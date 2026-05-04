@@ -1,41 +1,93 @@
 """
 MarketPulse — News & Sentiment Fetcher
-Uses Google News RSS + VADER for free sentiment analysis.
+Uses multiple sources with fallback for reliability.
 """
-import feedparser
+import requests
+import xml.etree.ElementTree as ET
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from datetime import datetime
 import ssl
+import traceback
 
 # Fix Mac SSL issue
 ssl._create_default_https_context = ssl._create_unverified_context
 
 analyzer = SentimentIntensityAnalyzer()
 
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+}
+
 GOOGLE_NEWS_RSS = "https://news.google.com/rss/search?q={query}&hl=en-IN&gl=IN&ceid=IN:en"
 
 
-def fetch_news(query="Indian stock market", max_results=20):
-    """Fetch news from Google News RSS."""
+def _fetch_google_news(query, max_results=10):
+    """Fetch news from Google News RSS using requests (not feedparser)."""
     url = GOOGLE_NEWS_RSS.format(query=query.replace(" ", "+"))
     try:
-        feed = feedparser.parse(url)
+        r = requests.get(url, headers=HEADERS, timeout=10)
+        if r.status_code != 200 or not r.text.strip():
+            return []
+        root = ET.fromstring(r.text)
         articles = []
-        for entry in feed.entries[:max_results]:
-            title = entry.get("title", "")
+        items = root.findall(".//item")
+        for item in items[:max_results]:
+            title = item.findtext("title", "")
+            link = item.findtext("link", "")
+            pub_date = item.findtext("pubDate", "")
+            source_el = item.find("source")
+            source = source_el.text if source_el is not None else "Unknown"
+            
             sentiment = analyzer.polarity_scores(title)
             articles.append({
                 "title": title,
-                "link": entry.get("link", ""),
-                "published": entry.get("published", ""),
-                "source": entry.get("source", {}).get("title", "Unknown"),
+                "link": link,
+                "published": pub_date,
+                "source": source,
                 "sentiment_score": sentiment["compound"],
                 "sentiment": "positive" if sentiment["compound"] > 0.05 else "negative" if sentiment["compound"] < -0.05 else "neutral",
             })
         return articles
     except Exception as e:
-        print(f"Error fetching news: {e}")
+        print(f"Google News fetch error for '{query}': {e}")
         return []
+
+
+def _fetch_yahoo_news(query="market", max_results=10):
+    """Fallback: fetch news from Yahoo Finance search."""
+    try:
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}&newsCount={max_results}&quotesCount=0"
+        r = requests.get(url, headers=HEADERS, timeout=10)
+        if r.status_code != 200:
+            return []
+        data = r.json()
+        articles = []
+        for item in data.get("news", [])[:max_results]:
+            title = item.get("title", "")
+            sentiment = analyzer.polarity_scores(title)
+            articles.append({
+                "title": title,
+                "link": item.get("link", ""),
+                "published": item.get("providerPublishTime", ""),
+                "source": item.get("publisher", "Yahoo Finance"),
+                "sentiment_score": sentiment["compound"],
+                "sentiment": "positive" if sentiment["compound"] > 0.05 else "negative" if sentiment["compound"] < -0.05 else "neutral",
+            })
+        return articles
+    except Exception as e:
+        print(f"Yahoo News fetch error: {e}")
+        return []
+
+
+def fetch_news(query="Indian stock market", max_results=20):
+    """Fetch news with Google News primary, Yahoo Finance fallback."""
+    articles = _fetch_google_news(query, max_results)
+    if not articles:
+        # Fallback to Yahoo Finance news
+        articles = _fetch_yahoo_news(query, max_results)
+    return articles
 
 
 def get_market_sentiment():
