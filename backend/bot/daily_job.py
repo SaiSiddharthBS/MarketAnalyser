@@ -29,6 +29,11 @@ def send_telegram_sync(msg):
     payload = {"chat_id": CHAT_ID, "text": msg, "parse_mode": "Markdown"}
     try:
         r = requests.post(url, json=payload, timeout=10)
+        if r.status_code != 200:
+            # Telegram rejected the Markdown, try sending as plain text
+            print(f"Markdown failed ({r.status_code}), retrying plain text...")
+            payload.pop("parse_mode")
+            r = requests.post(url, json=payload, timeout=10)
         return r.status_code == 200
     except Exception:
         return False
