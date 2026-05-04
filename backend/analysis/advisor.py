@@ -52,7 +52,7 @@ Format your response in clean Markdown.
 """
 
         response = client.models.generate_content(
-            model='gemini-2.5-pro',
+            model='gemini-2.0-flash',
             contents=prompt,
         )
         return response.text
