@@ -101,24 +101,41 @@ def get_market_overview():
     all_symbols = {**indices, **commodities}
 
     for name, symbol in all_symbols.items():
+        current, prev = None, None
         try:
-            # Note: yf.Ticker().history() uses its own curl_cffi session internally
-            # Do NOT pass requests.Session here — it causes errors in yfinance 0.2.40+
+            # Attempt 1: Standard yfinance
             ticker = yf.Ticker(symbol)
             hist = ticker.history(period="2d")
-            if hist.empty:
-                continue
-            current = hist["Close"].iloc[-1]
-            prev = hist["Close"].iloc[-2] if len(hist) > 1 else current
+            if not hist.empty:
+                current = float(hist["Close"].iloc[-1])
+                prev = float(hist["Close"].iloc[-2]) if len(hist) > 1 else current
+        except Exception:
+            pass
+            
+        if current is None:
+            # Attempt 2: Direct Yahoo Finance API Fallback (Bypasses yfinance block)
+            try:
+                import requests
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+                url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=2d"
+                res = requests.get(url, headers=headers, timeout=5)
+                data = res.json()
+                quotes = data['chart']['result'][0]['indicators']['quote'][0]['close']
+                quotes = [q for q in quotes if q is not None]
+                if len(quotes) >= 1:
+                    current = float(quotes[-1])
+                    prev = float(quotes[-2]) if len(quotes) > 1 else current
+            except Exception as fallback_e:
+                print(f"Fallback failed for {name}: {fallback_e}")
+
+        if current is not None and prev is not None:
             change = current - prev
             change_pct = (change / prev) * 100 if prev else 0
             result[name] = {
-                "value": round(float(current), 2),
-                "change": round(float(change), 2),
-                "change_pct": round(float(change_pct), 2),
+                "value": round(current, 2),
+                "change": round(change, 2),
+                "change_pct": round(change_pct, 2),
             }
-        except Exception as e:
-            print(f"Error fetching {name}: {e}")
 
     return result
 
