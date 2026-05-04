@@ -26,17 +26,28 @@ def send_telegram_sync(msg):
     if not TOKEN or not CHAT_ID:
         return False
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": msg, "parse_mode": "Markdown"}
-    try:
-        r = requests.post(url, json=payload, timeout=10)
-        if r.status_code != 200:
-            # Telegram rejected the Markdown, try sending as plain text
-            print(f"Markdown failed ({r.status_code}), retrying plain text...")
-            payload.pop("parse_mode")
+    
+    # Telegram max length is 4096. Split into 4000 char chunks to be safe.
+    chunks = [msg[i:i+4000] for i in range(0, len(msg), 4000)]
+    all_success = True
+    
+    for chunk in chunks:
+        payload = {"chat_id": CHAT_ID, "text": chunk, "parse_mode": "Markdown"}
+        try:
             r = requests.post(url, json=payload, timeout=10)
-        return r.status_code == 200
-    except Exception:
-        return False
+            if r.status_code != 200:
+                # Telegram rejected the Markdown, try sending as plain text
+                print(f"Markdown failed ({r.status_code}), retrying plain text...")
+                payload.pop("parse_mode")
+                r = requests.post(url, json=payload, timeout=10)
+            if r.status_code != 200:
+                print(f"Failed to send chunk: {r.text}")
+                all_success = False
+        except Exception as e:
+            print(f"Exception sending chunk: {e}")
+            all_success = False
+            
+    return all_success
 
 async def send_daily_alert():
     """Fetches data, generates AI advice, and sends the daily Telegram briefing."""
