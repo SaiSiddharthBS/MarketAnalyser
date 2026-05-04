@@ -257,11 +257,16 @@ def init_db():
 
 def add_holding(symbol, name, asset_type, quantity, buy_price, buy_date, invested_amount, exchange="NSE", scheme_code=None, notes=None):
     """Add a new holding to the portfolio."""
-    db_execute(
-        """INSERT INTO holdings (symbol, name, asset_type, exchange, quantity, buy_price, buy_date, invested_amount, scheme_code, notes)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (symbol, name, asset_type, exchange, quantity, buy_price, buy_date, invested_amount, scheme_code, notes),
-    )
+    # Expanded asset types to support full Personal Financial Advisor capabilities
+    allowed_types = ["stock", "mf", "fd", "bond", "gold", "liquid"]
+    if asset_type not in allowed_types:
+        asset_type = "stock"
+        
+    db_execute("""
+        INSERT INTO holdings 
+        (symbol, name, asset_type, quantity, buy_price, buy_date, invested_amount, exchange, scheme_code, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (symbol, name, asset_type, quantity, buy_price, buy_date, invested_amount, exchange, scheme_code, notes))
 
 
 def get_holdings(asset_type=None):

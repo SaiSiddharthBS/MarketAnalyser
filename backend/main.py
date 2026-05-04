@@ -100,10 +100,14 @@ async def market_overview():
         news_task = run_in_threadpool(news_fetcher.get_market_news)
         sentiment_task = run_in_threadpool(news_fetcher.get_market_sentiment)
 
-        indices, news, sentiment = await asyncio.gather(
-            indices_task, news_task, sentiment_task,
-            return_exceptions=True
-        )
+        try:
+            indices, news, sentiment = await asyncio.wait_for(
+                asyncio.gather(indices_task, news_task, sentiment_task, return_exceptions=True),
+                timeout=8.0
+            )
+        except asyncio.TimeoutError:
+            print("⚠️ Market overview fetch timed out!")
+            indices, news, sentiment = Exception("Timeout"), Exception("Timeout"), Exception("Timeout")
 
         # Handle partial failures gracefully
         if isinstance(indices, Exception):

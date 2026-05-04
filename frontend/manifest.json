@@ -1,0 +1,22 @@
+{
+  "name": "MarketPulse Agent Alpha",
+  "short_name": "MarketPulse",
+  "description": "Your Personal AI Financial Advisor and Market Dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#0a0e17",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/images/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/static/images/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
