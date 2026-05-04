@@ -377,15 +377,19 @@ async def execute_paper_trade(t: TradeCreate):
     return {"status": "ok", "price": price, "fees": fees}
 
 @app.post("/api/bot/alert")
-async def trigger_telegram_alert():
-    """Manually trigger the daily Telegram briefing."""
+async def trigger_telegram_alert(background_tasks: BackgroundTasks):
+    """Manually trigger the daily Telegram briefing as a background task."""
     from bot.daily_job import send_daily_alert
-    try:
-        await send_daily_alert()
-        return {"status": "ok"}
-    except Exception as e:
-        print(f"❌ Telegram alert error: {traceback.format_exc()}")
-        raise HTTPException(500, str(e))
+    
+    # Define a sync wrapper for the async job since background tasks can handle async, but sometimes need wrapper
+    async def run_job():
+        try:
+            await send_daily_alert()
+        except Exception as e:
+            print(f"❌ Background Telegram alert error: {e}")
+            
+    background_tasks.add_task(run_job)
+    return {"status": "queued", "message": "Daily alert triggered in background."}
 
 
 # ─── Health ──────────────────────────────────────────────
