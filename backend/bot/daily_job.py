@@ -11,11 +11,27 @@ ssl._create_default_https_context = ssl._create_unverified_context
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from bot.telegram_bot import send_message
+from telegram import Bot
 from analysis.advisor import generate_financial_advice
 import database as db
 from data.stock_fetcher import get_market_overview
 from data.news_fetcher import get_market_news
+
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+def send_telegram_sync(msg):
+    """Synchronous wrapper to send Telegram message."""
+    import requests
+    if not TOKEN or not CHAT_ID:
+        return False
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    payload = {"chat_id": CHAT_ID, "text": msg, "parse_mode": "Markdown"}
+    try:
+        r = requests.post(url, json=payload, timeout=10)
+        return r.status_code == 200
+    except Exception:
+        return False
 
 async def send_daily_alert():
     """Fetches data, generates AI advice, and sends the daily Telegram briefing."""
@@ -49,7 +65,7 @@ async def send_daily_alert():
         advice_markdown = generate_financial_advice(portfolio_text, market_text, news_text)
 
         # 5. Send to Telegram
-        success = send_message(advice_markdown)
+        success = send_telegram_sync(advice_markdown)
         if success:
             print("✅ Daily AI briefing sent successfully.")
         else:
@@ -59,7 +75,7 @@ async def send_daily_alert():
         # DEAD MAN'S SWITCH / FALLBACK
         print(f"❌ FATAL ERROR in daily_job: {traceback.format_exc()}")
         fallback_msg = f"⚠️ *Agent Alpha Alert*\nI encountered a critical error while trying to generate your daily financial plan. I am still online, but my data feeds or AI engine timed out.\n\n`{str(e)}`"
-        send_message(fallback_msg)
+        send_telegram_sync(fallback_msg)
 
 if __name__ == "__main__":
     asyncio.run(send_daily_alert())
