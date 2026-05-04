@@ -257,10 +257,9 @@ def init_db():
 
 def add_holding(symbol, name, asset_type, quantity, buy_price, buy_date, invested_amount, exchange="NSE", scheme_code=None, notes=None):
     """Add a new holding to the portfolio."""
-    # Expanded asset types to support full Personal Financial Advisor capabilities
-    allowed_types = ["stock", "mf", "fd", "bond", "gold", "liquid"]
-    if asset_type not in allowed_types:
-        asset_type = "stock"
+    # Ensure asset_type is lowercase but allow ANY asset class (Crypto, Real Estate, PPF, NPS, Commodities, etc.)
+    # The AI Advisor will dynamically interpret whatever asset class the user inputs.
+    asset_type = str(asset_type).strip().lower() if asset_type else "other"
         
     db_execute("""
         INSERT INTO holdings 
