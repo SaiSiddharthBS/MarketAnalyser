@@ -17,8 +17,8 @@ import database as db
 from data.stock_fetcher import get_market_overview
 from data.news_fetcher import get_market_news
 
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 
 def send_telegram_sync(msg):
     """Synchronous wrapper to send Telegram message."""
