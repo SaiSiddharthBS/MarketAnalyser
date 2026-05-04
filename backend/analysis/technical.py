@@ -6,18 +6,17 @@ import pandas as pd
 import ta
 import yfinance as yf
 
-# yfinance handles its own sessions internally
+# Use the shared robust downloader with Yahoo API fallback
+from data.stock_fetcher import download_ohlcv
 
 
 def get_technical_analysis(symbol, exchange="NS", period="1y"):
     """Run full technical analysis on a stock and return indicators + signals."""
     ticker = f"{symbol}.{exchange}" if exchange else symbol
     try:
-        df = yf.download(ticker, period=period, interval="1d", progress=False)
-        if df.empty or len(df) < 50:
+        df = download_ohlcv(ticker, period=period, interval="1d")
+        if df is None or df.empty or len(df) < 50:
             return None
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
         df = df.reset_index()
     except Exception as e:
         print(f"TA error for {ticker}: {e}")

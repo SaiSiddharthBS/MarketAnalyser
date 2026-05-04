@@ -12,7 +12,8 @@ from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from datetime import datetime
 
-# yfinance handles its own sessions internally
+# Use the shared robust downloader with Yahoo API fallback
+from data.stock_fetcher import download_ohlcv
 
 # Setup models directory
 MODELS_DIR = Path(__file__).parent.parent.parent / "data" / "models"
@@ -67,9 +68,7 @@ def fetch_and_prepare_data(symbol, exchange="NS", period="5y"):
     """Fetch history, generate features, and create target."""
     ticker = f"{symbol}.{exchange}" if exchange else symbol
     try:
-        df = yf.download(ticker, period=period, progress=False)
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
+        df = download_ohlcv(ticker, period=period)
             
         df = prepare_features(df)
         if df is None or len(df) < 100:

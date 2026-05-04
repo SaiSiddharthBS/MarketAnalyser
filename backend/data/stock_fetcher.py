@@ -1,6 +1,6 @@
 """
 MarketPulse — Stock & Index Data Fetcher
-Uses yfinance for NSE/BSE/Global market data.
+Uses yfinance for NSE/BSE/Global market data with direct Yahoo API fallback for cloud environments.
 """
 import yfinance as yf
 import pandas as pd
@@ -11,25 +11,71 @@ import requests
 # Fix Mac SSL issue
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# Bypassing Cloud IP Blocks (Render/Heroku)
-session = requests.Session()
-session.headers.update({
+HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-})
+}
+
+# Period to Yahoo API range mapping
+_PERIOD_MAP = {
+    "1d": "1d", "5d": "5d", "1mo": "1mo", "3mo": "3mo",
+    "6mo": "6mo", "1y": "1y", "2y": "2y", "5y": "5y", "max": "max",
+}
+
+
+def download_ohlcv(symbol, period="1y", interval="1d"):
+    """
+    Robust OHLCV downloader. Tries yf.download first, then falls back to
+    the direct Yahoo Finance v8 chart API to bypass cloud IP blocks.
+    Returns a pandas DataFrame or None.
+    """
+    # Attempt 1: Standard yfinance
+    try:
+        df = yf.download(symbol, period=period, interval=interval, progress=False)
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+        if not df.empty and len(df) > 1:
+            return df
+    except Exception as e:
+        print(f"yf.download failed for {symbol}: {e}")
+
+    # Attempt 2: Direct Yahoo Finance API (bypasses cloud IP blocks)
+    try:
+        yahoo_range = _PERIOD_MAP.get(period, "6mo")
+        url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?interval={interval}&range={yahoo_range}"
+        r = requests.get(url, headers=HEADERS, timeout=15)
+        if r.status_code != 200:
+            return None
+        data = r.json()
+        result = data["chart"]["result"][0]
+        timestamps = result["timestamp"]
+        quotes = result["indicators"]["quote"][0]
+
+        df = pd.DataFrame({
+            "Open": quotes.get("open", []),
+            "High": quotes.get("high", []),
+            "Low": quotes.get("low", []),
+            "Close": quotes.get("close", []),
+            "Volume": quotes.get("volume", []),
+        }, index=pd.to_datetime(timestamps, unit="s"))
+        df.index.name = "Date"
+        df = df.dropna(subset=["Close"])
+        if not df.empty:
+            return df
+    except Exception as e:
+        print(f"Yahoo API fallback failed for {symbol}: {e}")
+
+    return None
 
 
 def get_stock_data(symbol, period="1y", interval="1d", exchange="NS"):
     """Fetch OHLCV data for a stock."""
     ticker = f"{symbol}.{exchange}" if exchange else symbol
     try:
-        data = yf.download(ticker, period=period, interval=interval, progress=False)
-        if data.empty:
+        df = download_ohlcv(ticker, period=period, interval=interval)
+        if df is None or df.empty:
             return None
-        # Flatten multi-level columns if present
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.get_level_values(0)
-        data.index = data.index.strftime("%Y-%m-%d") if interval == "1d" else data.index.strftime("%Y-%m-%d %H:%M")
-        return data.reset_index().to_dict("records")
+        df.index = df.index.strftime("%Y-%m-%d") if interval == "1d" else df.index.strftime("%Y-%m-%d %H:%M")
+        return df.reset_index().to_dict("records")
     except Exception as e:
         print(f"Error fetching {ticker}: {e}")
         return None
@@ -69,13 +115,11 @@ def get_stock_info(symbol, exchange="NS"):
 def get_index_data(index_symbol, period="6mo"):
     """Fetch index data. Common indices: ^NSEI (Nifty50), ^BSESN (Sensex)."""
     try:
-        data = yf.download(index_symbol, period=period, interval="1d", progress=False)
-        if data.empty:
+        df = download_ohlcv(index_symbol, period=period, interval="1d")
+        if df is None or df.empty:
             return None
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.get_level_values(0)
-        data.index = data.index.strftime("%Y-%m-%d")
-        return data.reset_index().to_dict("records")
+        df.index = df.index.strftime("%Y-%m-%d")
+        return df.reset_index().to_dict("records")
     except Exception as e:
         print(f"Error fetching index {index_symbol}: {e}")
         return None
