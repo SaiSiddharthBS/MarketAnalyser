@@ -206,12 +206,15 @@ def _gather_screener_data(top_n=5):
     """Run the stock screener and format results for the AI."""
     try:
         from analysis.technical import screen_stocks
-        results = screen_stocks(NIFTY_50_SYMBOLS, top_n=top_n)
-        if not results:
+        # Run screener ONCE on all stocks, then slice for top + dip candidates
+        all_results = screen_stocks(NIFTY_50_SYMBOLS, top_n=50)
+        if not all_results:
             return ""
 
-        lines = [f"Top {len(results)} Nifty 50 Stocks by Technical Score:\n"]
-        for i, r in enumerate(results, 1):
+        # Top N by score (best stocks)
+        top_results = all_results[:top_n]
+        lines = [f"Top {len(top_results)} Nifty 50 Stocks by Technical Score:\n"]
+        for i, r in enumerate(top_results, 1):
             signal_emoji = "🟢" if "BUY" in r["signal"] else "🔴" if "SELL" in r["signal"] else "🟡"
             lines.append(
                 f"{i}. {r['symbol']} — {signal_emoji} {r['signal'].replace('_', ' ')} | "
@@ -223,21 +226,19 @@ def _gather_screener_data(top_n=5):
                 f"RSI: {r['indicators'].get('rsi', 'N/A')}"
             )
 
-        # Also add worst performers (potential dip-buy candidates)
-        all_results = screen_stocks(NIFTY_50_SYMBOLS, top_n=50)
-        if all_results:
-            dip_candidates = [r for r in all_results if r["score"] <= 35]
-            if dip_candidates:
-                lines.append("\n⚠️ OVERSOLD / DIP CANDIDATES (Low scores may = buying opportunity):")
-                for r in dip_candidates[:3]:
-                    lines.append(
-                        f"- {r['symbol']} — Score: {r['score']}/100 | "
-                        f"Price: ₹{r['price']:,.2f} | RSI: {r['indicators'].get('rsi', 'N/A')} | "
-                        f"Signal: {r['signal'].replace('_', ' ')}"
-                    )
+        # Dip candidates from the SAME results (no second screener run)
+        dip_candidates = [r for r in all_results if r["score"] <= 35]
+        if dip_candidates:
+            lines.append("\n⚠️ OVERSOLD / DIP CANDIDATES (Low scores may = buying opportunity):")
+            for r in dip_candidates[:3]:
+                lines.append(
+                    f"- {r['symbol']} — Score: {r['score']}/100 | "
+                    f"Price: ₹{r['price']:,.2f} | RSI: {r['indicators'].get('rsi', 'N/A')} | "
+                    f"Signal: {r['signal'].replace('_', ' ')}"
+                )
 
         screener_text = "\n".join(lines)
-        print(f"✅ Screener: {len(results)} top stocks analyzed")
+        print(f"✅ Screener: {len(top_results)} top + {len(dip_candidates)} dip candidates")
         return screener_text
 
     except Exception as e:

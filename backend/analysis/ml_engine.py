@@ -97,7 +97,7 @@ def train_model_for_symbol(symbol, exchange="NS"):
     """Train XGBoost for a specific stock."""
     df_train, df_latest = fetch_and_prepare_data(symbol, exchange)
     if df_train is None:
-        return False
+        return False, {}
         
     features = [
         "RSI", "MACD", "MACD_Hist", "Dist_EMA20", "Dist_EMA50", "Dist_EMA200", 
