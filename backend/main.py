@@ -378,27 +378,30 @@ async def execute_paper_trade(t: TradeCreate):
 
 @app.get("/api/bot/alert")
 @app.post("/api/bot/alert")
-async def trigger_telegram_alert():
-    """Trigger the daily Telegram briefing synchronously so we can see errors."""
-    from bot.daily_job import send_daily_alert
-    import traceback
-    
-    try:
-        result = await run_in_threadpool(_run_daily_alert_sync)
-        return {"status": "completed", "result": result}
-    except Exception as e:
-        error_detail = traceback.format_exc()
-        print(f"❌ Alert endpoint error: {error_detail}")
-        return {"status": "error", "error": str(e), "traceback": error_detail}
+async def trigger_telegram_alert(background_tasks: BackgroundTasks):
+    """Trigger the daily Telegram briefing in the background.
+    Returns 200 immediately so cron-job.org doesn't timeout (30s limit).
+    The actual briefing runs asynchronously and takes 1-2 minutes.
+    """
+    background_tasks.add_task(_run_daily_alert_sync)
+    return {
+        "status": "accepted",
+        "message": "Agent Alpha briefing triggered. Telegram message will arrive in 1-2 minutes.",
+        "timestamp": datetime.now().isoformat(),
+    }
 
 
 def _run_daily_alert_sync():
-    """Run the daily alert synchronously in a thread."""
+    """Run the daily alert synchronously in a background thread."""
     import asyncio
     from bot.daily_job import send_daily_alert
     loop = asyncio.new_event_loop()
     try:
-        return loop.run_until_complete(send_daily_alert())
+        result = loop.run_until_complete(send_daily_alert())
+        print(f"✅ Background alert completed: {result.get('status', 'unknown')}")
+        return result
+    except Exception as e:
+        print(f"❌ Background alert failed: {e}")
     finally:
         loop.close()
 
