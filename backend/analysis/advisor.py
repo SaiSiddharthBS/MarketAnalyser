@@ -151,7 +151,7 @@ FORMATTING RULES:
 - Be warm, encouraging, but HONEST. If market is dangerous, say so clearly.
 - CRITICAL: Total message MUST be 300-450 words for morning, 150-250 words for afternoon. Shorter is better. Only include what matters.
 """
-        # Try multiple models with retries to handle 503 overload errors
+        # Try multiple models with exponential backoff to handle 503 overload errors
         import time
         models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
         last_error = None
@@ -169,8 +169,11 @@ FORMATTING RULES:
                 except Exception as e:
                     last_error = str(e)
                     if '503' in last_error or 'overloaded' in last_error.lower() or 'unavailable' in last_error.lower():
-                        print(f"  ⚠️ {model_name} attempt {attempt + 1} failed (503 overload), retrying in 10s...")
-                        time.sleep(10)
+                        # Exponential backoff: 5s, 15s, 30s
+                        wait_time = 5 * (3 ** attempt) 
+                        if attempt < 2:  # Don't sleep after the last attempt
+                            print(f"  ⚠️ {model_name} attempt {attempt + 1} failed (503 overload), retrying in {wait_time}s...")
+                            time.sleep(wait_time)
                     else:
                         print(f"  ❌ {model_name} failed with non-retryable error: {last_error[:100]}")
                         break  # Non-503 error, try next model
