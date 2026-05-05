@@ -140,15 +140,16 @@ You MUST structure your response EXACTLY in these sections (use these exact head
 {MORNING_FORMAT if session_type == "morning" else AFTERNOON_FORMAT}
 
 FORMATTING RULES:
-- Use clean Markdown with bold and bullet points
+- KEEP IT SHORT. Sai is a beginner and does NOT want long essays. Get to the point.
+- Use bullet points ONLY. No paragraphs. No walls of text.
 - Use emojis strategically (not excessively)
-- Keep each section to 3-5 bullet points MAX
-- For any BUY recommendation, ALWAYS include: Entry Price, Target, Stop Loss
-- For MF SIPs, mention the exact fund name and whether to increase/decrease/hold SIP
+- Keep each section to 2-3 bullet points MAX
+- For any BUY recommendation, ALWAYS include: Entry Price, Target, Stop Loss in one line
+- For MF SIPs, just say the fund name + action (increase/decrease/hold) + reason in 1 line
 - IMPORTANT: The MF returns shown in portfolio data are TOTAL returns since investment date, NOT today's daily change. Do NOT confuse them with daily movements.
 - Express all prices in ₹ (Indian Rupees)
 - Be warm, encouraging, but HONEST. If market is dangerous, say so clearly.
-- Total message should be 600-900 words for morning, 300-500 words for afternoon.
+- CRITICAL: Total message MUST be 300-450 words for morning, 150-250 words for afternoon. Shorter is better. Only include what matters.
 """
 
         response = client.models.generate_content(
