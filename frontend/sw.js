@@ -1,10 +1,14 @@
-const CACHE_NAME = 'marketpulse-v2';
+const CACHE_NAME = 'marketpulse-v3';
 const ASSETS = [
     '/',
     '/static/css/styles.css',
     '/static/js/app.js',
     '/static/js/api.js',
     '/static/js/charts.js',
+    '/static/images/icon-192.png',
+    '/static/images/icon-512.png',
+    '/static/images/apple-touch-icon.png',
+    '/static/images/favicon-32.png',
     'https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js',
     'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap'
 ];
