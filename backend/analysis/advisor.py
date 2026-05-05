@@ -54,8 +54,14 @@ def generate_financial_advice(portfolio_data, market_data, news_data,
     try:
         client = genai.Client(api_key=api_key)
 
-        today = datetime.now().strftime('%A, %B %d, %Y')
-        time_now = datetime.now().strftime('%I:%M %p')
+        # Use IST for display (Render servers run in UTC)
+        try:
+            from zoneinfo import ZoneInfo
+            ist_now = datetime.now(ZoneInfo("Asia/Kolkata"))
+        except Exception:
+            ist_now = datetime.utcnow()
+        today = ist_now.strftime('%A, %B %d, %Y')
+        time_now = ist_now.strftime('%I:%M %p') + ' IST'
 
         if session_type == "morning":
             session_context = f"""
@@ -139,6 +145,7 @@ FORMATTING RULES:
 - Keep each section to 3-5 bullet points MAX
 - For any BUY recommendation, ALWAYS include: Entry Price, Target, Stop Loss
 - For MF SIPs, mention the exact fund name and whether to increase/decrease/hold SIP
+- IMPORTANT: The MF returns shown in portfolio data are TOTAL returns since investment date, NOT today's daily change. Do NOT confuse them with daily movements.
 - Express all prices in ₹ (Indian Rupees)
 - Be warm, encouraging, but HONEST. If market is dangerous, say so clearly.
 - Total message should be 600-900 words for morning, 300-500 words for afternoon.

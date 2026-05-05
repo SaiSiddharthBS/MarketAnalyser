@@ -126,7 +126,7 @@ def _gather_portfolio_data():
         ]
         mf_values = get_mf_portfolio_value(mf_list)
         if mf_values and mf_values.get("holdings"):
-            portfolio_text += "\n\n📈 LIVE MF VALUES:\n"
+            portfolio_text += "\n\n📈 LIVE MF VALUES (returns are TOTAL since purchase, NOT daily change):\n"
             for h in mf_values["holdings"]:
                 portfolio_text += (
                     f"- {h['scheme_name']}: NAV ₹{h['nav']:.2f} | "
