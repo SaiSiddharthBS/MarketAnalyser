@@ -151,18 +151,35 @@ FORMATTING RULES:
 - Be warm, encouraging, but HONEST. If market is dangerous, say so clearly.
 - CRITICAL: Total message MUST be 300-450 words for morning, 150-250 words for afternoon. Shorter is better. Only include what matters.
 """
+        # Try multiple models with retries to handle 503 overload errors
+        import time
+        models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+        last_error = None
 
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-        )
-        return response.text
+        for model_name in models_to_try:
+            for attempt in range(3):  # 3 retries per model
+                try:
+                    print(f"  → Trying {model_name} (attempt {attempt + 1}/3)...")
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                    )
+                    print(f"  ✅ Success with {model_name}")
+                    return response.text
+                except Exception as e:
+                    last_error = str(e)
+                    if '503' in last_error or 'overloaded' in last_error.lower() or 'unavailable' in last_error.lower():
+                        print(f"  ⚠️ {model_name} attempt {attempt + 1} failed (503 overload), retrying in 10s...")
+                        time.sleep(10)
+                    else:
+                        print(f"  ❌ {model_name} failed with non-retryable error: {last_error[:100]}")
+                        break  # Non-503 error, try next model
+            print(f"  ❌ All retries exhausted for {model_name}, trying next model...")
 
-    except Exception as e:
-        error_msg = str(e)
+        # If ALL models and retries failed, use fallback
+        error_msg = last_error or "Unknown error"
         print(f"Error generating AI advice: {traceback.format_exc()}")
 
-        # Provide a useful fallback message instead of just an error
         return (
             f"⚠️ *Agent Alpha — Emergency Fallback Briefing*\n\n"
             f"I encountered a technical issue generating your personalized advice today:\n"
@@ -175,6 +192,18 @@ FORMATTING RULES:
             f"I'll be back to full strength in the next briefing. 🙏"
         )
 
+    except Exception as e:
+        error_msg = str(e)
+        print(f"Critical error in advisor: {traceback.format_exc()}")
+        return (
+            f"⚠️ *Agent Alpha — Emergency Fallback Briefing*\n\n"
+            f"Critical error: `{error_msg[:150]}`\n\n"
+            f"📋 *Quick Manual Checklist:*\n"
+            f"1. Check MF NAVs on Groww\n"
+            f"2. Check Nifty 50 level\n"
+            f"3. If Nifty dropped >1%, add ₹2,000 to your index SIP\n\n"
+            f"I'll fix myself by next briefing. 🙏"
+        )
 
 # ─── Response Format Templates ──────────────────────────────────
 
