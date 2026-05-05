@@ -5,13 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Alpha — MarketPulse</title>
     <meta name="description" content="AI-powered personal market analysis and portfolio tracking system">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/styles.css">
     <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#0a0e17">
-    <link rel="apple-touch-icon" href="/static/images/icon-192.png">
+    
+    <!-- iOS PWA Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Agent Alpha">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/apple-touch-icon.png">
     
     <script>
         if ('serviceWorker' in navigator) {
@@ -28,7 +35,7 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <span class="logo-icon">α</span>
+                <img src="/static/images/icon-192.png" alt="Agent Alpha" class="logo-icon-img">
                 <span class="logo-text">Agent Alpha</span>
             </div>
         </div>
