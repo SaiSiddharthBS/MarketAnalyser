@@ -273,6 +273,26 @@ def init_db():
         )
     """)
 
+    # Daily Intraday Predictions (For Verification Engine)
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS daily_predictions (
+            id {id_type},
+            symbol TEXT NOT NULL,
+            date_predicted TEXT NOT NULL,
+            target_date TEXT NOT NULL,
+            pred_high REAL NOT NULL,
+            pred_low REAL NOT NULL,
+            pred_direction TEXT,
+            actual_open REAL,
+            actual_high REAL,
+            actual_low REAL,
+            actual_close REAL,
+            status TEXT DEFAULT 'pending',
+            {"PRIMARY KEY (id)," if DATABASE_URL else ""}
+            UNIQUE(symbol, target_date)
+        )
+    """)
+
     conn.commit()
     put_connection(conn)
     print("✅ Database initialized successfully")
@@ -299,9 +319,36 @@ def log_screener_signals(results, segment="NIFTY_50"):
         conn.commit()
         print(f"✅ Logged {len(results)} signals to signal_log")
     except Exception as e:
-        print(f"⚠️ Signal logging failed: {e}")
+        print(f"❌ Failed to log signals: {e}")
     finally:
         put_connection(conn)
+
+def log_intraday_prediction(symbol, target_date, pred_high, pred_low, pred_direction):
+    """Log an intraday prediction (Peak/Floor) for tomorrow."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    query = "INSERT OR REPLACE INTO daily_predictions (symbol, date_predicted, target_date, pred_high, pred_low, pred_direction, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')"
+    if DATABASE_URL:
+        query = "INSERT INTO daily_predictions (symbol, date_predicted, target_date, pred_high, pred_low, pred_direction, status) VALUES (?, ?, ?, ?, ?, ?, 'pending') ON CONFLICT (symbol, target_date) DO UPDATE SET pred_high=EXCLUDED.pred_high, pred_low=EXCLUDED.pred_low, pred_direction=EXCLUDED.pred_direction, date_predicted=EXCLUDED.date_predicted"
+    
+    try:
+        db_execute(query, (symbol, today, target_date, pred_high, pred_low, pred_direction))
+    except Exception as e:
+        print(f"⚠️ Failed to log intraday prediction for {symbol}: {e}")
+
+def get_recent_intraday_verification(symbol):
+    """Get the most recent verified intraday prediction for a symbol."""
+    try:
+        # Get the most recent prediction that has actuals recorded (status != pending)
+        res = db_execute(
+            "SELECT * FROM daily_predictions WHERE symbol = ? AND status != 'pending' ORDER BY target_date DESC LIMIT 1",
+            (symbol,)
+        )
+        if res and len(res) > 0:
+            return res[0]
+        return None
+    except Exception as e:
+        print(f"⚠️ Failed to get recent verification for {symbol}: {e}")
+        return None
 
 
 # ── CRUD Operations ──────────────────────────────────────────

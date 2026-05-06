@@ -665,8 +665,10 @@ async function analyseStock(symbol) {
         </div>
 
         <div class="glass-card">
-            <h3>📈 Predicted Range (Next Trading Day)</h3>
-            <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px">ATR-based volatility estimate — NOT a price prediction</p>
+            <h3>📈 Predicted Range & Accuracy</h3>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px">ATR-based intraday volatility estimate for the next trading session</p>
+            
+            <h4 style="margin-bottom:12px;color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:1px">Prediction for Tomorrow</h4>
             <div class="signal-metrics">
                 <div class="signal-metric">
                     <div class="label">Expected High</div>
@@ -685,6 +687,48 @@ async function analyseStock(symbol) {
                     <div class="value">₹${formatNumber(t.predicted_range?.resistance || 0)}</div>
                 </div>
             </div>
+
+            ${data.recent_verification && data.recent_verification.actual_high ? `
+            <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px">
+                <h4 style="margin-bottom:12px;color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:1px">Yesterday's Prediction vs Today's Reality</h4>
+                <table class="data-table" style="font-size:13px;width:100%;text-align:left">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Predicted</th>
+                            <th>Actual</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding:8px">Peak (High)</td>
+                            <td style="padding:8px">₹${formatNumber(data.recent_verification.pred_high)}</td>
+                            <td style="padding:8px">₹${formatNumber(data.recent_verification.actual_high)}</td>
+                            <td style="padding:8px">${data.recent_verification.actual_high <= data.recent_verification.pred_high ? '✅ Held' : '📈 Breached Up'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px">Floor (Low)</td>
+                            <td style="padding:8px">₹${formatNumber(data.recent_verification.pred_low)}</td>
+                            <td style="padding:8px">₹${formatNumber(data.recent_verification.actual_low)}</td>
+                            <td style="padding:8px">${data.recent_verification.actual_low >= data.recent_verification.pred_low ? '✅ Held' : '📉 Breached Down'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px">Volatility Range</td>
+                            <td style="padding:8px">₹${formatNumber(data.recent_verification.pred_high - data.recent_verification.pred_low)}</td>
+                            <td style="padding:8px">₹${formatNumber(data.recent_verification.actual_high - data.recent_verification.actual_low)}</td>
+                            <td style="padding:8px">—</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:8px">Daily Direction</td>
+                            <td style="padding:8px">${data.recent_verification.pred_direction}</td>
+                            <td style="padding:8px">${data.recent_verification.actual_close > data.recent_verification.actual_open ? 'Bullish' : (data.recent_verification.actual_close < data.recent_verification.actual_open ? 'Bearish' : 'Neutral')}</td>
+                            <td style="padding:8px">${data.recent_verification.status.includes('Direction Hit') ? '✅ Accurate' : '❌ Missed'}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            ` : ''}
         </div>
 
         <div class="glass-card">

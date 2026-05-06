@@ -208,3 +208,69 @@ def get_accuracy_stats():
         db.put_connection(conn)
 
     return stats
+
+def verify_intraday_predictions():
+    """Check pending intraday predictions against actual market data."""
+    conn = db.get_connection()
+    if not conn: return
+    cursor = db.get_cursor(conn)
+    
+    try:
+        # Get pending predictions where target_date <= today
+        today = datetime.now().strftime("%Y-%m-%d")
+        db.db_execute(cursor, f"SELECT * FROM daily_predictions WHERE status = 'pending' AND target_date <= '{today}'")
+        rows = cursor.fetchall()
+        
+        updated = 0
+        for row in rows:
+            pid = row[0] if isinstance(row, (list, tuple)) else row["id"]
+            sym = row[1] if isinstance(row, (list, tuple)) else row["symbol"]
+            t_date = row[3] if isinstance(row, (list, tuple)) else row["target_date"]
+            p_high = row[4] if isinstance(row, (list, tuple)) else row["pred_high"]
+            p_low = row[5] if isinstance(row, (list, tuple)) else row["pred_low"]
+            p_dir = row[6] if isinstance(row, (list, tuple)) else row["pred_direction"]
+            
+            ticker = f"{sym}.NS"
+            df = download_ohlcv(ticker, period="5d", interval="1d")
+            if df is None or df.empty: continue
+            
+            # Find the row corresponding to target_date
+            # yfinance index is DatetimeIndex
+            df_target = df[df.index.strftime('%Y-%m-%d') == t_date]
+            
+            if df_target.empty:
+                continue # Data not yet available for this date
+                
+            actual_open = float(df_target["Open"].iloc[0])
+            actual_high = float(df_target["High"].iloc[0])
+            actual_low = float(df_target["Low"].iloc[0])
+            actual_close = float(df_target["Close"].iloc[0])
+            
+            # Determine status
+            status_parts = []
+            if actual_high <= p_high and actual_low >= p_low:
+                status_parts.append("✅ Within Range")
+            else:
+                status_parts.append("❌ Range Breached")
+                
+            actual_dir = "Bullish" if actual_close > actual_open else "Bearish" if actual_close < actual_open else "Neutral"
+            if p_dir == actual_dir:
+                status_parts.append("✅ Direction Hit")
+            else:
+                status_parts.append("❌ Direction Missed")
+                
+            final_status = " | ".join(status_parts)
+            
+            db.db_execute(cursor, """
+                UPDATE daily_predictions 
+                SET actual_open=?, actual_high=?, actual_low=?, actual_close=?, status=?
+                WHERE id=?
+            """, (actual_open, actual_high, actual_low, actual_close, final_status, pid))
+            updated += 1
+            
+        conn.commit()
+        print(f"✅ Verified {updated} intraday predictions")
+    except Exception as e:
+        print(f"❌ Failed to verify intraday predictions: {e}")
+    finally:
+        db.put_connection(conn)

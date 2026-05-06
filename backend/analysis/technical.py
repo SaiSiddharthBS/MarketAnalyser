@@ -19,7 +19,8 @@ Scoring Formula (100 points total):
 """
 import pandas as pd
 import ta
-from datetime import datetime
+from datetime import datetime, timedelta
+import database as db
 
 # Use the shared robust downloader with Yahoo API fallback
 from data.stock_fetcher import download_ohlcv
@@ -412,6 +413,22 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
     # ─── ATR-Based Predicted Range (Next Day) ──────────────
     pred_high = round(close + atr_val, 2) if atr_val else None
     pred_low = round(close - atr_val, 2) if atr_val else None
+    
+    if pred_high and pred_low:
+        now = datetime.now()
+        days_ahead = 1
+        if now.weekday() == 4: days_ahead = 3 # Friday -> Monday
+        elif now.weekday() == 5: days_ahead = 2 # Saturday -> Monday
+        target_date = (now + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+        
+        # Determine predicted direction
+        pred_direction = "Bullish" if overall in ["EARLY_MOMENTUM", "CONTINUATION"] else "Bearish" if overall in ["AVOID", "WEAK"] else "Neutral"
+        
+        try:
+            db.log_intraday_prediction(symbol, target_date, pred_high, pred_low, pred_direction)
+        except Exception as e:
+            print(f"Failed to log prediction for {symbol}: {e}")
+
     # Support/Resistance
     support = round(min(filter(None, [ema50, ema200, bb_lower, sl])), 2) if any([ema50, ema200, bb_lower]) else sl
     resistance = round(max(filter(None, [bb_upper, target])), 2) if bb_upper else target

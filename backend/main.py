@@ -179,10 +179,14 @@ async def stock_detail(symbol: str):
             return_exceptions=True
         )
 
+        import database as db
+        verification = db.get_recent_intraday_verification(symbol)
+
         return {
             "info": info if not isinstance(info, Exception) else None,
             "technical": ta_result if not isinstance(ta_result, Exception) else None,
             "news": (news[:5] if isinstance(news, list) else []),
+            "recent_verification": verification,
         }
     except Exception as e:
         raise HTTPException(500, f"Error analysing {symbol}: {str(e)}")
