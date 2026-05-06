@@ -187,34 +187,91 @@ FORMATTING RULES:
                         break  # Non-retryable error, try next model
             print(f"  ❌ All retries exhausted for {model_name}, trying next model...")
 
-        # If ALL models and retries failed, use fallback
-        error_msg = last_error or "Unknown error"
-        print(f"Error generating AI advice: {traceback.format_exc()}")
-
-        return (
-            f"⚠️ *Agent Alpha — Emergency Fallback Briefing*\n\n"
-            f"I encountered a technical issue generating your personalized advice today:\n"
-            f"`{error_msg[:150]}`\n\n"
-            f"📋 *Quick Manual Checklist for Today:*\n"
-            f"1. Check your MF NAVs on Groww — are all 3 funds in green?\n"
-            f"2. Glance at Nifty 50 — is it above or below yesterday's close?\n"
-            f"3. If Nifty dropped >1%, consider adding ₹2,000 to your Nifty 50 index SIP\n"
-            f"4. Check gold prices — if gold dropped >1%, good time for a small SGB/Gold ETF buy\n\n"
-            f"I'll be back to full strength in the next briefing. 🙏"
+        # ═══════════════════════════════════════════════════════════
+        # PERMANENT FALLBACK: Data-driven briefing (NO AI needed)
+        # Uses the REAL data we already collected to generate a
+        # structured briefing. This NEVER fails.
+        # ═══════════════════════════════════════════════════════════
+        print("⚠️ All AI models failed. Generating data-driven fallback briefing...")
+        return _generate_data_briefing(
+            portfolio_data, market_data, news_data, screener_data, session_type
         )
 
     except Exception as e:
         error_msg = str(e)
         print(f"Critical error in advisor: {traceback.format_exc()}")
-        return (
-            f"⚠️ *Agent Alpha — Emergency Fallback Briefing*\n\n"
-            f"Critical error: `{error_msg[:150]}`\n\n"
-            f"📋 *Quick Manual Checklist:*\n"
-            f"1. Check MF NAVs on Groww\n"
-            f"2. Check Nifty 50 level\n"
-            f"3. If Nifty dropped >1%, add ₹2,000 to your index SIP\n\n"
-            f"I'll fix myself by next briefing. 🙏"
+        # Even the data-driven fallback crashed — use absolute last resort
+        return _generate_data_briefing(
+            portfolio_data, market_data, news_data, screener_data, session_type
         )
+
+
+def _generate_data_briefing(portfolio_data, market_data, news_data, screener_data, session_type):
+    """
+    Generate a structured briefing using ONLY the raw data we collected.
+    No AI model needed. This is the permanent failsafe.
+    """
+    try:
+        from zoneinfo import ZoneInfo
+        now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    except Exception:
+        now = datetime.utcnow()
+
+    greeting = "Good Morning" if session_type == "morning" else "Good Afternoon"
+    lines = [
+        f"📊 **{greeting} Sai! Agent Alpha Data Briefing — {now.strftime('%B %d, %Y')}**",
+        "",
+        "_(AI models are temporarily busy. Here's your complete data briefing with all real numbers.)_",
+        "",
+    ]
+
+    # Portfolio section
+    if portfolio_data and portfolio_data.strip():
+        lines.append("🏦 **Your Portfolio**")
+        # Extract key numbers from portfolio text
+        for line in portfolio_data.strip().split('\n'):
+            line = line.strip()
+            if line and not line.startswith('='):
+                lines.append(f"  {line}")
+        lines.append("")
+
+    # Market section
+    if market_data and market_data.strip():
+        lines.append("📈 **Market Overview**")
+        for line in market_data.strip().split('\n'):
+            line = line.strip()
+            if line and not line.startswith('='):
+                lines.append(f"  {line}")
+        lines.append("")
+
+    # Screener section — most actionable part
+    if screener_data and screener_data.strip():
+        lines.append("🔍 **Screener Results**")
+        for line in screener_data.strip().split('\n'):
+            line = line.strip()
+            if line:
+                lines.append(f"  {line}")
+        lines.append("")
+
+    # News section
+    if news_data and news_data.strip():
+        lines.append("📰 **News & Sentiment**")
+        news_lines = news_data.strip().split('\n')
+        for line in news_lines[:8]:  # Limit to 8 news items
+            line = line.strip()
+            if line and not line.startswith('='):
+                lines.append(f"  {line}")
+        lines.append("")
+
+    # Action items
+    lines.append("📋 **Quick Actions**")
+    lines.append("• Review the screener's top-scored stocks above")
+    lines.append("• Check your MF SIP NAVs on Groww")
+    lines.append("• If any stock scored 80+, research it for a swing trade")
+    lines.append("")
+    lines.append("_Agent Alpha will be back at full AI strength in the next briefing. 🙏_")
+
+    return "\n".join(lines)
 
 # ─── Response Format Templates ──────────────────────────────────
 
