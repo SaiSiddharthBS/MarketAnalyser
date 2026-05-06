@@ -69,6 +69,7 @@ function switchPage(page) {
         news: loadFullNews,
         rotation: () => {},
         accuracy: loadAccuracy,
+        watchlist: loadWatchlist,
     };
     if (loaders[page]) loaders[page]();
 }
@@ -356,6 +357,8 @@ async function runScreener() {
         const scoreClass = s.score >= 80 ? 'score-strong-buy' : s.score >= 60 ? 'score-high' : s.score >= 45 ? 'score-mid' : s.score >= 25 ? 'score-weak' : 'score-low';
         const signalLabel = signalLabels[s.signal] || s.signal.replace('_', ' ');
         const signalClass = s.signal === 'STRONG_BUY' ? 'signal-strong-buy' : s.signal === 'BUY' ? 'positive' : s.signal === 'EXIT' ? 'negative' : s.signal === 'WEAKENING' ? 'signal-weak' : 'signal-watch';
+        const riskPerShare = s.entry - s.stop_loss;
+        const recQty = riskPerShare > 0 ? Math.floor((500000 * 0.01) / riskPerShare) : 0;
         return `
             <tr style="cursor:pointer" onclick="analyseFromScreener('${s.symbol}')">
                 <td>${i + 1}</td>
@@ -369,6 +372,7 @@ async function runScreener() {
                 <td>₹${formatNumber(s.entry)}</td>
                 <td class="positive">₹${formatNumber(s.target)}</td>
                 <td class="negative">₹${formatNumber(s.stop_loss)}</td>
+                <td>${recQty}</td>
                 <td class="holding-label">${s.holding_period || '-'}</td>
             </tr>
         `;
@@ -636,6 +640,29 @@ async function analyseStock(symbol) {
         </div>
 
         <div class="glass-card">
+            <h3>📈 Predicted Range (Next Trading Day)</h3>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px">ATR-based volatility estimate — NOT a price prediction</p>
+            <div class="signal-metrics">
+                <div class="signal-metric">
+                    <div class="label">Expected High</div>
+                    <div class="value positive">₹${formatNumber(t.predicted_range?.high || 0)}</div>
+                </div>
+                <div class="signal-metric">
+                    <div class="label">Expected Low</div>
+                    <div class="value negative">₹${formatNumber(t.predicted_range?.low || 0)}</div>
+                </div>
+                <div class="signal-metric">
+                    <div class="label">Support</div>
+                    <div class="value">₹${formatNumber(t.predicted_range?.support || 0)}</div>
+                </div>
+                <div class="signal-metric">
+                    <div class="label">Resistance</div>
+                    <div class="value">₹${formatNumber(t.predicted_range?.resistance || 0)}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
                 <h3>Price Chart</h3>
                 <div id="chart-period-btns" style="display:flex;gap:4px">
@@ -853,6 +880,10 @@ async function loadAccuracy() {
         el('acc-open', d.still_open || 0);
         el('acc-avg-days', d.avg_holding_days || '—');
 
+        // Average return
+        const avgRetEl = document.getElementById('acc-avg-return');
+        if (avgRetEl) avgRetEl.textContent = d.avg_return ? `${d.avg_return}%` : '—';
+
         // By signal type
         const sigEl = document.getElementById('acc-by-signal');
         if (d.by_signal_type && d.by_signal_type.length > 0) {
@@ -883,6 +914,28 @@ async function loadAccuracy() {
             `).join('');
         } else {
             segEl.innerHTML = '<div class="loading-skeleton">No segment data yet.</div>';
+        }
+
+        // Signal history table
+        const logEl = document.getElementById('acc-signal-log');
+        if (logEl && d.recent_signals && d.recent_signals.length > 0) {
+            const outcomeColors = { hit_target: '#10b981', hit_sl: '#ef4444', open: '#f59e0b' };
+            const outcomeLabels = { hit_target: '✅ Hit Target', hit_sl: '❌ Hit SL', open: '⏳ Open' };
+            logEl.innerHTML = `<table class="data-table"><thead><tr>
+                <th>Date</th><th>Symbol</th><th>Signal</th><th>Score</th><th>Entry</th><th>Target</th><th>SL</th><th>Outcome</th><th>Days</th>
+            </tr></thead><tbody>${d.recent_signals.map(s => `<tr>
+                <td>${(s.date || '').substring(0, 10)}</td>
+                <td><strong>${s.symbol}</strong></td>
+                <td>${(s.signal || '').replace('_', ' ')}</td>
+                <td>${s.score || '—'}</td>
+                <td>₹${formatNumber(s.entry)}</td>
+                <td class="positive">₹${formatNumber(s.target)}</td>
+                <td class="negative">₹${formatNumber(s.sl)}</td>
+                <td style="color:${outcomeColors[s.outcome] || '#94a3b8'}">${outcomeLabels[s.outcome] || s.outcome}</td>
+                <td>${s.days || '—'}</td>
+            </tr>`).join('')}</tbody></table>`;
+        } else if (logEl) {
+            logEl.innerHTML = '<div class="loading-skeleton">Signals will appear here once the screener runs.</div>';
         }
     } catch (e) {
         console.error('Accuracy load error:', e);
@@ -991,4 +1044,71 @@ async function importCSV(event) {
     alert(`Imported ${imported} holdings from CSV`);
     event.target.value = '';
     loadPortfolio();
+}
+
+/* ─── Watchlist ──────────────────────────────────────── */
+function getWatchlist() {
+    try { return JSON.parse(localStorage.getItem('agent_alpha_watchlist') || '[]'); }
+    catch(e) { return []; }
+}
+function saveWatchlist(list) {
+    localStorage.setItem('agent_alpha_watchlist', JSON.stringify(list));
+}
+
+function addToWatchlist() {
+    const input = document.getElementById('watchlist-input');
+    if (!input) return;
+    const sym = input.value.trim().toUpperCase();
+    if (!sym) return;
+    const list = getWatchlist();
+    if (list.includes(sym)) { alert(sym + ' already in watchlist'); return; }
+    list.push(sym);
+    saveWatchlist(list);
+    input.value = '';
+    loadWatchlist();
+}
+
+function removeFromWatchlist(sym) {
+    const list = getWatchlist().filter(s => s !== sym);
+    saveWatchlist(list);
+    loadWatchlist();
+}
+
+async function loadWatchlist() {
+    const list = getWatchlist();
+    const tbody = document.getElementById('watchlist-body');
+    if (!tbody) return;
+    if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7">Add stocks to your watchlist above</td></tr>';
+        return;
+    }
+    tbody.innerHTML = '<tr><td colspan="7"><span class="spinner"></span> Loading watchlist...</td></tr>';
+
+    const rows = [];
+    for (const sym of list) {
+        try {
+            const res = await fetch(`/api/stock/${sym}`);
+            const data = await res.json();
+            const t = data.technical;
+            if (t) {
+                const pr = t.predicted_range || {};
+                rows.push(`<tr style="cursor:pointer" onclick="analyseFromScreener('${sym}')">
+                    <td><strong>${sym}</strong></td>
+                    <td>₹${formatNumber(t.price)}</td>
+                    <td>${t.score}</td>
+                    <td>${t.signal.replace(/_/g,' ')}</td>
+                    <td>${t.rvol || '-'}x</td>
+                    <td>₹${formatNumber(pr.low||0)} - ₹${formatNumber(pr.high||0)}</td>
+                    <td><button class="btn-small" onclick="event.stopPropagation();removeFromWatchlist('${sym}')">✕</button></td>
+                </tr>`);
+            } else {
+                rows.push(`<tr><td><strong>${sym}</strong></td><td colspan="5">Data unavailable</td>
+                    <td><button class="btn-small" onclick="removeFromWatchlist('${sym}')">✕</button></td></tr>`);
+            }
+        } catch(e) {
+            rows.push(`<tr><td><strong>${sym}</strong></td><td colspan="5">Error loading</td>
+                <td><button class="btn-small" onclick="removeFromWatchlist('${sym}')">✕</button></td></tr>`);
+        }
+    }
+    tbody.innerHTML = rows.join('');
 }

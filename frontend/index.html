@@ -67,6 +67,9 @@
             <li><a href="#" class="nav-link" data-page="accuracy" id="nav-accuracy">
                 <span class="nav-icon">🎯</span> Accuracy
             </a></li>
+            <li><a href="#" class="nav-link" data-page="watchlist" id="nav-watchlist">
+                <span class="nav-icon">👀</span> Watchlist
+            </a></li>
         </ul>
         <div class="sidebar-footer">
             <div class="market-status" id="market-status">
@@ -335,11 +338,12 @@
                                 <th>Entry</th>
                                 <th>Target</th>
                                 <th>Stop Loss</th>
+                                <th>Qty</th>
                                 <th>Holding</th>
                             </tr>
                         </thead>
                         <tbody id="screener-table-body">
-                            <tr><td colspan="12">Select a segment and run the screener</td></tr>
+                            <tr><td colspan="14">Select a segment and run the screener</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -427,6 +431,10 @@
                     <div class="card-label">Avg Hold Days</div>
                     <div class="card-value" id="acc-avg-days">—</div>
                 </div>
+                <div class="summary-card">
+                    <div class="card-label">Avg Return</div>
+                    <div class="card-value" id="acc-avg-return">—</div>
+                </div>
             </div>
             <div class="card-grid two-grid">
                 <div class="glass-card">
@@ -440,6 +448,36 @@
                     <div id="acc-by-segment">
                         <div class="loading-skeleton">Loading accuracy data...</div>
                     </div>
+                </div>
+            </div>
+            <div class="glass-card">
+                <h3>📋 Signal History Log</h3>
+                <div class="table-container" id="acc-signal-log">
+                    <div class="loading-skeleton">Loading signal history...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Watchlist Page -->
+        <section class="page" id="page-watchlist">
+            <div class="page-header">
+                <h1>Watchlist</h1>
+                <p class="subtitle">Track stocks without buying</p>
+            </div>
+            <div class="glass-card">
+                <div style="display:flex;gap:8px;margin-bottom:16px">
+                    <input type="text" class="form-input" id="watchlist-input" placeholder="Enter symbol (e.g. RELIANCE)" style="flex:1">
+                    <button class="btn btn-primary" onclick="addToWatchlist()">+ Add</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="watchlist-table">
+                        <thead>
+                            <tr><th>Symbol</th><th>Price</th><th>Score</th><th>Signal</th><th>RVOL</th><th>Range</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="watchlist-body">
+                            <tr><td colspan="7">Add stocks to your watchlist above</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>

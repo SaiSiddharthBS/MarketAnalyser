@@ -192,10 +192,15 @@ async def stock_detail(symbol: str):
 async def stock_chart(symbol: str, period: str = "1y"):
     """Get price chart data."""
     try:
-        data = await run_in_threadpool(get_stock_data, symbol, period=period)
+        # Map periods to appropriate intervals
+        interval_map = {"1d": "5m", "5d": "15m", "1mo": "1d", "6mo": "1d", "1y": "1d", "5y": "1wk", "max": "1mo"}
+        interval = interval_map.get(period, "1d")
+        data = await run_in_threadpool(get_stock_data, symbol, period=period, interval=interval)
         if not data:
             raise HTTPException(404, f"No data for {symbol}")
-        return {"symbol": symbol, "period": period, "data": data}
+        # Filter out records with null OHLC
+        clean = [d for d in data if d.get("Open") and d.get("Close") and d.get("High") and d.get("Low")]
+        return {"symbol": symbol, "period": period, "data": clean}
     except HTTPException:
         raise
     except Exception as e:

@@ -382,6 +382,17 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
         else:
             holding_label = f"🐢 {holding_sessions_low // 20}–{(holding_sessions_high + 19) // 20} months"
 
+    # ─── ATR-Based Predicted Range (Next Day) ──────────────
+    pred_high = round(close + atr_val, 2) if atr_val else None
+    pred_low = round(close - atr_val, 2) if atr_val else None
+    # Support/Resistance
+    support = round(min(filter(None, [ema50, ema200, bb_lower, sl])), 2) if any([ema50, ema200, bb_lower]) else sl
+    resistance = round(max(filter(None, [bb_upper, target])), 2) if bb_upper else target
+
+    # Recommended quantity (₹5L capital, 1% risk)
+    risk_per_share = entry - sl if sl else 0
+    rec_qty = int((500000 * 0.01) / risk_per_share) if risk_per_share > 0 else 0
+
     return {
         "symbol": symbol,
         "price": round(close, 2),
@@ -392,6 +403,7 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
         "stop_loss": sl,
         "risk_reward": rr_ratio,
         "rvol": rvol,
+        "rec_qty": rec_qty,
         # Score breakdown
         "score_breakdown": {
             "trend": trend_score,
@@ -404,6 +416,13 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
         # Holding period
         "holding_period": holding_label,
         "holding_sessions": f"{holding_sessions_low}–{holding_sessions_high} sessions",
+        # Predicted range
+        "predicted_range": {
+            "high": pred_high,
+            "low": pred_low,
+            "support": support,
+            "resistance": resistance,
+        },
         # Indicators
         "indicators": {
             "rsi": rsi, "macd": macd_val, "macd_signal": macd_signal,

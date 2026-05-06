@@ -165,6 +165,28 @@ def get_accuracy_stats():
                 "win_rate": round((r[2] / r[1]) * 100, 1) if r[1] > 0 else 0,
             })
 
+        # Recent signals log (for transparency table)
+        db.db_execute(cursor, """
+            SELECT symbol, signal_type, score, entry_price, target_price, stop_loss,
+                   outcome, days_to_outcome, segment, date_generated
+            FROM signal_log ORDER BY date_generated DESC LIMIT 50
+        """)
+        recent = []
+        for r in cursor.fetchall():
+            recent.append({
+                "symbol": r[0], "signal": r[1], "score": r[2],
+                "entry": r[3], "target": r[4], "sl": r[5],
+                "outcome": r[6], "days": r[7], "segment": r[8], "date": r[9],
+            })
+
+        # Average return for hit_target signals
+        db.db_execute(cursor, """
+            SELECT AVG((target_price - entry_price) / entry_price * 100)
+            FROM signal_log WHERE outcome = 'hit_target' AND entry_price > 0
+        """)
+        avg_ret_row = cursor.fetchone()
+        avg_return = round(float(avg_ret_row[0]), 2) if avg_ret_row and avg_ret_row[0] else 0
+
         stats = {
             "total_signals": total,
             "evaluated": evaluated,
@@ -173,8 +195,10 @@ def get_accuracy_stats():
             "still_open": still_open,
             "win_rate": win_rate,
             "avg_holding_days": avg_days,
+            "avg_return": avg_return,
             "by_signal_type": by_signal,
             "by_segment": by_segment,
+            "recent_signals": recent,
         }
 
     except Exception as e:
