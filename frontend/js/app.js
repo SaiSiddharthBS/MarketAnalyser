@@ -688,9 +688,9 @@ async function analyseStock(symbol) {
                 </div>
             </div>
 
-            ${data.recent_verification && data.recent_verification.actual_high ? `
             <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px">
                 <h4 style="margin-bottom:12px;color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:1px">Yesterday's Prediction vs Today's Reality</h4>
+                ${data.recent_verification && data.recent_verification.actual_high ? `
                 <table class="data-table" style="font-size:13px;width:100%;text-align:left">
                     <thead>
                         <tr>
@@ -727,8 +727,14 @@ async function analyseStock(symbol) {
                         </tr>
                     </tbody>
                 </table>
+                ` : `
+                <div style="background:rgba(255,255,255,0.03);padding:16px;border-radius:8px;text-align:center;color:var(--text-muted);font-size:13px">
+                    <span style="font-size:24px;display:block;margin-bottom:8px">⏳</span>
+                    Prediction logged! Verification pending market close.<br>
+                    <span style="font-size:11px;opacity:0.7">The accuracy table will appear here tomorrow once actual market data is available to grade today's prediction.</span>
+                </div>
+                `}
             </div>
-            ` : ''}
         </div>
 
         <div class="glass-card">
