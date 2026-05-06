@@ -92,9 +92,9 @@ body::before {
     top: 0;
     width: var(--sidebar-width);
     height: 100vh;
-    background: rgba(10, 14, 23, 0.95);
-    border-right: 1px solid var(--border-glass);
-    backdrop-filter: blur(20px);
+    background: linear-gradient(180deg, rgba(8, 12, 24, 0.98) 0%, rgba(12, 18, 36, 0.98) 100%);
+    border-right: 1px solid rgba(74, 144, 255, 0.1);
+    backdrop-filter: blur(24px);
     display: flex;
     flex-direction: column;
     z-index: 100;
@@ -121,9 +121,9 @@ body::before {
 
 .logo-text {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #f1f5f9, #94a3b8);
+    background: linear-gradient(135deg, #4a90ff, #a855f7, #22d3ee);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -155,9 +155,10 @@ body::before {
 }
 
 .nav-link.active {
-    background: var(--accent-blue-dim);
-    color: var(--accent-blue);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: linear-gradient(135deg, rgba(74, 144, 255, 0.15), rgba(168, 85, 247, 0.1));
+    color: #4a90ff;
+    border: 1px solid rgba(74, 144, 255, 0.3);
+    box-shadow: 0 0 12px rgba(74, 144, 255, 0.08);
 }
 
 .nav-icon { font-size: 18px; }
@@ -253,8 +254,11 @@ body::before {
 
 .page-header h1 {
     font-size: 28px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #e8edf5 0%, #4a90ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .subtitle {
@@ -265,11 +269,12 @@ body::before {
 
 /* ─── Glass Cards ───────────────────────────────────── */
 .glass-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-glass);
+    background: linear-gradient(145deg, rgba(13, 19, 35, 0.85), rgba(10, 15, 28, 0.9));
+    border: 1px solid rgba(74, 144, 255, 0.08);
+    border-top: 2px solid rgba(74, 144, 255, 0.15);
     border-radius: var(--radius);
     padding: 24px;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(14px);
     transition: var(--transition);
     margin-bottom: 20px;
 }
