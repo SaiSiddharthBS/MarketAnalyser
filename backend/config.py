@@ -29,7 +29,8 @@ MARKET_OPEN = "09:15"
 MARKET_CLOSE = "15:30"
 TIMEZONE = "Asia/Kolkata"
 
-# Stock Universe
+# ─── Stock Universe ─────────────────────────────────────────────
+
 NIFTY_50_SYMBOLS = [
     "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK",
     "HINDUNILVR", "ITC", "SBIN", "BHARTIARTL", "KOTAKBANK",
@@ -43,7 +44,134 @@ NIFTY_50_SYMBOLS = [
     "BAJAJ-AUTO", "HDFCLIFE", "SHRIRAMFIN", "LTIM", "ADANIENT",
 ]
 
-# User's MF Scheme Codes (from AMFI)
+# ─── Sector Indices ─────────────────────────────────────────────
+# Each sector has: name, yahoo_index (for sector strength calc), symbols
+
+SECTOR_INDICES = {
+    "NIFTY_50": {
+        "name": "Nifty 50",
+        "yahoo_index": "^NSEI",
+        "symbols": NIFTY_50_SYMBOLS,
+    },
+    "NIFTY_BANK": {
+        "name": "Nifty Bank",
+        "yahoo_index": "^NSEBANK",
+        "symbols": [
+            "HDFCBANK", "ICICIBANK", "SBIN", "KOTAKBANK", "AXISBANK",
+            "INDUSINDBK", "BAJFINANCE", "BAJAJFINSV", "BANDHANBNK",
+            "IDFCFIRSTB", "PNB", "FEDERALBNK",
+        ],
+    },
+    "NIFTY_IT": {
+        "name": "Nifty IT",
+        "yahoo_index": "^CNXIT",
+        "symbols": [
+            "TCS", "INFY", "WIPRO", "HCLTECH", "TECHM",
+            "LTIM", "PERSISTENT", "COFORGE", "MPHASIS", "LTTS",
+        ],
+    },
+    "NIFTY_PHARMA": {
+        "name": "Nifty Pharma",
+        "yahoo_index": "^CNXPHARMA",
+        "symbols": [
+            "SUNPHARMA", "DRREDDY", "CIPLA", "DIVISLAB", "APOLLOHOSP",
+            "BIOCON", "AUROPHARMA", "TORNTPHARM", "LUPIN", "ALKEM",
+        ],
+    },
+    "NIFTY_AUTO": {
+        "name": "Nifty Auto",
+        "yahoo_index": "^CNXAUTO",
+        "symbols": [
+            "MARUTI", "TATAMOTORS", "M&M", "BAJAJ-AUTO", "HEROMOTOCO",
+            "EICHERMOT", "ASHOKLEY", "BOSCHLTD", "BALKRISIND", "BHARATFORG",
+            "MOTHERSON", "TVSMOTOR", "MRF", "EXIDEIND", "TIINDIA",
+        ],
+    },
+    "NIFTY_METAL": {
+        "name": "Nifty Metal",
+        "yahoo_index": "^CNXMETAL",
+        "symbols": [
+            "TATASTEEL", "JSWSTEEL", "HINDALCO", "COALINDIA", "VEDL",
+            "NMDC", "SAIL", "NATIONALUM", "APLAPOLLO", "JINDALSTEL",
+            "RATNAMANI", "MOIL", "WELCORP",
+        ],
+    },
+    "NIFTY_FMCG": {
+        "name": "Nifty FMCG",
+        "yahoo_index": "^CNXFMCG",
+        "symbols": [
+            "HINDUNILVR", "ITC", "NESTLEIND", "BRITANNIA", "TATACONSUM",
+            "DABUR", "MARICO", "GODREJCP", "COLPAL", "VBL",
+            "EMAMILTD", "RADICO", "PGHH", "UNITDSPR",
+        ],
+    },
+    "NIFTY_ENERGY": {
+        "name": "Nifty Energy",
+        "yahoo_index": "^CNXENERGY",
+        "symbols": [
+            "RELIANCE", "NTPC", "POWERGRID", "ONGC", "BPCL",
+            "COALINDIA", "IOC", "GAIL", "ADANIGREEN", "TATAPOWER",
+            "NHPC", "SJVN", "IREDA",
+        ],
+    },
+    "NIFTY_INFRA": {
+        "name": "Nifty Infrastructure",
+        "yahoo_index": "^CNXINFRA",
+        "symbols": [
+            "LT", "ADANIPORTS", "ULTRACEMCO", "GRASIM", "BHARTIARTL",
+            "POWERGRID", "NTPC", "SIEMENS", "ABB", "HAVELLS",
+            "CUMMINSIND", "BEL", "HAL",
+        ],
+    },
+    "NIFTY_PSU_BANK": {
+        "name": "Nifty PSU Bank",
+        "yahoo_index": "^CNXPSUBANK",
+        "symbols": [
+            "SBIN", "PNB", "BANKBARODA", "CANBK", "UNIONBANK",
+            "IOB", "INDIANB", "CENTRALBK", "BANKINDIA", "MAHABANK",
+            "UCOBANK", "PSB",
+        ],
+    },
+    "NIFTY_REALTY": {
+        "name": "Nifty Realty",
+        "yahoo_index": "^CNXREALTY",
+        "symbols": [
+            "DLF", "GODREJPROP", "OBEROIRLTY", "PRESTIGE", "PHOENIXLTD",
+            "BRIGADE", "SOBHA", "SUNTECK", "LODHA", "MAHLIFE",
+        ],
+    },
+    # ─── Tradable Instruments (same screener logic) ───────────
+    "ETFS": {
+        "name": "ETFs (Exchange Traded)",
+        "yahoo_index": "^NSEI",
+        "symbols": [
+            "NIFTYBEES", "BANKBEES", "JUNIORBEES", "SETFNIF50",
+            "ITBEES", "PSUBNKBEES", "CPSEETF", "MOM50",
+            "MON100", "MIDCPBEES",
+        ],
+    },
+    "GOLD_ETFS": {
+        "name": "Gold & Commodity ETFs",
+        "yahoo_index": "GC=F",
+        "symbols": [
+            "GOLDBEES", "GOLDSHARE", "LIQUIDBEES", "SILVERBEES",
+        ],
+    },
+    "REITS_INVITS": {
+        "name": "REITs & InvITs",
+        "yahoo_index": "^NSEI",
+        "symbols": [
+            "MINDSPACE", "BROOKFIELD", "EMBASSY", "IRBINVIT",
+            "INDIGRID", "POWERGRID-INVIT",
+        ],
+    },
+}
+
+# All segment keys for easy iteration
+ALL_SEGMENTS = list(SECTOR_INDICES.keys())
+
+# ─── User's MF Holdings ────────────────────────────────────────
+
 USER_MF_HOLDINGS = {
     "ICICI Prudential Nifty 50 Index Fund": {
         "scheme_code": "120620",
@@ -62,7 +190,8 @@ USER_MF_HOLDINGS = {
     },
 }
 
-# Risk Profile
+# ─── Risk Profile ──────────────────────────────────────────────
+
 RISK_PROFILE = {
     "max_single_stock_pct": 5.0,      # Max 5% in any single stock
     "max_sector_pct": 25.0,           # Max 25% in any sector
@@ -71,7 +200,8 @@ RISK_PROFILE = {
     "risk_tolerance": "moderate",      # moderate for the user
 }
 
-# Technical Analysis Defaults
+# ─── Technical Analysis Defaults ───────────────────────────────
+
 TA_PARAMS = {
     "rsi_period": 14,
     "macd_fast": 12,
@@ -83,4 +213,22 @@ TA_PARAMS = {
     "ema_medium": 50,
     "ema_long": 200,
     "atr_period": 14,
+}
+
+# ─── 5-Point Signal Thresholds ─────────────────────────────────
+
+SIGNAL_THRESHOLDS = {
+    "STRONG_BUY": 80,   # 🚀 All factors aligned
+    "BUY": 60,          # 🟢 Good setup
+    "WATCH": 45,        # 🟡 Forming but not triggered
+    "WEAKENING": 25,    # 🟠 Momentum fading
+    "EXIT": 0,          # 🔴 Trend broken
+}
+
+SIGNAL_LABELS = {
+    "STRONG_BUY": "🚀 Strong Buy",
+    "BUY": "🟢 Buy",
+    "WATCH": "🟡 Watch",
+    "WEAKENING": "🟠 Weakening",
+    "EXIT": "🔴 Exit",
 }

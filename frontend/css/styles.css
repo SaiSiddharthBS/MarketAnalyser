@@ -761,9 +761,29 @@ body::before {
     font-family: var(--font-mono);
 }
 
+.score-strong-buy { background: #0d3320; color: #00e676; }
 .score-high { background: var(--accent-green-dim); color: var(--accent-green); }
 .score-mid { background: var(--accent-amber-dim); color: var(--accent-amber); }
+.score-weak { background: #3d2800; color: #ff9800; }
 .score-low { background: var(--accent-red-dim); color: var(--accent-red); }
+
+.signal-strong-buy { color: #00e676; font-weight: 700; }
+.signal-watch { color: var(--accent-amber); }
+.signal-weak { color: #ff9800; }
+.holding-label { font-size: 0.75rem; opacity: 0.8; }
+
+.segment-select {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    font-family: var(--font-main);
+    cursor: pointer;
+    min-width: 200px;
+}
+.segment-select:focus { outline: none; border-color: var(--accent-blue); }
 
 /* ─── Responsive ────────────────────────────────────── */
 @media (max-width: 768px) {

@@ -206,24 +206,34 @@ def _gather_screener_data(top_n=5):
     """Run the stock screener and format results for the AI."""
     try:
         from analysis.technical import screen_stocks
+        from config import SIGNAL_LABELS
         # Run screener ONCE on all stocks, then slice for top + dip candidates
         all_results = screen_stocks(NIFTY_50_SYMBOLS, top_n=50)
         if not all_results:
             return ""
 
+        # Log signals for accuracy tracking (Day 1)
+        try:
+            import database as db
+            db.log_screener_signals(all_results, segment="NIFTY_50")
+        except Exception as log_err:
+            print(f"⚠️ Signal logging error: {log_err}")
+
         # Top N by score (best stocks)
         top_results = all_results[:top_n]
         lines = [f"Top {len(top_results)} Nifty 50 Stocks by Technical Score:\n"]
         for i, r in enumerate(top_results, 1):
-            signal_emoji = "🟢" if "BUY" in r["signal"] else "🔴" if "SELL" in r["signal"] else "🟡"
+            label = SIGNAL_LABELS.get(r["signal"], r["signal"])
             lines.append(
-                f"{i}. {r['symbol']} — {signal_emoji} {r['signal'].replace('_', ' ')} | "
+                f"{i}. {r['symbol']} — {label} | "
                 f"Score: {r['score']}/100 | "
                 f"Price: ₹{r['price']:,.2f} | "
                 f"Entry: ₹{r['entry']:,.2f} | "
                 f"Target: ₹{r['target']:,.2f} | "
                 f"Stop Loss: ₹{r['stop_loss']:,.2f} | "
-                f"RSI: {r['indicators'].get('rsi', 'N/A')}"
+                f"RSI: {r['indicators'].get('rsi', 'N/A')} | "
+                f"RVOL: {r.get('rvol', 'N/A')}x | "
+                f"Holding: {r.get('holding_period', 'N/A')}"
             )
 
         # Dip candidates from the SAME results (no second screener run)
@@ -231,10 +241,11 @@ def _gather_screener_data(top_n=5):
         if dip_candidates:
             lines.append("\n⚠️ OVERSOLD / DIP CANDIDATES (Low scores may = buying opportunity):")
             for r in dip_candidates[:3]:
+                label = SIGNAL_LABELS.get(r["signal"], r["signal"])
                 lines.append(
                     f"- {r['symbol']} — Score: {r['score']}/100 | "
                     f"Price: ₹{r['price']:,.2f} | RSI: {r['indicators'].get('rsi', 'N/A')} | "
-                    f"Signal: {r['signal'].replace('_', ' ')}"
+                    f"Signal: {label}"
                 )
 
         screener_text = "\n".join(lines)

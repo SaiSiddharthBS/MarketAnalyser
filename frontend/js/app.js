@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     updateMarketStatus();
     loadDashboard();
+    loadSegments();
     setInterval(updateMarketStatus, 60000);
 });
 
@@ -312,10 +313,14 @@ function renderStockTable(stocks) {
 async function runScreener() {
     const btn = document.getElementById('btn-run-screener');
     const info = document.getElementById('screener-info');
-    if (btn) btn.disabled = true;
-    if (info) info.innerHTML = '<span class="spinner"></span> Analysing Nifty 50 stocks... This takes 1-2 minutes';
+    const selector = document.getElementById('segment-selector');
+    const segment = selector ? selector.value : 'NIFTY_50';
+    const segName = selector ? selector.options[selector.selectedIndex].text : 'Nifty 50';
 
-    const data = await api.getScreenerTop(50);
+    if (btn) btn.disabled = true;
+    if (info) info.innerHTML = `<span class="spinner"></span> Analysing ${segName}... This may take 1-3 minutes`;
+
+    const data = await api.getScreenerTop(50, segment);
 
     if (btn) btn.disabled = false;
 
@@ -324,28 +329,49 @@ async function runScreener() {
         return;
     }
 
-    if (info) info.textContent = `Found ${data.count} stocks`;
+    if (info) info.textContent = `${data.segment_name || segment}: ${data.count} stocks analysed`;
 
+    const signalLabels = data.signal_labels || {};
     const tbody = document.getElementById('screener-table-body');
     if (!tbody) return;
 
     tbody.innerHTML = data.stocks.map((s, i) => {
-        const scoreClass = s.score >= 60 ? 'score-high' : s.score >= 40 ? 'score-mid' : 'score-low';
-        const signalClass = s.signal.includes('BUY') ? 'positive' : s.signal.includes('SELL') ? 'negative' : '';
+        const scoreClass = s.score >= 80 ? 'score-strong-buy' : s.score >= 60 ? 'score-high' : s.score >= 45 ? 'score-mid' : s.score >= 25 ? 'score-weak' : 'score-low';
+        const signalLabel = signalLabels[s.signal] || s.signal.replace('_', ' ');
+        const signalClass = s.signal === 'STRONG_BUY' ? 'signal-strong-buy' : s.signal === 'BUY' ? 'positive' : s.signal === 'EXIT' ? 'negative' : s.signal === 'WEAKENING' ? 'signal-weak' : 'signal-watch';
         return `
             <tr style="cursor:pointer" onclick="analyseFromScreener('${s.symbol}')">
                 <td>${i + 1}</td>
                 <td><strong>${s.symbol}</strong></td>
                 <td>₹${formatNumber(s.price)}</td>
                 <td><span class="score-badge ${scoreClass}">${s.score}</span></td>
-                <td class="${signalClass}">${s.signal.replace('_', ' ')}</td>
+                <td class="${signalClass}">${signalLabel}</td>
                 <td>${s.indicators.rsi || '-'}</td>
+                <td>${s.rvol || '-'}x</td>
+                <td>${s.risk_reward || '-'}</td>
                 <td>₹${formatNumber(s.entry)}</td>
                 <td class="positive">₹${formatNumber(s.target)}</td>
                 <td class="negative">₹${formatNumber(s.stop_loss)}</td>
+                <td class="holding-label">${s.holding_period || '-'}</td>
             </tr>
         `;
     }).join('');
+}
+
+// Load segment dropdown on page init
+async function loadSegments() {
+    try {
+        const res = await fetch('/api/screener/segments');
+        const segments = await res.json();
+        const selector = document.getElementById('segment-selector');
+        if (selector && segments.length) {
+            selector.innerHTML = segments.map(s =>
+                `<option value="${s.key}">${s.name} (${s.count})</option>`
+            ).join('');
+        }
+    } catch (e) {
+        console.error('Failed to load segments:', e);
+    }
 }
 
 function analyseFromScreener(symbol) {

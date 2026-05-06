@@ -47,7 +47,7 @@ const api = {
     getStockDetail: (symbol) => api.get(`/stock/${symbol}`),
     getStockChart: (symbol, period) => api.get(`/stock/${symbol}/chart?period=${period || '1y'}`),
     getIndexData: (symbol, period) => api.get(`/market/index/${symbol}?period=${period || '6mo'}`),
-    getScreenerTop: (n) => api.get(`/screener/top?n=${n || 10}`),
+    getScreenerTop: (n, segment) => api.get(`/screener/top?n=${n || 10}&segment=${segment || 'NIFTY_50'}`),
     getSignals: () => api.get('/signals'),
     generateSignals: () => api.get('/signals/generate'),
     getMfDetail: (code) => api.get(`/mf/${code}`),

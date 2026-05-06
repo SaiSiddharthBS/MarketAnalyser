@@ -248,9 +248,60 @@ def init_db():
         )
     """)
 
+    # Signal log for accuracy tracking (Day 1 logging)
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS signal_log (
+            id {id_type},
+            date_generated TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            segment TEXT,
+            signal_type TEXT NOT NULL,
+            score INTEGER NOT NULL,
+            entry_price REAL,
+            target_price REAL,
+            stop_loss REAL,
+            risk_reward REAL,
+            holding_period TEXT,
+            actual_open REAL,
+            actual_high REAL,
+            actual_low REAL,
+            actual_close REAL,
+            outcome TEXT DEFAULT 'open',
+            days_to_outcome INTEGER,
+            created_at TEXT DEFAULT ({now_func}),
+            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
+        )
+    """)
+
     conn.commit()
     put_connection(conn)
     print("✅ Database initialized successfully")
+
+
+def log_screener_signals(results, segment="NIFTY_50"):
+    """Log screener results to signal_log for accuracy tracking."""
+    if not results:
+        return
+    conn = get_connection()
+    if not conn:
+        return
+    cursor = get_cursor(conn)
+    today = datetime.now().strftime("%Y-%m-%d")
+    try:
+        for r in results:
+            db_execute(cursor, """
+                INSERT INTO signal_log 
+                (date_generated, symbol, segment, signal_type, score, entry_price, target_price, stop_loss, risk_reward, holding_period)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (today, r["symbol"], segment, r["signal"], r["score"],
+                  r["entry"], r["target"], r["stop_loss"],
+                  r.get("risk_reward", 0), r.get("holding_period", "N/A")))
+        conn.commit()
+        print(f"✅ Logged {len(results)} signals to signal_log")
+    except Exception as e:
+        print(f"⚠️ Signal logging failed: {e}")
+    finally:
+        put_connection(conn)
 
 
 # ── CRUD Operations ──────────────────────────────────────────

@@ -238,12 +238,15 @@
         <section class="page" id="page-screener">
             <div class="page-header">
                 <h1>Stock Screener</h1>
-                <p class="subtitle">Nifty 50 stocks ranked by technical score</p>
+                <p class="subtitle">Multi-sector analysis powered by 6-factor scoring</p>
             </div>
             <div class="glass-card">
                 <div class="screener-controls">
+                    <select id="segment-selector" class="segment-select">
+                        <option value="NIFTY_50">Loading segments...</option>
+                    </select>
                     <button class="btn btn-primary" id="btn-run-screener">🔍 Run Screener</button>
-                    <span class="screener-info" id="screener-info">Click to analyse all Nifty 50 stocks</span>
+                    <span class="screener-info" id="screener-info">Select a segment and run</span>
                 </div>
                 <div class="table-container">
                     <table class="data-table" id="screener-table">
@@ -255,13 +258,16 @@
                                 <th>Score</th>
                                 <th>Signal</th>
                                 <th>RSI</th>
+                                <th>RVOL</th>
+                                <th>R/R</th>
                                 <th>Entry</th>
                                 <th>Target</th>
                                 <th>Stop Loss</th>
+                                <th>Holding</th>
                             </tr>
                         </thead>
                         <tbody id="screener-table-body">
-                            <tr><td colspan="9">Run the screener to see results</td></tr>
+                            <tr><td colspan="12">Select a segment and run the screener</td></tr>
                         </tbody>
                     </table>
                 </div>

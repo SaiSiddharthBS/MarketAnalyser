@@ -30,9 +30,9 @@ from data.stock_fetcher import (
 from data.mf_fetcher import get_mf_nav, get_mf_historical, get_mf_portfolio_value
 from data.news_fetcher import get_market_sentiment, get_stock_news, get_market_news
 from analysis.technical import get_technical_analysis, screen_stocks
-from config import NIFTY_50_SYMBOLS, USER_MF_HOLDINGS
+from config import NIFTY_50_SYMBOLS, USER_MF_HOLDINGS, SECTOR_INDICES, SIGNAL_LABELS
 
-app = FastAPI(title="MarketPulse - Agent Alpha", version="2.0.0")
+app = FastAPI(title="MarketPulse - Agent Alpha", version="3.0.0")
 
 # CORS for frontend
 app.add_middleware(
@@ -196,12 +196,43 @@ async def stock_chart(symbol: str, period: str = "1y"):
 
 # ─── Screener ────────────────────────────────────────────
 
+@app.get("/api/screener/segments")
+async def screener_segments():
+    """List all available screener segments."""
+    return [
+        {"key": k, "name": v["name"], "count": len(v["symbols"])}
+        for k, v in SECTOR_INDICES.items()
+    ]
+
+
 @app.get("/api/screener/top")
-async def screener_top(n: int = 10):
-    """Get top N stocks by technical score from Nifty 50."""
+async def screener_top(n: int = 10, segment: str = "NIFTY_50"):
+    """Get top N stocks by technical score from a segment."""
     try:
-        results = await run_in_threadpool(screen_stocks, NIFTY_50_SYMBOLS, top_n=n)
-        return {"count": len(results), "stocks": results}
+        seg_data = SECTOR_INDICES.get(segment)
+        if not seg_data:
+            return {"count": 0, "stocks": [], "error": f"Unknown segment: {segment}"}
+
+        symbols = seg_data["symbols"]
+        yahoo_index = seg_data.get("yahoo_index", "^NSEI")
+        results = await run_in_threadpool(
+            screen_stocks, symbols, top_n=n, sector_yahoo_index=yahoo_index
+        )
+
+        # Log signals for accuracy tracking (Day 1)
+        try:
+            import database as db
+            db.log_screener_signals(results, segment=segment)
+        except Exception as log_err:
+            print(f"⚠️ Signal logging failed: {log_err}")
+
+        return {
+            "segment": segment,
+            "segment_name": seg_data["name"],
+            "count": len(results),
+            "stocks": results,
+            "signal_labels": SIGNAL_LABELS,
+        }
     except Exception as e:
         print(f"❌ Screener error: {e}")
         return {"count": 0, "stocks": [], "error": str(e)}
