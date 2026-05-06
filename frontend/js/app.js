@@ -356,19 +356,30 @@ async function runScreener() {
     tbody.innerHTML = data.stocks.map((s, i) => {
         const scoreClass = s.score >= 80 ? 'score-strong-buy' : s.score >= 60 ? 'score-high' : s.score >= 45 ? 'score-mid' : s.score >= 25 ? 'score-weak' : 'score-low';
         const signalLabel = signalLabels[s.signal] || s.signal.replace('_', ' ');
-        const signalClass = s.signal === 'STRONG_BUY' ? 'signal-strong-buy' : s.signal === 'BUY' ? 'positive' : s.signal === 'EXIT' ? 'negative' : s.signal === 'WEAKENING' ? 'signal-weak' : 'signal-watch';
+        let signalClass = 'signal-watch';
+        if (s.signal === 'EARLY_MOMENTUM') signalClass = 'signal-early';
+        else if (s.signal === 'CONTINUATION') signalClass = 'signal-cont';
+        else if (s.signal === 'EXTENDED') signalClass = 'signal-extended';
+        else if (s.signal === 'PULLBACK') signalClass = 'signal-pullback';
+        else if (s.signal === 'WEAK') signalClass = 'signal-weak';
+        else if (s.signal === 'AVOID') signalClass = 'negative';
+
         const riskPerShare = s.entry - s.stop_loss;
         const recQty = riskPerShare > 0 ? Math.floor((500000 * 0.01) / riskPerShare) : 0;
+        
         return `
             <tr style="cursor:pointer" onclick="analyseFromScreener('${s.symbol}')">
                 <td>${i + 1}</td>
                 <td><strong>${s.symbol}</strong></td>
                 <td>₹${formatNumber(s.price)}</td>
                 <td><span class="score-badge ${scoreClass}">${s.score}</span></td>
-                <td class="${signalClass}">${signalLabel}</td>
+                <td class="${signalClass}" style="font-weight:600">${signalLabel}</td>
                 <td>${s.indicators.rsi || '-'}</td>
                 <td>${s.rvol || '-'}x</td>
-                <td>${s.risk_reward || '-'}</td>
+                <td>
+                    <div>${s.risk_reward || '-'}</div>
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">[R: <span class="positive">+${s.reward_pct || 0}%</span> | L: <span class="negative">-${s.risk_pct || 0}%</span>]</div>
+                </td>
                 <td>₹${formatNumber(s.entry)}</td>
                 <td class="positive">₹${formatNumber(s.target)}</td>
                 <td class="negative">₹${formatNumber(s.stop_loss)}</td>
@@ -555,10 +566,24 @@ async function analyseStock(symbol) {
 
     const t = data.technical;
     const info = data.info || {};
-    const signalColors = { STRONG_BUY: '#00e676', BUY: '#10b981', WATCH: '#f59e0b', WEAKENING: '#ff9800', EXIT: '#ef4444' };
-    const signalEmojis = { STRONG_BUY: '🚀', BUY: '🟢', WATCH: '🟡', WEAKENING: '🟠', EXIT: '🔴' };
-    const sigColor = signalColors[t.signal] || '#f59e0b';
-    const sigEmoji = signalEmojis[t.signal] || '🟡';
+    const signalColors = { 
+        EARLY_MOMENTUM: '#06b6d4', // Cyan
+        CONTINUATION: '#f59e0b',   // Orange/Amber
+        EXTENDED: '#f43f5e',       // Red/Pink
+        PULLBACK: '#3b82f6',       // Blue
+        WEAK: '#f97316',           // Orange
+        AVOID: '#ef4444'           // Red
+    };
+    const signalEmojis = { 
+        EARLY_MOMENTUM: '🚀', 
+        CONTINUATION: '🔥', 
+        EXTENDED: '⚠️', 
+        PULLBACK: '👀', 
+        WEAK: '🟠', 
+        AVOID: '🔴' 
+    };
+    const sigColor = signalColors[t.signal] || '#64748b';
+    const sigEmoji = signalEmojis[t.signal] || '⚫';
 
     // Position sizing (default ₹5L capital, 1% risk)
     const riskPerShare = t.entry - t.stop_loss;

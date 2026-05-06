@@ -354,29 +354,34 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
         else:
             signals.append({"indicator": "ADX", "signal": f"WEAK/NO TREND ({adx:.0f})", "value": adx, "weight": 0})
 
-    # ─── 5-Point Signal ──────────────────────────────────────
-    # BUG FIX: Downgrade signal if RVOL < 1.0 (no institutional backing)
-    raw_score = score
-    if score >= 80:
-        overall = "STRONG_BUY"
-    elif score >= 60:
-        overall = "BUY"
-    elif score >= 45:
-        overall = "WATCH"
-    elif score >= 25:
-        overall = "WEAKENING"
+    # ─── Contextual Phase Engine ─────────────────────────────
+    # Calculate explicit Risk/Reward percentages
+    reward_pct = round(((target - entry) / entry) * 100, 2) if entry > 0 else 0
+    risk_pct = round(((entry - sl) / entry) * 100, 2) if entry > 0 else 0
+
+    _rsi = rsi if rsi is not None else 50
+    _rvol = rvol if rvol is not None else 1.0
+
+    # Phase Logic
+    if score >= 60 and 50 <= _rsi <= 66 and _rvol >= 1.2 and close > (ema50 or 0):
+        overall = "EARLY_MOMENTUM"
+        signals.append({"indicator": "Phase", "signal": "Early Breakout. Fresh momentum.", "value": _rsi, "weight": 0})
+    elif score >= 65 and 66 < _rsi <= 72 and _rvol >= 1.2 and close > (ema20 or 0):
+        overall = "CONTINUATION"
+        signals.append({"indicator": "Phase", "signal": "Strong Continuation. Trend active.", "value": _rsi, "weight": 0})
+    elif score >= 60 and (_rsi > 72 or (_rsi > 68 and _rvol < 1.0)):
+        overall = "EXTENDED"
+        score -= 15  # Penalize extended setups so early ones rank higher
+        score = max(0, score)
+        signals.append({"indicator": "Phase Warning", "signal": "Extended momentum. High pullback risk.", "value": _rsi, "weight": 0})
+    elif 45 <= score < 65 and 40 <= _rsi <= 55 and (close >= (ema50 or close) * 0.98):
+        overall = "PULLBACK"
+        signals.append({"indicator": "Phase", "signal": "Resting at support. Watch for bounce.", "value": _rsi, "weight": 0})
+    elif 30 <= score < 45:
+        overall = "WEAK"
+        signals.append({"indicator": "Phase Warning", "signal": "Losing momentum. Weak setup.", "value": _rsi, "weight": 0})
     else:
-        overall = "EXIT"
-
-    # RVOL downgrade: BUY/STRONG_BUY with weak volume → WATCH
-    if rvol is not None and rvol < 1.2 and overall in ("BUY", "STRONG_BUY"):
-        overall = "WATCH"
-        signals.append({"indicator": "RVOL Warning", "signal": f"Downgraded to WATCH — RVOL {rvol}x (below 1.2, weak institutional backing)", "value": rvol, "weight": 0})
-
-    # RSI overbought downgrade: BUY/STRONG_BUY near overbought → WATCH
-    if rsi is not None and rsi > 68 and overall in ("BUY", "STRONG_BUY"):
-        overall = "WATCH"
-        signals.append({"indicator": "RSI Warning", "signal": f"Downgraded to WATCH — RSI {rsi:.1f} (overbought, wait for pullback to 60-65)", "value": rsi, "weight": 0})
+        overall = "AVOID"
 
     # ─── Holding Period Estimate (ATR-based, swing-calibrated) ─
     holding_sessions_low = 0
@@ -424,6 +429,8 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
         "target": target,
         "stop_loss": sl,
         "risk_reward": rr_ratio,
+        "reward_pct": reward_pct,
+        "risk_pct": risk_pct,
         "rvol": rvol,
         "rec_qty": rec_qty,
         # Score breakdown

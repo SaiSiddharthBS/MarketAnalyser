@@ -222,13 +222,14 @@ SIGNAL_THRESHOLDS = {
     "BUY": 60,          # 🟢 Good setup
     "WATCH": 45,        # 🟡 Forming but not triggered
     "WEAKENING": 25,    # 🟠 Momentum fading
-    "EXIT": 0,          # 🔴 Trend broken
+    "EXIT": 0,          # ─── New Contextual Signal System ──────────────────────────────────
 }
 
 SIGNAL_LABELS = {
-    "STRONG_BUY": "🚀 Strong Buy",
-    "BUY": "🟢 Buy",
-    "WATCH": "🟡 Watch",
-    "WEAKENING": "🟠 Weakening",
-    "EXIT": "🔴 Exit",
+    "EARLY_MOMENTUM": "🚀 Early Breakout",
+    "CONTINUATION": "🔥 Continuation",
+    "EXTENDED": "⚠️ Extended",
+    "PULLBACK": "👀 Pullback",
+    "WEAK": "🟠 Weak",
+    "AVOID": "🔴 Avoid"
 }
