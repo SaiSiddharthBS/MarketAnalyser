@@ -235,7 +235,8 @@ async def screener_top(n: int = 10, segment: str = "NIFTY_50"):
                     all_results.extend(results)
                 except Exception as seg_err:
                     print(f"⚠️ Skipping {seg_key}: {seg_err}")
-            all_results.sort(key=lambda x: x["score"], reverse=True)
+            phase_priority = {"EARLY_MOMENTUM": 6, "CONTINUATION": 5, "PULLBACK": 4, "EXTENDED": 3, "WEAK": 2, "AVOID": 1}
+            all_results.sort(key=lambda x: (phase_priority.get(x["signal"], 0), x["score"]), reverse=True)
             # Deduplicate by symbol (keep highest score)
             seen = set()
             deduped = []

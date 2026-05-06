@@ -486,7 +486,8 @@ def screen_stocks(symbols, exchange="NS", top_n=10, sector_yahoo_index="^NSEI"):
                 results.append(analysis)
         except Exception as e:
             print(f"Screener error for {sym}: {e}")
-    results.sort(key=lambda x: x["score"], reverse=True)
+    phase_priority = {"EARLY_MOMENTUM": 6, "CONTINUATION": 5, "PULLBACK": 4, "EXTENDED": 3, "WEAK": 2, "AVOID": 1}
+    results.sort(key=lambda x: (phase_priority.get(x.get("signal", ""), 0), x.get("score", 0)), reverse=True)
     return results[:top_n]
 
 
