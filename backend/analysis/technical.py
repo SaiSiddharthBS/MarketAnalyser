@@ -310,11 +310,16 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
     nifty_trend = "Above 50 EMA" if ctx.get("nifty_above_50ema") else "Below 50 EMA"
     signals.append({"indicator": "Market", "signal": f"Regime: {vix_display}, Nifty {nifty_trend} ({regime_score}/15)", "value": regime_score, "weight": regime_score})
 
-    # FACTOR 6: Risk-Reward Ratio (0-10)
+    # FACTOR 6: Risk-Reward Ratio (0-10) — DYNAMIC multipliers
     entry = close
-    sl = round(close - (2 * atr_val), 2) if atr_val else round(close * 0.97, 2)
-    target = round(close + (3 * atr_val), 2) if atr_val else round(close * 1.05, 2)
-    rr_ratio = round((target - entry) / (entry - sl), 2) if entry != sl else 0
+    # Determine target/SL multipliers based on trend strength
+    trend_strength = trend_score / 25.0  # 0.0 to 1.0
+    sl_mult = 1.5 + (0.5 * (1 - trend_strength))  # Weak trend = wider SL (2.0), Strong = tighter (1.5)
+    tgt_mult = 2.0 + (2.5 * trend_strength)        # Weak trend = modest target (2.0x), Strong = aggressive (4.5x)
+
+    sl = round(close - (sl_mult * atr_val), 2) if atr_val else round(close * 0.97, 2)
+    target = round(close + (tgt_mult * atr_val), 2) if atr_val else round(close * 1.05, 2)
+    rr_ratio = round((target - entry) / (entry - sl), 2) if entry > sl else 0
 
     rr_score = 0
     if rr_ratio >= 3.0:
@@ -350,6 +355,8 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
             signals.append({"indicator": "ADX", "signal": f"WEAK/NO TREND ({adx:.0f})", "value": adx, "weight": 0})
 
     # ─── 5-Point Signal ──────────────────────────────────────
+    # BUG FIX: Downgrade signal if RVOL < 1.0 (no institutional backing)
+    raw_score = score
     if score >= 80:
         overall = "STRONG_BUY"
     elif score >= 60:
@@ -360,6 +367,11 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
         overall = "WEAKENING"
     else:
         overall = "EXIT"
+
+    # RVOL downgrade: BUY/STRONG_BUY with weak volume → WATCH
+    if rvol is not None and rvol < 1.0 and overall in ("BUY", "STRONG_BUY"):
+        overall = "WATCH"
+        signals.append({"indicator": "RVOL Warning", "signal": f"Downgraded to WATCH — RVOL {rvol}x (below 1.0, no institutional backing)", "value": rvol, "weight": 0})
 
     # ─── Holding Period Estimate (ATR-based) ─────────────────
     holding_sessions_low = 0
@@ -444,9 +456,13 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
 # ─── Screener ────────────────────────────────────────────────────
 
 def screen_stocks(symbols, exchange="NS", top_n=10, sector_yahoo_index="^NSEI"):
-    """Screen multiple stocks and return top N by score."""
+    """Screen multiple stocks and return top N by score. Deduplicates by symbol."""
     results = []
+    seen_symbols = set()
     for sym in symbols:
+        if sym in seen_symbols:
+            continue  # Skip duplicate symbols
+        seen_symbols.add(sym)
         try:
             analysis = get_technical_analysis(sym, exchange, sector_yahoo_index=sector_yahoo_index)
             if analysis:

@@ -236,7 +236,14 @@ async def screener_top(n: int = 10, segment: str = "NIFTY_50"):
                 except Exception as seg_err:
                     print(f"⚠️ Skipping {seg_key}: {seg_err}")
             all_results.sort(key=lambda x: x["score"], reverse=True)
-            all_results = all_results[:n]
+            # Deduplicate by symbol (keep highest score)
+            seen = set()
+            deduped = []
+            for r in all_results:
+                if r["symbol"] not in seen:
+                    seen.add(r["symbol"])
+                    deduped.append(r)
+            all_results = deduped[:n]
             return {
                 "segment": "ALL_SECTORS",
                 "segment_name": "🔥 All Sectors — Top Picks",
