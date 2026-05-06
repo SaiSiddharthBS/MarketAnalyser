@@ -158,12 +158,20 @@ async def index_data(symbol: str, period: str = "6mo"):
 
 # ─── Stock Analysis ──────────────────────────────────────
 
+def _find_sector_for_symbol(symbol):
+    """Find which sector a stock belongs to and return its yahoo index."""
+    for key, seg in SECTOR_INDICES.items():
+        if symbol.upper() in seg["symbols"]:
+            return seg.get("yahoo_index", "^NSEI")
+    return "^NSEI"
+
 @app.get("/api/stock/{symbol}")
 async def stock_detail(symbol: str):
     """Get full analysis for a stock."""
     try:
+        sector_idx = _find_sector_for_symbol(symbol)
         info_task = run_in_threadpool(get_stock_info, symbol)
-        ta_task = run_in_threadpool(get_technical_analysis, symbol)
+        ta_task = run_in_threadpool(get_technical_analysis, symbol, "NS", "1y", sector_idx)
         news_task = run_in_threadpool(get_stock_news, symbol)
 
         info, ta_result, news = await asyncio.gather(
