@@ -153,7 +153,7 @@ FORMATTING RULES:
 """
         # Try multiple models with exponential backoff to handle 503 overload errors
         import time
-        models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+        models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite']
         last_error = None
 
         for model_name in models_to_try:
@@ -168,15 +168,23 @@ FORMATTING RULES:
                     return response.text
                 except Exception as e:
                     last_error = str(e)
-                    if '503' in last_error or 'overloaded' in last_error.lower() or 'unavailable' in last_error.lower():
+                    if '404' in last_error or 'not found' in last_error.lower() or 'not supported' in last_error.lower():
+                        print(f"  ❌ {model_name} not available (404), skipping to next model...")
+                        break  # Model doesn't exist, skip all retries for this model
+                    elif '503' in last_error or 'overloaded' in last_error.lower() or 'unavailable' in last_error.lower():
                         # Exponential backoff: 5s, 15s, 30s
                         wait_time = 5 * (3 ** attempt) 
                         if attempt < 2:  # Don't sleep after the last attempt
                             print(f"  ⚠️ {model_name} attempt {attempt + 1} failed (503 overload), retrying in {wait_time}s...")
                             time.sleep(wait_time)
+                    elif '429' in last_error or 'quota' in last_error.lower() or 'rate' in last_error.lower():
+                        wait_time = 10 * (attempt + 1)
+                        if attempt < 2:
+                            print(f"  ⚠️ {model_name} rate limited, retrying in {wait_time}s...")
+                            time.sleep(wait_time)
                     else:
-                        print(f"  ❌ {model_name} failed with non-retryable error: {last_error[:100]}")
-                        break  # Non-503 error, try next model
+                        print(f"  ❌ {model_name} failed with non-retryable error: {last_error[:150]}")
+                        break  # Non-retryable error, try next model
             print(f"  ❌ All retries exhausted for {model_name}, trying next model...")
 
         # If ALL models and retries failed, use fallback
