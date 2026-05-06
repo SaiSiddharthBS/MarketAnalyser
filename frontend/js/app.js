@@ -6,8 +6,23 @@ document.addEventListener('DOMContentLoaded', () => {
     updateMarketStatus();
     loadDashboard();
     loadSegments();
+    loadMarketRegime();
     setInterval(updateMarketStatus, 60000);
+    setInterval(loadMarketRegime, 300000); // Refresh every 5 min
 });
+
+async function loadMarketRegime() {
+    try {
+        const res = await fetch('/api/market/regime');
+        const d = await res.json();
+        const bar = document.getElementById('regime-bar');
+        const txt = document.getElementById('regime-text');
+        if (bar && txt && d.status) {
+            bar.style.borderColor = d.color;
+            txt.innerHTML = `${d.emoji} Market: <strong>${d.status}</strong> | VIX: ${d.vix || 'N/A'} (${d.vix_level}) | Nifty: ${d.nifty_trend}`;
+        }
+    } catch(e) {}
+}
 
 /* ─── Navigation ─────────────────────────────────────── */
 function initNavigation() {
@@ -367,9 +382,10 @@ async function loadSegments() {
         const segments = await res.json();
         const selector = document.getElementById('segment-selector');
         if (selector && segments.length) {
-            selector.innerHTML = segments.map(s =>
-                `<option value="${s.key}">${s.name} (${s.count})</option>`
-            ).join('');
+            selector.innerHTML = '<option value="ALL_SECTORS">🔥 All Sectors — Top Picks</option>' +
+                segments.map(s =>
+                    `<option value="${s.key}">${s.name} (${s.count})</option>`
+                ).join('');
         }
     } catch (e) {
         console.error('Failed to load segments:', e);
@@ -535,18 +551,43 @@ async function analyseStock(symbol) {
 
     const t = data.technical;
     const info = data.info || {};
-    const scoreClass = t.score >= 60 ? 'positive' : t.score >= 40 ? '' : 'negative';
+    const signalColors = { STRONG_BUY: '#00e676', BUY: '#10b981', WATCH: '#f59e0b', WEAKENING: '#ff9800', EXIT: '#ef4444' };
+    const signalEmojis = { STRONG_BUY: '🚀', BUY: '🟢', WATCH: '🟡', WEAKENING: '🟠', EXIT: '🔴' };
+    const sigColor = signalColors[t.signal] || '#f59e0b';
+    const sigEmoji = signalEmojis[t.signal] || '🟡';
+
+    // Position sizing (default ₹5L capital, 1% risk)
+    const riskPerShare = t.entry - t.stop_loss;
+    const recQty = riskPerShare > 0 ? Math.floor((500000 * 0.01) / riskPerShare) : 0;
+    const capitalNeeded = recQty * t.entry;
+
+    // Score breakdown bars
+    const bd = t.score_breakdown || {};
+    const breakdownHTML = [
+        { label: 'Trend', val: bd.trend || 0, max: 25 },
+        { label: 'Volume', val: bd.volume || 0, max: 20 },
+        { label: 'RSI', val: bd.rsi || 0, max: 15 },
+        { label: 'Sector', val: bd.sector || 0, max: 15 },
+        { label: 'Regime', val: bd.regime || 0, max: 15 },
+        { label: 'R/R', val: bd.risk_reward || 0, max: 10 },
+    ].map(b => `
+        <div class="breakdown-row">
+            <span class="bd-label">${b.label}</span>
+            <div class="bd-bar-wrap"><div class="bd-bar" style="width:${(b.val/b.max)*100}%;background:${sigColor}"></div></div>
+            <span class="bd-val">${b.val}/${b.max}</span>
+        </div>
+    `).join('');
 
     container.innerHTML = `
-        <div class="glass-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div class="glass-card" style="border-top:3px solid ${sigColor}">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
                 <div>
                     <h2 style="font-size:24px;margin-bottom:4px">${info.name || symbol}</h2>
                     <span style="color:var(--text-muted);font-size:13px">${info.sector || ''} • ${info.industry || ''}</span>
                 </div>
                 <div style="text-align:right">
                     <div style="font-size:32px;font-weight:700;font-family:var(--font-mono)">₹${formatNumber(t.price)}</div>
-                    <div class="${scoreClass}" style="font-size:18px;font-weight:600">${t.signal.replace(/_/g, ' ')} (${t.score}/100)</div>
+                    <div style="font-size:18px;font-weight:700;color:${sigColor}">${sigEmoji} ${t.signal.replace(/_/g, ' ')} (${t.score}/100)</div>
                 </div>
             </div>
 
@@ -563,34 +604,77 @@ async function analyseStock(symbol) {
                     <div class="label">Stop Loss</div>
                     <div class="value negative">₹${formatNumber(t.stop_loss)}</div>
                 </div>
-            </div>
-
-            <div style="margin-bottom:20px">
-                <h3 style="margin-bottom:12px">Technical Indicators</h3>
-                <div class="indicator-grid">
-                    ${renderIndicator('RSI (14)', t.indicators.rsi, t.indicators.rsi < 30 ? 'positive' : t.indicators.rsi > 70 ? 'negative' : '')}
-                    ${renderIndicator('MACD', t.indicators.macd)}
-                    ${renderIndicator('MACD Signal', t.indicators.macd_signal)}
-                    ${renderIndicator('MACD Hist', t.indicators.macd_histogram, t.indicators.macd_histogram > 0 ? 'positive' : 'negative')}
-                    ${renderIndicator('EMA 20', t.indicators.ema_20)}
-                    ${renderIndicator('EMA 50', t.indicators.ema_50)}
-                    ${renderIndicator('EMA 200', t.indicators.ema_200)}
-                    ${renderIndicator('BB Upper', t.indicators.bb_upper)}
-                    ${renderIndicator('BB Lower', t.indicators.bb_lower)}
-                    ${renderIndicator('ATR', t.indicators.atr)}
-                    ${renderIndicator('ADX', t.indicators.adx)}
-                    ${renderIndicator('Stoch %K', t.indicators.stoch_k)}
+                <div class="signal-metric">
+                    <div class="label">R/R Ratio</div>
+                    <div class="value">${t.risk_reward || '—'}:1</div>
+                </div>
+                <div class="signal-metric">
+                    <div class="label">RVOL</div>
+                    <div class="value">${t.rvol || '—'}x</div>
+                </div>
+                <div class="signal-metric">
+                    <div class="label">Holding</div>
+                    <div class="value">${t.holding_period || '—'}</div>
                 </div>
             </div>
 
-            <div>
-                <h3 style="margin-bottom:12px">Signal Breakdown</h3>
-                ${t.signals.map(s => `
-                    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-glass);font-size:13px">
-                        <span><strong>${s.indicator}</strong>: ${s.signal}</span>
-                        <span class="${s.weight > 0 ? 'positive' : s.weight < 0 ? 'negative' : ''}">${s.weight > 0 ? '+' : ''}${s.weight}</span>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+                <div>
+                    <h3 style="margin-bottom:12px">Score Breakdown</h3>
+                    ${breakdownHTML}
+                </div>
+                <div>
+                    <h3 style="margin-bottom:12px">📊 Position Sizing</h3>
+                    <div style="font-size:14px;line-height:2">
+                        <div>Recommended Qty: <strong>${recQty} shares</strong></div>
+                        <div>Capital Needed: <strong>₹${formatNumber(capitalNeeded)}</strong></div>
+                        <div>Max Risk: <strong class="negative">₹${formatNumber(recQty * riskPerShare)}</strong></div>
+                        <div style="color:var(--text-muted);font-size:11px;margin-top:4px">Based on ₹5L capital, 1% risk per trade</div>
                     </div>
-                `).join('')}
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+                <h3>Price Chart</h3>
+                <div id="chart-period-btns" style="display:flex;gap:4px">
+                    <button class="btn-small" onclick="reloadChart('${symbol}','1d')">1D</button>
+                    <button class="btn-small" onclick="reloadChart('${symbol}','5d')">1W</button>
+                    <button class="btn-small" onclick="reloadChart('${symbol}','1mo')">1M</button>
+                    <button class="btn-small" onclick="reloadChart('${symbol}','6mo')">6M</button>
+                    <button class="btn-small active" onclick="reloadChart('${symbol}','1y')">1Y</button>
+                    <button class="btn-small" onclick="reloadChart('${symbol}','5y')">5Y</button>
+                    <button class="btn-small" onclick="reloadChart('${symbol}','max')">ALL</button>
+                </div>
+            </div>
+            <div id="analysis-chart" class="chart-container" style="height:400px"></div>
+        </div>
+
+        <div class="glass-card" id="why-trade-panel">
+            <h3>🧠 Why This Trade?</h3>
+            <div id="why-trade-content"><span class="spinner"></span> Loading AI explanation...</div>
+        </div>
+
+        <div class="glass-card">
+            <h3>📚 Understanding This Analysis</h3>
+            <div class="legend-grid">
+                ${t.signals.map(s => {
+                    const icon = s.weight >= 10 ? '✅' : s.weight >= 5 ? '🟡' : '⚠️';
+                    return `<div class="legend-item">
+                        <span>${icon} <strong>${s.indicator}</strong>: ${s.signal}</span>
+                        <span style="color:var(--text-muted)">+${s.weight} pts</span>
+                    </div>`;
+                }).join('')}
+            </div>
+            <div style="margin-top:16px;padding:12px;background:var(--bg-glass);border-radius:8px;font-size:12px;color:var(--text-muted);line-height:1.8">
+                <strong>📖 Quick Guide:</strong><br>
+                • <strong>RSI</strong> = Momentum (30-40 = oversold bounce, 70+ = overbought)<br>
+                • <strong>MACD</strong> = Trend direction (bullish crossover = buying signal)<br>
+                • <strong>EMA</strong> = Price above 20/50/200 EMA = stronger uptrend<br>
+                • <strong>RVOL</strong> = Volume vs average (>1.5x = institutional interest)<br>
+                • <strong>ATR</strong> = Volatility (higher = wider stop loss needed)<br>
+                • <strong>R/R</strong> = Risk-Reward ratio (>2:1 = good trade setup)
             </div>
         </div>
 
@@ -608,25 +692,40 @@ async function analyseStock(symbol) {
                 ${renderIndicator('Debt/Equity', info.debt_to_equity)}
             </div>
         </div>` : ''}
-
-        <div class="glass-card">
-            <h3>Price Chart (1 Year)</h3>
-            <div id="analysis-chart" class="chart-container" style="height:400px"></div>
-        </div>
     `;
 
     // Load chart
     const chartData = await api.getStockChart(symbol, '1y');
     if (chartData && chartData.data) {
         Charts.createCandlestickChart('analysis-chart', chartData.data);
+    } else {
+        document.getElementById('analysis-chart').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">Chart data unavailable. Try a different timeframe.</div>';
     }
 
-    // Load news
-    if (data.news && data.news.length) {
-        const newsHtml = `<div class="glass-card"><h3>Latest News</h3><div class="news-feed">${
-            data.news.map(n => renderNewsItem(n)).join('')
-        }</div></div>`;
-        container.innerHTML += newsHtml;
+    // Load "Why This Trade?" from AI
+    try {
+        const whyRes = await fetch(`/api/stock/${symbol}/why`);
+        const whyData = await whyRes.json();
+        const el = document.getElementById('why-trade-content');
+        if (el) {
+            el.innerHTML = whyData.explanation ?
+                `<div style="white-space:pre-wrap;line-height:1.8;font-size:14px">${whyData.explanation}</div>` :
+                '<div style="color:var(--text-muted)">Explanation unavailable.</div>';
+        }
+    } catch (e) {
+        const el = document.getElementById('why-trade-content');
+        if (el) el.innerHTML = '<div style="color:var(--text-muted)">Could not load explanation.</div>';
+    }
+}
+
+async function reloadChart(symbol, period) {
+    const chartDiv = document.getElementById('analysis-chart');
+    if (chartDiv) chartDiv.innerHTML = '<div style="padding:40px;text-align:center"><span class="spinner"></span></div>';
+    const chartData = await api.getStockChart(symbol, period);
+    if (chartData && chartData.data && chartData.data.length > 0) {
+        Charts.createCandlestickChart('analysis-chart', chartData.data);
+    } else {
+        if (chartDiv) chartDiv.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">No data for this period.</div>';
     }
 }
 

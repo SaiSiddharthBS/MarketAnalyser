@@ -217,6 +217,29 @@ async def screener_segments():
 async def screener_top(n: int = 10, segment: str = "NIFTY_50"):
     """Get top N stocks by technical score from a segment."""
     try:
+        if segment == "ALL_SECTORS":
+            # Scan top 3 from each sector, merge and rank
+            all_results = []
+            for seg_key, seg_data in SECTOR_INDICES.items():
+                try:
+                    symbols = seg_data["symbols"][:15]  # Limit per sector for speed
+                    yahoo_idx = seg_data.get("yahoo_index", "^NSEI")
+                    results = await run_in_threadpool(screen_stocks, symbols, top_n=3, sector_yahoo_index=yahoo_idx)
+                    for r in results:
+                        r["sector_name"] = seg_data["name"]
+                    all_results.extend(results)
+                except Exception as seg_err:
+                    print(f"⚠️ Skipping {seg_key}: {seg_err}")
+            all_results.sort(key=lambda x: x["score"], reverse=True)
+            all_results = all_results[:n]
+            return {
+                "segment": "ALL_SECTORS",
+                "segment_name": "🔥 All Sectors — Top Picks",
+                "count": len(all_results),
+                "stocks": all_results,
+                "signal_labels": SIGNAL_LABELS,
+            }
+
         seg_data = SECTOR_INDICES.get(segment)
         if not seg_data:
             return {"count": 0, "stocks": [], "error": f"Unknown segment: {segment}"}
@@ -244,6 +267,42 @@ async def screener_top(n: int = 10, segment: str = "NIFTY_50"):
     except Exception as e:
         print(f"❌ Screener error: {e}")
         return {"count": 0, "stocks": [], "error": str(e)}
+
+
+# ─── Market Regime ───────────────────────────────────────
+
+@app.get("/api/market/regime")
+async def market_regime():
+    """Get current market regime for the global bar."""
+    try:
+        from analysis.technical import _fetch_market_context
+        ctx = _fetch_market_context()
+        vix = ctx.get("vix")
+        nifty_bullish = ctx.get("nifty_above_50ema", False)
+        regime_score = ctx.get("regime_score", 7)
+
+        if regime_score >= 12:
+            status = "BULLISH"
+            color = "#10b981"
+            emoji = "🟢"
+        elif regime_score >= 8:
+            status = "NEUTRAL"
+            color = "#f59e0b"
+            emoji = "🟡"
+        else:
+            status = "BEARISH"
+            color = "#ef4444"
+            emoji = "🔴"
+
+        return {
+            "status": status, "color": color, "emoji": emoji,
+            "vix": round(vix, 1) if vix else None,
+            "vix_level": "Low" if vix and vix < 15 else "Moderate" if vix and vix < 20 else "High" if vix else "N/A",
+            "nifty_trend": "Above 50 EMA" if nifty_bullish else "Below 50 EMA",
+            "regime_score": regime_score,
+        }
+    except Exception as e:
+        return {"status": "UNKNOWN", "color": "#64748b", "emoji": "⚪", "error": str(e)}
 
 
 # ─── Sector Rotation ─────────────────────────────────────
