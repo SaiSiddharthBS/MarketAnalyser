@@ -233,8 +233,20 @@ def _gather_screener_data(top_n=5):
                 f"Stop Loss: ₹{r['stop_loss']:,.2f} | "
                 f"RSI: {r['indicators'].get('rsi', 'N/A')} | "
                 f"RVOL: {r.get('rvol', 'N/A')}x | "
+                f"Qty: {r.get('rec_qty', 'N/A')} shares | "
                 f"Holding: {r.get('holding_period', 'N/A')}"
             )
+
+        # "Why This Trade?" for the #1 pick
+        top1 = top_results[0]
+        if top1.get("signals"):
+            lines.append(f"\n🧠 WHY AGENT ALPHA LIKES {top1['symbol']}:")
+            for sig in top1["signals"]:
+                icon = "✅" if sig["weight"] >= 10 else "🟡" if sig["weight"] >= 5 else "⚠️"
+                lines.append(f"  {icon} {sig['indicator']}: {sig['signal']}")
+            pr = top1.get("predicted_range", {})
+            if pr.get("high"):
+                lines.append(f"  📈 Expected Range: ₹{pr['low']:.2f} - ₹{pr['high']:.2f}")
 
         # Dip candidates from the SAME results (no second screener run)
         dip_candidates = [r for r in all_results if r["score"] <= 35]

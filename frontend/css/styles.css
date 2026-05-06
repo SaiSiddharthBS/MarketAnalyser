@@ -5,39 +5,41 @@
 
 /* ─── CSS Variables ─────────────────────────────────── */
 :root {
-    --bg-primary: #0a0e17;
-    --bg-secondary: #111827;
-    --bg-card: rgba(17, 24, 39, 0.7);
-    --bg-card-hover: rgba(17, 24, 39, 0.9);
-    --bg-glass: rgba(255, 255, 255, 0.03);
-    --border-glass: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.15);
+    --bg-primary: #060a13;
+    --bg-secondary: #0d1321;
+    --bg-card: rgba(13, 19, 33, 0.8);
+    --bg-card-hover: rgba(20, 28, 48, 0.95);
+    --bg-glass: rgba(255, 255, 255, 0.04);
+    --border-glass: rgba(255, 255, 255, 0.07);
+    --border-hover: rgba(100, 140, 255, 0.25);
 
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --text-primary: #e8edf5;
+    --text-secondary: #8b9dc3;
+    --text-muted: #5a6d8a;
 
-    --accent-green: #10b981;
-    --accent-green-dim: rgba(16, 185, 129, 0.15);
-    --accent-red: #ef4444;
-    --accent-red-dim: rgba(239, 68, 68, 0.15);
-    --accent-blue: #3b82f6;
-    --accent-blue-dim: rgba(59, 130, 246, 0.15);
-    --accent-purple: #8b5cf6;
-    --accent-purple-dim: rgba(139, 92, 246, 0.15);
-    --accent-amber: #f59e0b;
-    --accent-amber-dim: rgba(245, 158, 11, 0.15);
-    --accent-cyan: #06b6d4;
+    --accent-green: #00d68f;
+    --accent-green-dim: rgba(0, 214, 143, 0.12);
+    --accent-red: #ff4757;
+    --accent-red-dim: rgba(255, 71, 87, 0.12);
+    --accent-blue: #4a90ff;
+    --accent-blue-dim: rgba(74, 144, 255, 0.12);
+    --accent-purple: #a855f7;
+    --accent-purple-dim: rgba(168, 85, 247, 0.12);
+    --accent-amber: #ffb930;
+    --accent-amber-dim: rgba(255, 185, 48, 0.12);
+    --accent-cyan: #22d3ee;
 
-    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --gradient-green: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    --gradient-red: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    --gradient-blue: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    --gradient-primary: linear-gradient(135deg, #4a90ff 0%, #a855f7 100%);
+    --gradient-green: linear-gradient(135deg, #00d68f 0%, #00a86b 100%);
+    --gradient-red: linear-gradient(135deg, #ff4757 0%, #e8364a 100%);
+    --gradient-blue: linear-gradient(135deg, #4a90ff 0%, #2d6fe0 100%);
+    --gradient-gold: linear-gradient(135deg, #ffb930 0%, #ff8c00 100%);
 
     --sidebar-width: 240px;
-    --radius: 12px;
-    --radius-sm: 8px;
-    --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --radius: 14px;
+    --radius-sm: 10px;
+    --shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+    --shadow-glow: 0 0 20px rgba(74, 144, 255, 0.08);
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --font-main: 'Inter', -apple-system, sans-serif;
@@ -70,11 +72,12 @@ body::before {
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 80%, rgba(16, 185, 129, 0.04) 0%, transparent 50%);
+    background: radial-gradient(ellipse at 15% 50%, rgba(74, 144, 255, 0.07) 0%, transparent 50%),
+                radial-gradient(ellipse at 85% 20%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 85%, rgba(0, 214, 143, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 60%, rgba(255, 185, 48, 0.03) 0%, transparent 40%);
     z-index: 0;
-    animation: bgShift 20s ease-in-out infinite alternate;
+    animation: bgShift 25s ease-in-out infinite alternate;
 }
 
 @keyframes bgShift {
@@ -273,7 +276,8 @@ body::before {
 
 .glass-card:hover {
     border-color: var(--border-hover);
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow), var(--shadow-glow);
+    transform: translateY(-1px);
 }
 
 .glass-card h3 {
