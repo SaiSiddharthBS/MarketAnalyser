@@ -369,30 +369,40 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
         overall = "EXIT"
 
     # RVOL downgrade: BUY/STRONG_BUY with weak volume → WATCH
-    if rvol is not None and rvol < 1.0 and overall in ("BUY", "STRONG_BUY"):
+    if rvol is not None and rvol < 1.2 and overall in ("BUY", "STRONG_BUY"):
         overall = "WATCH"
-        signals.append({"indicator": "RVOL Warning", "signal": f"Downgraded to WATCH — RVOL {rvol}x (below 1.0, no institutional backing)", "value": rvol, "weight": 0})
+        signals.append({"indicator": "RVOL Warning", "signal": f"Downgraded to WATCH — RVOL {rvol}x (below 1.2, weak institutional backing)", "value": rvol, "weight": 0})
 
-    # ─── Holding Period Estimate (ATR-based) ─────────────────
+    # RSI overbought downgrade: BUY/STRONG_BUY near overbought → WATCH
+    if rsi is not None and rsi > 68 and overall in ("BUY", "STRONG_BUY"):
+        overall = "WATCH"
+        signals.append({"indicator": "RSI Warning", "signal": f"Downgraded to WATCH — RSI {rsi:.1f} (overbought, wait for pullback to 60-65)", "value": rsi, "weight": 0})
+
+    # ─── Holding Period Estimate (ATR-based, swing-calibrated) ─
     holding_sessions_low = 0
     holding_sessions_high = 0
     holding_label = "N/A"
     if atr_val and atr_val > 0:
-        base_sessions = abs(target - entry) / atr_val
-        holding_sessions_low = max(1, int(base_sessions / 1.3))
-        holding_sessions_high = max(holding_sessions_low + 1, int(base_sessions * 1.3))
-        if holding_sessions_high <= 3:
-            holding_label = f"⚡ {holding_sessions_low}–{holding_sessions_high} days"
-        elif holding_sessions_high <= 7:
+        # A stock captures ~40% of ATR per day on average in a trend
+        daily_capture = 0.4
+        target_distance = abs(target - entry)
+        base_sessions = target_distance / (atr_val * daily_capture)
+        holding_sessions_low = max(3, int(base_sessions * 0.7))
+        holding_sessions_high = max(holding_sessions_low + 2, int(base_sessions * 1.4))
+        if holding_sessions_high <= 8:
             holding_label = f"⚡ {holding_sessions_low}–{holding_sessions_high} trading days"
-        elif holding_sessions_high <= 15:
+        elif holding_sessions_high <= 20:
             low_wk = max(1, holding_sessions_low // 5)
             high_wk = max(low_wk + 1, (holding_sessions_high + 4) // 5)
             holding_label = f"🕒 {low_wk}–{high_wk} weeks"
-        elif holding_sessions_high <= 30:
-            holding_label = f"📅 {holding_sessions_low // 5}–{(holding_sessions_high + 4) // 5} weeks"
+        elif holding_sessions_high <= 45:
+            low_wk = max(2, holding_sessions_low // 5)
+            high_wk = max(low_wk + 1, (holding_sessions_high + 4) // 5)
+            holding_label = f"📅 {low_wk}–{high_wk} weeks"
         else:
-            holding_label = f"🐢 {holding_sessions_low // 20}–{(holding_sessions_high + 19) // 20} months"
+            low_mo = max(1, holding_sessions_low // 22)
+            high_mo = max(low_mo + 1, (holding_sessions_high + 21) // 22)
+            holding_label = f"🐢 {low_mo}–{high_mo} months"
 
     # ─── ATR-Based Predicted Range (Next Day) ──────────────
     pred_high = round(close + atr_val, 2) if atr_val else None
