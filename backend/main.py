@@ -295,6 +295,29 @@ async def calculate_position_size(
         return {"error": str(e)}
 
 
+# ─── Accuracy Analyser ───────────────────────────────────
+
+@app.get("/api/accuracy/stats")
+async def accuracy_stats():
+    """Get signal accuracy statistics."""
+    try:
+        from analysis.accuracy import get_accuracy_stats
+        return await run_in_threadpool(get_accuracy_stats)
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/accuracy/update")
+async def accuracy_update(background_tasks: BackgroundTasks):
+    """Trigger outcome update for open signals (run after market close)."""
+    try:
+        from analysis.accuracy import update_signal_outcomes
+        background_tasks.add_task(update_signal_outcomes)
+        return {"status": "Accuracy update started in background"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ─── Portfolio ───────────────────────────────────────────
 
 @app.get("/api/portfolio")
