@@ -238,6 +238,63 @@ async def screener_top(n: int = 10, segment: str = "NIFTY_50"):
         return {"count": 0, "stocks": [], "error": str(e)}
 
 
+# ─── Sector Rotation ─────────────────────────────────────
+
+@app.get("/api/screener/rotation")
+async def sector_rotation():
+    """Get sector rotation heatmap data."""
+    try:
+        from analysis.sector_rotation import get_sector_rotation
+        data = await run_in_threadpool(get_sector_rotation)
+        return data
+    except Exception as e:
+        print(f"❌ Sector rotation error: {e}")
+        return {"sectors": [], "error": str(e)}
+
+
+# ─── Why This Trade? ─────────────────────────────────────
+
+@app.get("/api/stock/{symbol}/why")
+async def why_this_trade(symbol: str):
+    """Get AI-generated 'Why This Trade?' explanation."""
+    try:
+        ta_data = await run_in_threadpool(get_technical_analysis, symbol)
+        if not ta_data:
+            raise HTTPException(404, f"No data for {symbol}")
+
+        from analysis.trade_explainer import explain_trade
+        explanation = await run_in_threadpool(explain_trade, ta_data)
+
+        return {
+            "symbol": symbol,
+            "score": ta_data.get("score"),
+            "signal": ta_data.get("signal"),
+            "explanation": explanation or "Explanation unavailable at this time.",
+            "score_breakdown": ta_data.get("score_breakdown"),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Why This Trade error: {e}")
+        return {"symbol": symbol, "explanation": f"Error: {str(e)}"}
+
+
+# ─── Position Sizing ─────────────────────────────────────
+
+@app.get("/api/position/calculate")
+async def calculate_position_size(
+    entry: float, stop_loss: float,
+    capital: float = 500000, risk_pct: float = 1.0
+):
+    """Calculate position size for a trade."""
+    try:
+        from analysis.position_sizing import calculate_position
+        result = calculate_position(entry, stop_loss, capital, risk_pct)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ─── Portfolio ───────────────────────────────────────────
 
 @app.get("/api/portfolio")
