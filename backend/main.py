@@ -320,6 +320,49 @@ async def accuracy_update(background_tasks: BackgroundTasks):
 
 # ─── Portfolio ───────────────────────────────────────────
 
+class HoldingInput(BaseModel):
+    symbol: str
+    quantity: float
+    buy_price: float
+    buy_date: str = ""
+    notes: str = ""
+    asset_type: str = "stock"
+
+@app.post("/api/portfolio/holdings")
+async def add_holding_api(holding: HoldingInput):
+    """Add a manual stock holding."""
+    try:
+        if not holding.buy_date:
+            holding.buy_date = datetime.now().strftime("%Y-%m-%d")
+        invested = round(holding.quantity * holding.buy_price, 2)
+        db.add_holding(
+            symbol=holding.symbol.upper(),
+            name=holding.symbol.upper(),
+            asset_type=holding.asset_type,
+            quantity=holding.quantity,
+            buy_price=holding.buy_price,
+            buy_date=holding.buy_date,
+            invested_amount=invested,
+            notes=holding.notes,
+        )
+        return {"success": True, "message": f"Added {holding.symbol.upper()}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.delete("/api/portfolio/holdings/{holding_id}")
+async def delete_holding_api(holding_id: int):
+    """Remove a holding by ID."""
+    try:
+        conn = db.get_connection()
+        cursor = db.get_cursor(conn)
+        db.db_execute(cursor, "DELETE FROM holdings WHERE id = ?", (holding_id,))
+        conn.commit()
+        db.put_connection(conn)
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 @app.get("/api/portfolio")
 async def get_portfolio():
     """Get user's complete portfolio with current values."""

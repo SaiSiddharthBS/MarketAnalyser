@@ -785,6 +785,127 @@ body::before {
 }
 .segment-select:focus { outline: none; border-color: var(--accent-blue); }
 
+/* ─── Gradient Cards ─────────────────────────────────── */
+.gradient-card {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%) !important;
+    border: 1px solid rgba(99, 102, 241, 0.3) !important;
+}
+.gradient-card .card-value {
+    font-size: 2rem;
+    background: linear-gradient(135deg, #818cf8, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ─── Two Column Grid ───────────────────────────────── */
+.two-grid { grid-template-columns: 1fr 1fr; }
+
+/* ─── Button Variants ───────────────────────────────── */
+.btn-secondary {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-glass);
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+.btn-secondary:hover { border-color: var(--accent-blue); background: var(--accent-blue-dim); }
+.btn-small {
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    background: var(--accent-blue-dim);
+    color: var(--accent-blue);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    cursor: pointer;
+    transition: var(--transition);
+    margin-top: 8px;
+}
+.btn-small:hover { background: var(--accent-blue); color: white; }
+
+/* ─── Sector Heatmap ────────────────────────────────── */
+.sector-heatmap {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+.sector-tile {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 16px;
+    backdrop-filter: blur(10px);
+    transition: var(--transition);
+}
+.sector-tile:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.sector-tile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.sector-name { font-weight: 600; font-size: 0.95rem; }
+.sector-class { font-weight: 700; font-size: 0.85rem; }
+.sector-tile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px 12px;
+    font-size: 0.8rem;
+}
+.stat-label { color: var(--text-muted); margin-right: 4px; }
+
+/* ─── Accuracy Bars ─────────────────────────────────── */
+.acc-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-glass);
+    font-size: 0.85rem;
+}
+.acc-row:last-child { border: none; }
+.acc-row > span:first-child { min-width: 100px; font-weight: 500; }
+.acc-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.acc-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+
+/* ─── Form Grid ─────────────────────────────────────── */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+}
+.form-group label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ─── Risk Panel ────────────────────────────────────── */
+.risk-panel {
+    border-left: 3px solid var(--accent-amber);
+}
+.risk-panel h3 { color: var(--accent-amber); }
+.risk-item {
+    padding: 6px 0;
+    font-size: 0.85rem;
+    color: var(--accent-amber);
+}
+
 /* ─── Responsive ────────────────────────────────────── */
 @media (max-width: 768px) {
     .sidebar {

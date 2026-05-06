@@ -58,8 +58,14 @@
             <li><a href="#" class="nav-link" data-page="analysis" id="nav-analysis">
                 <span class="nav-icon">📈</span> Analysis
             </a></li>
+            <li><a href="#" class="nav-link" data-page="rotation" id="nav-rotation">
+                <span class="nav-icon">🌡️</span> Sectors
+            </a></li>
             <li><a href="#" class="nav-link" data-page="news" id="nav-news">
                 <span class="nav-icon">📰</span> News
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="accuracy" id="nav-accuracy">
+                <span class="nav-icon">🎯</span> Accuracy
             </a></li>
         </ul>
         <div class="sidebar-footer">
@@ -131,7 +137,44 @@
         <section class="page" id="page-portfolio">
             <div class="page-header">
                 <h1>My Portfolio</h1>
-                <button class="btn btn-primary" id="btn-refresh-portfolio">↻ Refresh</button>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-secondary" id="btn-add-holding" onclick="toggleAddHolding()">+ Add Holding</button>
+                    <button class="btn btn-secondary" id="btn-csv-import" onclick="document.getElementById('csv-file').click()">📥 Import CSV</button>
+                    <button class="btn btn-secondary" id="btn-csv-export" onclick="exportCSV()">📤 Export</button>
+                    <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="importCSV(event)">
+                    <button class="btn btn-primary" id="btn-refresh-portfolio">↻ Refresh</button>
+                </div>
+            </div>
+
+            <!-- Add Holding Form (hidden by default) -->
+            <div class="glass-card add-holding-form" id="add-holding-form" style="display:none">
+                <h3>Add New Holding</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Symbol *</label>
+                        <input type="text" id="new-symbol" placeholder="e.g. TCS" class="search-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Quantity *</label>
+                        <input type="number" id="new-qty" placeholder="e.g. 10" class="search-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Avg Buy Price *</label>
+                        <input type="number" id="new-price" placeholder="e.g. 3500" class="search-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Buy Date</label>
+                        <input type="date" id="new-date" class="search-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <input type="text" id="new-notes" placeholder="Optional" class="search-input">
+                    </div>
+                    <div class="form-group" style="display:flex;align-items:flex-end;gap:8px">
+                        <button class="btn btn-primary" onclick="submitHolding()">✅ Add</button>
+                        <button class="btn btn-secondary" onclick="toggleAddHolding()">Cancel</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Portfolio Summary -->
@@ -139,7 +182,29 @@
                 <!-- Populated by JS -->
             </div>
 
-            <!-- Holdings Table -->
+            <!-- Risk Warnings -->
+            <div class="glass-card risk-panel" id="risk-warnings" style="display:none">
+                <h3>⚠️ Risk Warnings</h3>
+                <div id="risk-warnings-list"></div>
+            </div>
+
+            <!-- Sector Allocation -->
+            <div class="card-grid two-grid">
+                <div class="glass-card">
+                    <h3>Sector Allocation</h3>
+                    <div id="sector-allocation">
+                        <div class="loading-skeleton">Load portfolio to see allocation</div>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3>Top Holdings</h3>
+                    <div id="top-holdings">
+                        <div class="loading-skeleton">Load portfolio to see top holdings</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Holdings Tables -->
             <div class="glass-card">
                 <h3>Mutual Fund Holdings</h3>
                 <div class="table-container">
@@ -160,7 +225,6 @@
                 </div>
             </div>
 
-            <!-- Stock Holdings -->
             <div class="glass-card">
                 <h3>Stock Holdings</h3>
                 <div class="table-container">
@@ -169,13 +233,16 @@
                             <tr>
                                 <th>Symbol</th>
                                 <th>Qty</th>
-                                <th>Buy Price</th>
+                                <th>Avg Price</th>
                                 <th>LTP</th>
+                                <th>Current Value</th>
                                 <th>P&L</th>
+                                <th>P&L %</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="stock-table-body">
-                            <tr><td colspan="5">No stocks yet. Start investing! 🚀</td></tr>
+                            <tr><td colspan="8">No stocks yet. Click "+ Add Holding" to start 🚀</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -306,6 +373,69 @@
             </div>
             <div class="news-full" id="news-full">
                 <div class="loading-skeleton">Loading news...</div>
+            </div>
+        </section>
+
+        <!-- Sector Rotation Page -->
+        <section class="page" id="page-rotation">
+            <div class="page-header">
+                <h1>Sector Rotation</h1>
+                <p class="subtitle">Which sectors are leading the market right now?</p>
+            </div>
+            <div class="glass-card">
+                <button class="btn btn-primary" id="btn-load-rotation" onclick="loadRotation()">🔄 Load Sector Map</button>
+                <span class="screener-info" id="rotation-info">Click to analyse all sectors vs Nifty 50</span>
+            </div>
+            <div class="sector-heatmap" id="sector-heatmap">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- Accuracy Dashboard -->
+        <section class="page" id="page-accuracy">
+            <div class="page-header">
+                <h1>Signal Accuracy</h1>
+                <p class="subtitle">How accurate are Agent Alpha's calls? Full transparency.</p>
+            </div>
+            <div class="card-grid summary-grid" id="accuracy-summary">
+                <div class="summary-card gradient-card">
+                    <div class="card-label">Win Rate</div>
+                    <div class="card-value" id="acc-win-rate">—</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Total Signals</div>
+                    <div class="card-value" id="acc-total">—</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">🎯 Hit Target</div>
+                    <div class="card-value positive" id="acc-wins">—</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">🛑 Hit Stop Loss</div>
+                    <div class="card-value negative" id="acc-losses">—</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">⏳ Still Open</div>
+                    <div class="card-value" id="acc-open">—</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Avg Hold Days</div>
+                    <div class="card-value" id="acc-avg-days">—</div>
+                </div>
+            </div>
+            <div class="card-grid two-grid">
+                <div class="glass-card">
+                    <h3>By Signal Type</h3>
+                    <div id="acc-by-signal">
+                        <div class="loading-skeleton">Loading accuracy data...</div>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h3>By Segment</h3>
+                    <div id="acc-by-segment">
+                        <div class="loading-skeleton">Loading accuracy data...</div>
+                    </div>
+                </div>
             </div>
         </section>
 

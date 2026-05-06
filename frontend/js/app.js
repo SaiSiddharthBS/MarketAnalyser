@@ -52,6 +52,8 @@ function switchPage(page) {
         signals: loadSignals,
         analysis: () => {},
         news: loadFullNews,
+        rotation: () => {},
+        accuracy: loadAccuracy,
     };
     if (loaders[page]) loaders[page]();
 }
@@ -687,4 +689,207 @@ async function sendTelegramAlert() {
         btn.textContent = res ? '✅ Sent!' : '❌ Failed';
         setTimeout(() => { btn.textContent = '📱 Send Telegram Alert'; }, 3000);
     }
+}
+
+/* ─── Sector Rotation ───────────────────────────────── */
+async function loadRotation() {
+    const info = document.getElementById('rotation-info');
+    const btn = document.getElementById('btn-load-rotation');
+    if (btn) btn.disabled = true;
+    if (info) info.innerHTML = '<span class="spinner"></span> Analysing all sectors...';
+
+    try {
+        const res = await fetch('/api/screener/rotation');
+        const data = await res.json();
+
+        if (btn) btn.disabled = false;
+        if (!data || !data.sectors || data.sectors.length === 0) {
+            if (info) info.textContent = '⚠️ Could not load sector data';
+            return;
+        }
+        if (info) info.textContent = `${data.sectors.length} sectors analysed`;
+
+        const heatmap = document.getElementById('sector-heatmap');
+        heatmap.innerHTML = data.sectors.map(s => `
+            <div class="sector-tile" style="border-left: 4px solid ${s.color}">
+                <div class="sector-tile-header">
+                    <span class="sector-name">${s.name}</span>
+                    <span class="sector-class" style="color:${s.color}">${s.classification}</span>
+                </div>
+                <div class="sector-tile-stats">
+                    <div><span class="stat-label">5D</span> <span class="${s.returns['5d'] >= 0 ? 'positive' : 'negative'}">${s.returns['5d']}%</span></div>
+                    <div><span class="stat-label">10D</span> <span class="${s.returns['10d'] >= 0 ? 'positive' : 'negative'}">${s.returns['10d']}%</span></div>
+                    <div><span class="stat-label">20D</span> <span class="${s.returns['20d'] >= 0 ? 'positive' : 'negative'}">${s.returns['20d']}%</span></div>
+                    <div><span class="stat-label">RS</span> <span>${s.relative_strength}</span></div>
+                    <div><span class="stat-label">Breadth</span> <span>${s.breadth}%</span></div>
+                    <div><span class="stat-label">RVOL</span> <span>${s.rvol}x</span></div>
+                </div>
+                <button class="btn btn-small" onclick="scanSector('${s.key}')">🔍 Scan</button>
+            </div>
+        `).join('');
+    } catch (e) {
+        if (btn) btn.disabled = false;
+        if (info) info.textContent = '⚠️ Error loading sectors';
+    }
+}
+
+function scanSector(key) {
+    switchPage('screener');
+    const sel = document.getElementById('segment-selector');
+    if (sel) { sel.value = key; }
+    runScreener();
+}
+
+/* ─── Accuracy Dashboard ────────────────────────────── */
+async function loadAccuracy() {
+    try {
+        const res = await fetch('/api/accuracy/stats');
+        const d = await res.json();
+
+        const el = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+        el('acc-win-rate', d.win_rate ? `${d.win_rate}%` : 'No data yet');
+        el('acc-total', d.total_signals || 0);
+        el('acc-wins', d.hit_target || 0);
+        el('acc-losses', d.hit_sl || 0);
+        el('acc-open', d.still_open || 0);
+        el('acc-avg-days', d.avg_holding_days || '—');
+
+        // By signal type
+        const sigEl = document.getElementById('acc-by-signal');
+        if (d.by_signal_type && d.by_signal_type.length > 0) {
+            sigEl.innerHTML = d.by_signal_type.map(s => `
+                <div class="acc-row">
+                    <span>${s.signal.replace('_', ' ')}</span>
+                    <div class="acc-bar-wrap">
+                        <div class="acc-bar" style="width:${s.win_rate}%;background:${s.win_rate >= 50 ? 'var(--accent-green)' : 'var(--accent-red)'}"></div>
+                    </div>
+                    <span>${s.win_rate}% (${s.wins}/${s.total})</span>
+                </div>
+            `).join('');
+        } else {
+            sigEl.innerHTML = '<div class="loading-skeleton">No evaluated signals yet. Data will appear as signals hit their targets or stop losses.</div>';
+        }
+
+        // By segment
+        const segEl = document.getElementById('acc-by-segment');
+        if (d.by_segment && d.by_segment.length > 0) {
+            segEl.innerHTML = d.by_segment.map(s => `
+                <div class="acc-row">
+                    <span>${s.segment || 'Unknown'}</span>
+                    <div class="acc-bar-wrap">
+                        <div class="acc-bar" style="width:${s.win_rate}%;background:${s.win_rate >= 50 ? 'var(--accent-green)' : 'var(--accent-red)'}"></div>
+                    </div>
+                    <span>${s.win_rate}% (${s.wins}/${s.total})</span>
+                </div>
+            `).join('');
+        } else {
+            segEl.innerHTML = '<div class="loading-skeleton">No segment data yet.</div>';
+        }
+    } catch (e) {
+        console.error('Accuracy load error:', e);
+    }
+}
+
+/* ─── Manual Portfolio Entry ────────────────────────── */
+function toggleAddHolding() {
+    const form = document.getElementById('add-holding-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function submitHolding() {
+    const symbol = document.getElementById('new-symbol').value.trim().toUpperCase();
+    const qty = parseFloat(document.getElementById('new-qty').value);
+    const price = parseFloat(document.getElementById('new-price').value);
+    const date = document.getElementById('new-date').value || new Date().toISOString().split('T')[0];
+    const notes = document.getElementById('new-notes').value.trim();
+
+    if (!symbol || !qty || !price) {
+        alert('Please fill Symbol, Quantity, and Price');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/portfolio/holdings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                symbol, quantity: qty, buy_price: price,
+                buy_date: date, notes, asset_type: 'stock'
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            toggleAddHolding();
+            document.getElementById('new-symbol').value = '';
+            document.getElementById('new-qty').value = '';
+            document.getElementById('new-price').value = '';
+            document.getElementById('new-notes').value = '';
+            loadPortfolio();
+        } else {
+            alert('Failed to add: ' + (data.error || 'Unknown error'));
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+async function deleteHolding(id) {
+    if (!confirm('Remove this holding?')) return;
+    try {
+        await fetch(`/api/portfolio/holdings/${id}`, { method: 'DELETE' });
+        loadPortfolio();
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+/* ─── CSV Import/Export ─────────────────────────────── */
+function exportCSV() {
+    const rows = [];
+    const table = document.getElementById('stock-table');
+    if (!table) return;
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
+    rows.push(headers.join(','));
+    table.querySelectorAll('tbody tr').forEach(tr => {
+        const cells = Array.from(tr.querySelectorAll('td')).map(td => td.textContent.replace(/[₹,]/g, ''));
+        rows.push(cells.join(','));
+    });
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `agent_alpha_portfolio_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+}
+
+async function importCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const lines = text.trim().split('\n');
+    let imported = 0;
+    for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',');
+        if (parts.length >= 3) {
+            const symbol = parts[0].trim().toUpperCase();
+            const qty = parseFloat(parts[1]);
+            const price = parseFloat(parts[2]);
+            if (symbol && qty && price) {
+                try {
+                    await fetch('/api/portfolio/holdings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            symbol, quantity: qty, buy_price: price,
+                            buy_date: new Date().toISOString().split('T')[0],
+                            asset_type: 'stock'
+                        })
+                    });
+                    imported++;
+                } catch (e) { /* skip */ }
+            }
+        }
+    }
+    alert(`Imported ${imported} holdings from CSV`);
+    event.target.value = '';
+    loadPortfolio();
 }
