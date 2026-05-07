@@ -188,9 +188,15 @@ async function loadDashboard() {
         // Create it if it doesn't exist
         const regimeBar = document.getElementById('regime-bar');
         if (regimeBar) {
+            regimeBar.style.position = 'relative';
+            regimeBar.style.display = 'flex';
+            regimeBar.style.alignItems = 'center';
+            regimeBar.style.justifyContent = 'center';
+            
             const badge = document.createElement('div');
             badge.id = 'market-status-badge';
-            badge.style.marginLeft = 'auto';
+            badge.style.position = 'absolute';
+            badge.style.right = '20px';
             badge.style.fontSize = '12px';
             badge.style.padding = '4px 10px';
             badge.style.borderRadius = '12px';
