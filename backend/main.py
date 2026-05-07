@@ -120,8 +120,10 @@ async def market_overview():
             print(f"⚠️ Sentiment fetch failed: {sentiment}")
             sentiment = {"score": 0, "label": "Unavailable", "positive_pct": 0, "negative_pct": 0}
 
+        from data.stock_fetcher import get_market_status
         return {
             "timestamp": datetime.now().isoformat(),
+            "market_status": get_market_status(),
             "indices": indices or {},
             "sentiment": {
                 "score": sentiment.get("score", 0) if isinstance(sentiment, dict) else 0,
@@ -133,8 +135,10 @@ async def market_overview():
         }
     except Exception as e:
         print(f"❌ Market overview error: {traceback.format_exc()}")
+        from data.stock_fetcher import get_market_status
         return {
             "timestamp": datetime.now().isoformat(),
+            "market_status": get_market_status() if 'get_market_status' in locals() else "UNKNOWN",
             "indices": {},
             "sentiment": {"score": 0, "label": "Error", "positive_pct": 0, "negative_pct": 0},
             "news": [],

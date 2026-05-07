@@ -125,6 +125,28 @@ def get_index_data(index_symbol, period="6mo"):
         return None
 
 
+import pytz
+from datetime import time
+
+def get_market_status():
+    """Determine the current market status based on IST time."""
+    tz = pytz.timezone("Asia/Kolkata")
+    now = datetime.now(tz)
+    
+    if now.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
+        return "WEEKEND"
+    
+    current_time = now.time()
+    market_open = time(9, 15)
+    market_close = time(15, 30)
+    
+    if current_time < market_open:
+        return "PRE_MARKET"
+    elif current_time <= market_close:
+        return "OPEN"
+    else:
+        return "CLOSED"
+
 def get_market_overview():
     """Get current snapshot of major indices and indicators."""
     indices = {
@@ -143,6 +165,10 @@ def get_market_overview():
 
     result = {}
     all_symbols = {**indices, **commodities}
+    
+    status = get_market_status()
+    tz = pytz.timezone("Asia/Kolkata")
+    timestamp_str = datetime.now(tz).isoformat()
 
     for name, symbol in all_symbols.items():
         current, prev = None, None

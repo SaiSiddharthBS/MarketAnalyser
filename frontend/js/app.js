@@ -28,6 +28,7 @@ async function loadMarketRegime() {
                 bar.style.borderColor = '#6b7280';
                 txt.innerHTML = `⚪ Market Regime: <strong style="color:#6b7280">UNKNOWN</strong> <span style="margin:0 12px;opacity:0.5">|</span> <span style="font-style:italic">Data: ${JSON.stringify(d)}</span>`;
             }
+
         }
     } catch(e) {
         const txt = document.getElementById('regime-text');
@@ -180,6 +181,49 @@ async function loadDashboard() {
     renderSentiment(data.sentiment);
     renderNewsItems(data.news, 'news-feed', 5);
     loadNiftyChart();
+
+    // Data Freshness & Market Status Badge
+    const statusContainer = document.getElementById('market-status-badge');
+    if (!statusContainer) {
+        // Create it if it doesn't exist
+        const regimeBar = document.getElementById('regime-bar');
+        if (regimeBar) {
+            const badge = document.createElement('div');
+            badge.id = 'market-status-badge';
+            badge.style.marginLeft = 'auto';
+            badge.style.fontSize = '12px';
+            badge.style.padding = '4px 10px';
+            badge.style.borderRadius = '12px';
+            badge.style.fontWeight = '500';
+            badge.style.display = 'flex';
+            badge.style.alignItems = 'center';
+            badge.style.gap = '6px';
+            
+            // Insert before the end of regime-bar
+            regimeBar.appendChild(badge);
+        }
+    }
+
+    const badge = document.getElementById('market-status-badge');
+    if (badge && data.timestamp) {
+        const dateObj = new Date(data.timestamp);
+        const timeString = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const dateString = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric'});
+
+        if (data.market_status === 'OPEN') {
+            badge.innerHTML = `<span style="color:#10b981">● Live (15m delay)</span> <span style="opacity:0.5;margin-left:4px">Data as of ${timeString}</span>`;
+            badge.style.background = 'rgba(16, 185, 129, 0.1)';
+        } else if (data.market_status === 'PRE_MARKET') {
+            badge.innerHTML = `<span style="color:#f59e0b">● Pre-Market</span> <span style="opacity:0.5;margin-left:4px">EOD Data from ${dateString}</span>`;
+            badge.style.background = 'rgba(245, 158, 11, 0.1)';
+        } else if (data.market_status === 'WEEKEND') {
+            badge.innerHTML = `<span style="color:#6b7280">● Weekend</span> <span style="opacity:0.5;margin-left:4px">EOD Data from ${dateString}</span>`;
+            badge.style.background = 'rgba(107, 114, 128, 0.1)';
+        } else {
+            badge.innerHTML = `<span style="color:#ef4444">● Market Closed</span> <span style="opacity:0.5;margin-left:4px">EOD Data from ${dateString}</span>`;
+            badge.style.background = 'rgba(239, 68, 68, 0.1)';
+        }
+    }
 
     // Auto-refresh every 5 minutes during market hours
     if (!window._dashboardRefreshTimer) {
