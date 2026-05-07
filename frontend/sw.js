@@ -1,4 +1,4 @@
-const CACHE_NAME = 'marketpulse-v11';
+const CACHE_NAME = 'marketpulse-v12';
 const ASSETS = [
     '/',
     '/static/css/styles.css',

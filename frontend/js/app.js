@@ -188,7 +188,6 @@ async function loadDashboard() {
         // Create it if it doesn't exist
         const regimeBar = document.getElementById('regime-bar');
         if (regimeBar) {
-            regimeBar.style.position = 'relative';
             regimeBar.style.display = 'flex';
             regimeBar.style.alignItems = 'center';
             regimeBar.style.justifyContent = 'center';
