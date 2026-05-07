@@ -9,7 +9,33 @@ document.addEventListener('DOMContentLoaded', () => {
     loadMarketRegime();
     setInterval(updateMarketStatus, 60000);
     setInterval(loadMarketRegime, 300000); // Refresh every 5 min
+    initLiveClock();
 });
+
+function initLiveClock() {
+    const regimeBar = document.getElementById('regime-bar');
+    if (!regimeBar) return;
+    
+    // Create clock container on the left
+    const clockDiv = document.createElement('div');
+    clockDiv.id = 'live-clock';
+    clockDiv.style.position = 'absolute';
+    clockDiv.style.left = '20px';
+    clockDiv.style.fontSize = '12px';
+    clockDiv.style.fontWeight = '600';
+    clockDiv.style.color = 'var(--text-muted)';
+    clockDiv.style.fontFamily = 'var(--font-mono)';
+    
+    regimeBar.appendChild(clockDiv);
+    
+    // Update every second
+    setInterval(() => {
+        const now = new Date();
+        clockDiv.textContent = now.toLocaleTimeString('en-IN', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+        }) + ' IST';
+    }, 1000);
+}
 
 async function loadMarketRegime() {
     try {
