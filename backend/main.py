@@ -159,8 +159,10 @@ async def index_data(symbol: str, period: str = "6mo"):
 # ─── Stock Analysis ──────────────────────────────────────
 
 def _find_sector_for_symbol(symbol):
-    """Find which sector a stock belongs to and return its yahoo index."""
+    """Find which actual sector a stock belongs to and return its yahoo index."""
     for key, seg in SECTOR_INDICES.items():
+        if key == "NIFTY_50":
+            continue
         if symbol.upper() in seg["symbols"]:
             return seg.get("yahoo_index", "^NSEI")
     return "^NSEI"
