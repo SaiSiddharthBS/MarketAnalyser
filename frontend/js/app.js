@@ -16,6 +16,7 @@ async function loadMarketRegime() {
         const res = await fetch('/api/market/regime');
         const d = await res.json();
         const bar = document.getElementById('regime-bar');
+        const txt = document.getElementById('regime-text');
         if (bar && txt) {
             if (d.status && d.status !== 'UNKNOWN') {
                 bar.style.borderColor = d.color;
@@ -25,10 +26,15 @@ async function loadMarketRegime() {
                     <span style="margin:0 12px;opacity:0.5">|</span> <span style="font-style:italic">${d.message}</span>`;
             } else {
                 bar.style.borderColor = '#6b7280';
-                txt.innerHTML = `⚪ Market Regime: <strong style="color:#6b7280">UNKNOWN</strong> <span style="margin:0 12px;opacity:0.5">|</span> <span style="font-style:italic">Insufficient data to calculate regime.</span>`;
+                txt.innerHTML = `⚪ Market Regime: <strong style="color:#6b7280">UNKNOWN</strong> <span style="margin:0 12px;opacity:0.5">|</span> <span style="font-style:italic">Data: ${JSON.stringify(d)}</span>`;
             }
         }
-    } catch(e) {}
+    } catch(e) {
+        const txt = document.getElementById('regime-text');
+        if (txt) {
+            txt.innerHTML = `⚪ Error Loading Regime: ${e.message}`;
+        }
+    }
 }
 
 /* ─── Navigation ─────────────────────────────────────── */
