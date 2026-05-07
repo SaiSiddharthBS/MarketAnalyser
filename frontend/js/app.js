@@ -13,20 +13,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initLiveClock() {
-    const regimeBar = document.getElementById('regime-bar');
-    if (!regimeBar) return;
+    const regimeLeft = document.getElementById('regime-left');
+    if (!regimeLeft) return;
     
-    // Create clock container on the left
-    const clockDiv = document.createElement('div');
-    clockDiv.id = 'live-clock';
-    clockDiv.style.position = 'absolute';
-    clockDiv.style.left = '20px';
+    const clockDiv = document.getElementById('live-clock');
+    if (!clockDiv) return;
+    
     clockDiv.style.fontSize = '12px';
     clockDiv.style.fontWeight = '600';
     clockDiv.style.color = 'var(--text-muted)';
     clockDiv.style.fontFamily = 'var(--font-mono)';
-    
-    regimeBar.appendChild(clockDiv);
     
     // Update every second
     setInterval(() => {
@@ -211,32 +207,19 @@ async function loadDashboard() {
     // Data Freshness & Market Status Badge
     const statusContainer = document.getElementById('market-status-badge');
     if (!statusContainer) {
-        // Create it if it doesn't exist
-        const regimeBar = document.getElementById('regime-bar');
-        if (regimeBar) {
-            regimeBar.style.display = 'flex';
-            regimeBar.style.alignItems = 'center';
-            regimeBar.style.justifyContent = 'center';
-            
-            const badge = document.createElement('div');
-            badge.id = 'market-status-badge';
-            badge.style.position = 'absolute';
-            badge.style.right = '20px';
-            badge.style.fontSize = '12px';
-            badge.style.padding = '4px 10px';
-            badge.style.borderRadius = '12px';
-            badge.style.fontWeight = '500';
-            badge.style.display = 'flex';
-            badge.style.alignItems = 'center';
-            badge.style.gap = '6px';
-            
-            // Insert before the end of regime-bar
-            regimeBar.appendChild(badge);
-        }
+        return; // The div is already in index.html
     }
 
     const badge = document.getElementById('market-status-badge');
     if (badge && data.timestamp) {
+        badge.style.fontSize = '12px';
+        badge.style.padding = '4px 10px';
+        badge.style.borderRadius = '12px';
+        badge.style.fontWeight = '500';
+        badge.style.display = 'flex';
+        badge.style.alignItems = 'center';
+        badge.style.gap = '6px';
+        
         const dateObj = new Date(data.timestamp);
         const timeString = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const dateString = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric'});

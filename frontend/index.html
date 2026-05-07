@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/styles.css?v=13">
+    <link rel="stylesheet" href="/static/css/styles.css?v=14">
     <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#0a0e17">
@@ -91,7 +91,15 @@
 
         <!-- Global Market Regime Bar -->
         <div class="regime-bar" id="regime-bar">
-            <span id="regime-text">⚪ Loading market regime...</span>
+            <div id="regime-left" class="regime-side">
+                <div id="live-clock"></div>
+            </div>
+            <div id="regime-center" class="regime-center">
+                <span id="regime-text">⚪ Loading market regime...</span>
+            </div>
+            <div id="regime-right" class="regime-side">
+                <div id="market-status-badge"></div>
+            </div>
         </div>
 
         <!-- Dashboard Page -->
@@ -484,8 +492,8 @@
 
     </main>
 
-    <script src="/static/js/api.js?v=13"></script>
-    <script src="/static/js/charts.js?v=13"></script>
-    <script src="/static/js/app.js?v=13"></script>
+    <script src="/static/js/api.js?v=14"></script>
+    <script src="/static/js/charts.js?v=14"></script>
+    <script src="/static/js/app.js?v=14"></script>
 </body>
 </html>
