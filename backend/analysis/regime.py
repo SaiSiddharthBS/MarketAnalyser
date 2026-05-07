@@ -24,9 +24,9 @@ def get_smoothed_market_regime():
     Otherwise, it returns the last established smoothed regime.
     """
     try:
-        # Fetch last 15 days to ensure we have enough trading days
-        nifty_df = download_ohlcv("^NSEI", period="1mo", interval="1d")
-        vix_df = download_ohlcv("^INDIAVIX", period="1mo", interval="1d")
+        # Fetch enough days to calculate 50-day EMA (needs at least ~70 trading days, so 3mo)
+        nifty_df = download_ohlcv("^NSEI", period="3mo", interval="1d")
+        vix_df = download_ohlcv("^INDIAVIX", period="3mo", interval="1d")
         
         if nifty_df is None or nifty_df.empty or vix_df is None or vix_df.empty:
             return {"regime": "UNKNOWN", "message": "Failed to fetch market data."}

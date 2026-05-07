@@ -16,13 +16,17 @@ async function loadMarketRegime() {
         const res = await fetch('/api/market/regime');
         const d = await res.json();
         const bar = document.getElementById('regime-bar');
-        const txt = document.getElementById('regime-text');
-        if (bar && txt && d.status && d.status !== 'UNKNOWN') {
-            bar.style.borderColor = d.color;
-            txt.innerHTML = `${d.emoji} Market Regime: <strong style="color:${d.color}">${d.status}</strong> 
-                <span style="margin:0 12px;opacity:0.5">|</span> VIX: ${d.vix || 'N/A'} (${d.vix_level}) 
-                <span style="margin:0 12px;opacity:0.5">|</span> Nifty: ${d.nifty_trend}
-                <span style="margin:0 12px;opacity:0.5">|</span> <span style="font-style:italic">${d.message}</span>`;
+        if (bar && txt) {
+            if (d.status && d.status !== 'UNKNOWN') {
+                bar.style.borderColor = d.color;
+                txt.innerHTML = `${d.emoji} Market Regime: <strong style="color:${d.color}">${d.status}</strong> 
+                    <span style="margin:0 12px;opacity:0.5">|</span> VIX: ${d.vix || 'N/A'} (${d.vix_level}) 
+                    <span style="margin:0 12px;opacity:0.5">|</span> Nifty: ${d.nifty_trend}
+                    <span style="margin:0 12px;opacity:0.5">|</span> <span style="font-style:italic">${d.message}</span>`;
+            } else {
+                bar.style.borderColor = '#6b7280';
+                txt.innerHTML = `⚪ Market Regime: <strong style="color:#6b7280">UNKNOWN</strong> <span style="margin:0 12px;opacity:0.5">|</span> <span style="font-style:italic">Insufficient data to calculate regime.</span>`;
+            }
         }
     } catch(e) {}
 }
