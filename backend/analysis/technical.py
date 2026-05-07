@@ -363,8 +363,30 @@ def get_technical_analysis(symbol, exchange="NS", period="1y", sector_yahoo_inde
     _rsi = rsi if rsi is not None else 50
     _rvol = rvol if rvol is not None else 1.0
 
+    # ─── Safety Guards: Circuit & Trap Detection ─────────────
+    open_price = float(latest["Open"])
+    high = float(latest["High"])
+    prev_close = float(prev["Close"]) if len(df) > 1 else open_price
+    daily_return = ((close - prev_close) / prev_close) * 100 if prev_close > 0 else 0
+
+    circuit_hit = False
+    if daily_return >= 4.8 and close == high:
+        circuit_hit = True
+        signals.append({"indicator": "Safety", "signal": "UPPER CIRCUIT HIT 🚫", "value": daily_return, "weight": 0})
+
+    false_breakout = False
+    if _rsi > 65 and vol_20_avg < 50000:
+        false_breakout = True
+        signals.append({"indicator": "Safety", "signal": "TRAP: Low Volume Breakout ⚠️", "value": vol_20_avg, "weight": 0})
+
     # Phase Logic
-    if score >= 60 and 50 <= _rsi <= 66 and _rvol >= 1.2 and close > (ema50 or 0):
+    if circuit_hit:
+        overall = "AVOID"
+        score = 0
+    elif false_breakout:
+        overall = "WATCH"
+        score = min(score, 45)
+    elif score >= 60 and 50 <= _rsi <= 66 and _rvol >= 1.2 and close > (ema50 or 0):
         overall = "EARLY_MOMENTUM"
         signals.append({"indicator": "Phase", "signal": "Early Breakout. Fresh momentum.", "value": _rsi, "weight": 0})
     elif score >= 65 and 66 < _rsi <= 72 and _rvol >= 1.2 and close > (ema20 or 0):

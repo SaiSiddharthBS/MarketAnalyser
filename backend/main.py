@@ -213,6 +213,16 @@ async def stock_chart(symbol: str, period: str = "1y"):
 
 # ─── Screener ────────────────────────────────────────────
 
+@app.get("/api/regime")
+async def get_regime():
+    """Get the current smoothed market regime."""
+    try:
+        from analysis.regime import get_smoothed_market_regime
+        regime_data = await run_in_threadpool(get_smoothed_market_regime)
+        return regime_data
+    except Exception as e:
+        raise HTTPException(500, f"Error calculating regime: {str(e)}")
+
 @app.get("/api/screener/segments")
 async def screener_segments():
     """List all available screener segments."""
@@ -290,36 +300,13 @@ async def screener_top(n: int = 10, segment: str = "NIFTY_50"):
 
 @app.get("/api/market/regime")
 async def market_regime():
-    """Get current market regime for the global bar."""
+    """Get current smoothed market regime for the global bar."""
     try:
-        from analysis.technical import _fetch_market_context
-        ctx = _fetch_market_context()
-        vix = ctx.get("vix")
-        nifty_bullish = ctx.get("nifty_above_50ema", False)
-        regime_score = ctx.get("regime_score", 7)
-
-        if regime_score >= 12:
-            status = "BULLISH"
-            color = "#10b981"
-            emoji = "🟢"
-        elif regime_score >= 8:
-            status = "NEUTRAL"
-            color = "#f59e0b"
-            emoji = "🟡"
-        else:
-            status = "BEARISH"
-            color = "#ef4444"
-            emoji = "🔴"
-
-        return {
-            "status": status, "color": color, "emoji": emoji,
-            "vix": round(vix, 1) if vix else None,
-            "vix_level": "Low" if vix and vix < 15 else "Moderate" if vix and vix < 20 else "High" if vix else "N/A",
-            "nifty_trend": "Above 50 EMA" if nifty_bullish else "Below 50 EMA",
-            "regime_score": regime_score,
-        }
+        from analysis.regime import get_smoothed_market_regime
+        regime_data = await run_in_threadpool(get_smoothed_market_regime)
+        return regime_data
     except Exception as e:
-        return {"status": "UNKNOWN", "color": "#64748b", "emoji": "⚪", "error": str(e)}
+        return {"status": "UNKNOWN", "color": "#6b7280", "emoji": "⚪", "error": str(e)}
 
 
 # ─── Sector Rotation ─────────────────────────────────────

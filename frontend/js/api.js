@@ -60,4 +60,7 @@ const api = {
     // Paper Trading
     getPaperPortfolio: () => api.get('/paper/portfolio'),
     executePaperTrade: (data) => api.post('/paper/trade', data),
+
+    // Market Regime
+    getRegime: () => api.get('/regime'),
 };

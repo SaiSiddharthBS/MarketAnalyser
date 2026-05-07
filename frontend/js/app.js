@@ -17,9 +17,12 @@ async function loadMarketRegime() {
         const d = await res.json();
         const bar = document.getElementById('regime-bar');
         const txt = document.getElementById('regime-text');
-        if (bar && txt && d.status) {
+        if (bar && txt && d.status && d.status !== 'UNKNOWN') {
             bar.style.borderColor = d.color;
-            txt.innerHTML = `${d.emoji} Market: <strong>${d.status}</strong> | VIX: ${d.vix || 'N/A'} (${d.vix_level}) | Nifty: ${d.nifty_trend}`;
+            txt.innerHTML = `${d.emoji} Market Regime: <strong style="color:${d.color}">${d.status}</strong> 
+                <span style="margin:0 12px;opacity:0.5">|</span> VIX: ${d.vix || 'N/A'} (${d.vix_level}) 
+                <span style="margin:0 12px;opacity:0.5">|</span> Nifty: ${d.nifty_trend}
+                <span style="margin:0 12px;opacity:0.5">|</span> <span style="font-style:italic">${d.message}</span>`;
         }
     } catch(e) {}
 }
@@ -804,19 +807,27 @@ async function analyseStock(symbol) {
         document.getElementById('analysis-chart').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">Chart data unavailable. Try a different timeframe.</div>';
     }
 
-    // Load "Why This Trade?" from AI
-    try {
-        const whyRes = await fetch(`/api/stock/${symbol}/why`);
-        const whyData = await whyRes.json();
-        const el = document.getElementById('why-trade-content');
-        if (el) {
-            el.innerHTML = whyData.explanation ?
-                `<div style="white-space:pre-wrap;line-height:1.8;font-size:14px">${whyData.explanation}</div>` :
-                '<div style="color:var(--text-muted)">Explanation unavailable.</div>';
-        }
-    } catch (e) {
-        const el = document.getElementById('why-trade-content');
-        if (el) el.innerHTML = '<div style="color:var(--text-muted)">Could not load explanation.</div>';
+    // Load "Why This Trade?" (Native rendering from technical signals)
+    const el = document.getElementById('why-trade-content');
+    if (el && t.signals && t.signals.length > 0) {
+        const reasonsHTML = t.signals.map(s => {
+            const icon = s.weight >= 10 ? '✅' : s.weight >= 5 ? '🟡' : s.signal.includes('🚫') || s.signal.includes('❌') ? '🔴' : '⚠️';
+            const color = s.weight >= 10 ? '#10b981' : s.weight >= 5 ? '#f59e0b' : s.signal.includes('🚫') || s.signal.includes('❌') ? '#ef4444' : '#f43f5e';
+            return `<div style="margin-bottom:8px; display:flex; gap:12px; align-items:flex-start">
+                <span style="font-size:16px">${icon}</span>
+                <span style="font-size:14px; line-height:1.5">
+                    <strong style="color:${color}">${s.indicator}</strong>: ${s.signal.replace('✅','').replace('❌','').replace('⚠️','').replace('🚫','')}
+                </span>
+            </div>`;
+        }).join('');
+        
+        el.innerHTML = `
+            <div style="background:rgba(255,255,255,0.02); padding:16px; border-radius:8px;">
+                ${reasonsHTML}
+            </div>
+        `;
+    } else if (el) {
+        el.innerHTML = '<div style="color:var(--text-muted)">Explanation unavailable.</div>';
     }
 }
 
