@@ -346,3 +346,42 @@ def save_signal(*args, **kwargs):
 
 if __name__ == "__main__":
     init_db()
+
+# --- Restored CRUD Operations ---
+
+def get_holdings():
+    return db_execute("SELECT * FROM holdings ORDER BY created_at DESC")
+
+def add_holding(symbol, name, asset_type, quantity, buy_price, buy_date, invested_amount, exchange="NSE", scheme_code=None, notes=None):
+    query = """INSERT INTO holdings 
+               (symbol, name, asset_type, exchange, quantity, buy_price, buy_date, invested_amount, scheme_code, notes)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+    return db_execute(query, (symbol, name, asset_type, exchange, quantity, buy_price, buy_date, invested_amount, scheme_code, notes))
+
+def delete_holding(holding_id):
+    return db_execute("DELETE FROM holdings WHERE id = ?", (holding_id,))
+
+def get_active_signals():
+    return db_execute("SELECT * FROM signals WHERE status = 'active' ORDER BY created_at DESC LIMIT 50")
+
+def get_paper_portfolio():
+    positions = db_execute("SELECT * FROM paper_trades WHERE status = 'OPEN'") or []
+    history = db_execute("SELECT * FROM paper_trades WHERE status = 'CLOSED' ORDER BY trade_date DESC LIMIT 50") or []
+    metrics_res = db_execute("SELECT SUM(pnl) as net_realized_pnl, SUM(fees) as total_fees FROM paper_trades WHERE status = 'CLOSED'")
+    metrics = metrics_res[0] if metrics_res else {"net_realized_pnl": 0, "total_fees": 0}
+    if not metrics.get("net_realized_pnl"): metrics["net_realized_pnl"] = 0
+    if not metrics.get("total_fees"): metrics["total_fees"] = 0
+    return {"positions": positions, "history": history, "metrics": metrics}
+
+def add_paper_trade(symbol, trade_type, quantity, price, fees, notes=None):
+    query = """INSERT INTO paper_trades (symbol, trade_type, quantity, price, fees, notes)
+               VALUES (?, ?, ?, ?, ?, ?)"""
+    return db_execute(query, (symbol, trade_type, quantity, price, fees, notes))
+
+def get_recent_intraday_verification(symbol):
+    res = db_execute("SELECT * FROM error_log WHERE symbol = ? ORDER BY created_at DESC LIMIT 1", (symbol,))
+    return res[0] if res else None
+
+def log_screener_signals(results, segment="NIFTY_50"):
+    pass # Reserved for future ML logging
+
