@@ -18,6 +18,7 @@ Upgraded from v1's basic indicators to institutional-grade technicals:
 """
 import pandas as pd
 import numpy as np
+import math
 from typing import Dict, Any, Optional, Tuple
 import ta
 
@@ -203,16 +204,23 @@ def calculate_technical_signal(df: pd.DataFrame) -> Dict[str, Any]:
     # Calculate ATR for stops
     atr = ta.volatility.AverageTrueRange(df["High"], df["Low"], df["Close"]).average_true_range().iloc[-1]
         
+    def safe_float(v):
+        try:
+            val = float(v)
+            return 0.0 if math.isnan(val) else round(val, 2)
+        except:
+            return 0.0
+
     return {
         "signal": signal,
         "confidence": confidence,
         "direction": direction,
         "technical_score": score,
         "metrics": {
-            "adx": round(float(adx), 2),
-            "kama_fast": round(float(current_kama_f), 2),
-            "kama_slow": round(float(current_kama_s), 2),
-            "atr": round(float(atr), 2)
+            "adx": safe_float(adx),
+            "kama_fast": safe_float(current_kama_f),
+            "kama_slow": safe_float(current_kama_s),
+            "atr": safe_float(atr)
         },
         "reasons": reasons
     }
