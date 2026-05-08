@@ -211,24 +211,21 @@ def get_accuracy_stats():
 
 def verify_intraday_predictions():
     """Check pending intraday predictions against actual market data."""
-    conn = db.get_connection()
-    if not conn: return
-    cursor = db.get_cursor(conn)
-    
     try:
         # Get pending predictions where target_date <= today
         today = datetime.now().strftime("%Y-%m-%d")
-        db.db_execute(cursor, f"SELECT * FROM daily_predictions WHERE status = 'pending' AND target_date <= '{today}'")
-        rows = cursor.fetchall()
+        rows = db.db_execute(f"SELECT * FROM daily_predictions WHERE status = 'pending' AND target_date <= '{today}'")
+        
+        if not rows: return
         
         updated = 0
         for row in rows:
-            pid = row[0] if isinstance(row, (list, tuple)) else row["id"]
-            sym = row[1] if isinstance(row, (list, tuple)) else row["symbol"]
-            t_date = row[3] if isinstance(row, (list, tuple)) else row["target_date"]
-            p_high = row[4] if isinstance(row, (list, tuple)) else row["pred_high"]
-            p_low = row[5] if isinstance(row, (list, tuple)) else row["pred_low"]
-            p_dir = row[6] if isinstance(row, (list, tuple)) else row["pred_direction"]
+            pid = row["id"]
+            sym = row["symbol"]
+            t_date = row["target_date"]
+            p_high = row["pred_high"]
+            p_low = row["pred_low"]
+            p_dir = row["pred_direction"]
             
             ticker = f"{sym}.NS"
             df = download_ohlcv(ticker, period="5d", interval="1d")
@@ -261,16 +258,13 @@ def verify_intraday_predictions():
                 
             final_status = " | ".join(status_parts)
             
-            db.db_execute(cursor, """
+            db.db_execute("""
                 UPDATE daily_predictions 
                 SET actual_open=?, actual_high=?, actual_low=?, actual_close=?, status=?
                 WHERE id=?
             """, (actual_open, actual_high, actual_low, actual_close, final_status, pid))
             updated += 1
             
-        conn.commit()
         print(f"✅ Verified {updated} intraday predictions")
     except Exception as e:
         print(f"❌ Failed to verify intraday predictions: {e}")
-    finally:
-        db.put_connection(conn)

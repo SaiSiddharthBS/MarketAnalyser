@@ -24,13 +24,16 @@ function initLiveClock() {
     clockDiv.style.color = 'var(--text-muted)';
     clockDiv.style.fontFamily = 'var(--font-mono)';
     
-    // Update every second
-    setInterval(() => {
+    // Tick function
+    function tick() {
         const now = new Date();
         clockDiv.textContent = now.toLocaleTimeString('en-IN', {
             hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
         }) + ' IST';
-    }, 1000);
+    }
+    
+    tick(); // Show immediately — no 1-second gap
+    setInterval(tick, 1000);
 }
 
 async function loadMarketRegime() {
@@ -205,11 +208,6 @@ async function loadDashboard() {
     loadNiftyChart();
 
     // Data Freshness & Market Status Badge
-    const statusContainer = document.getElementById('market-status-badge');
-    if (!statusContainer) {
-        return; // The div is already in index.html
-    }
-
     const badge = document.getElementById('market-status-badge');
     if (badge && data.timestamp) {
         badge.style.fontSize = '12px';

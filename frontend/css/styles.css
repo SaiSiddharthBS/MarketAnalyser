@@ -224,14 +224,15 @@ body::before {
     font-size: 16px;
 }
 
-/* ─── Main Content ──────────────────────────────────── */
+/* ─── Main Content ──────────────────────────────────────── */
 .main-content {
     margin-left: var(--sidebar-width);
     flex: 1;
     padding: 32px;
     position: relative;
     z-index: 1;
-    min-height: 100vh;
+    height: 100vh;
+    overflow-y: auto;
 }
 
 /* ─── Pages ─────────────────────────────────────────── */
@@ -434,10 +435,11 @@ body::before {
 
 .data-table th {
     position: sticky;
-    top: 0;
+    top: 48px; /* Sticky headers below regime bar */
     z-index: 50;
-    background: rgba(17, 24, 39, 0.95);
-    backdrop-filter: blur(8px);
+    background: rgba(17, 24, 39, 0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     text-align: left;
     padding: 12px 16px;
     font-size: 11px;
@@ -961,19 +963,20 @@ body::before {
 
 /* ─── Market Regime Bar ──────────────────────────────── */
 .regime-bar {
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 100;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 8px 20px;
+    margin: -32px -32px 16px -32px; /* Bleed into parent padding for edge-to-edge */
     font-size: 0.8rem;
     font-weight: 500;
-    border-radius: var(--radius-sm);
-    margin-bottom: 16px;
-    background: rgba(17, 24, 39, 0.85); /* Slightly transparent for blur effect */
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--border-glass);
+    background: rgba(10, 15, 28, 0.82);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     letter-spacing: 0.3px;
     transition: var(--transition);
 }
@@ -1013,6 +1016,12 @@ body::before {
     .main-content {
         margin-left: 0;
         padding: 72px 16px 16px;
+    }
+
+    .regime-bar {
+        margin: -72px -16px 16px -16px; /* Match mobile padding */
+        padding: 8px 12px;
+        font-size: 0.7rem;
     }
 
     .two-col {

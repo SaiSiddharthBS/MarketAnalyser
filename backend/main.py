@@ -54,6 +54,12 @@ async def startup():
     try:
         db.init_db()
         _seed_portfolio()
+        # Verify any pending intraday predictions from previous days
+        try:
+            from analysis.accuracy import verify_intraday_predictions
+            verify_intraday_predictions()
+        except Exception as ve:
+            print(f"⚠️ Prediction verification on startup failed (non-fatal): {ve}")
     except Exception as e:
         print(f"⚠️ Startup error (non-fatal): {e}")
 
@@ -184,6 +190,13 @@ async def stock_detail(symbol: str):
             info_task, ta_task, news_task,
             return_exceptions=True
         )
+
+        # Verify any pending predictions for this symbol before returning
+        try:
+            from analysis.accuracy import verify_intraday_predictions
+            await run_in_threadpool(verify_intraday_predictions)
+        except Exception as ve:
+            print(f"⚠️ Prediction verification failed for {symbol}: {ve}")
 
         import database as db
         verification = db.get_recent_intraday_verification(symbol)
