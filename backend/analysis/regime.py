@@ -1,121 +1,313 @@
+"""
+Agent Alpha v2.0 — HMM Regime Classifier (Layer 3)
+===================================================
+A 4-state Hidden Markov Model that probabilistically identifies the 
+true underlying market regime using multiple observable features.
+
+Why HMM?
+Simple rules (like "if price < 200 EMA then bear market") whipsaw constantly.
+HMMs recognize that regimes are "hidden" states that emit observable features
+(like returns, volatility, and breadth). They provide a probability for each
+regime, allowing us to size positions continuously rather than binary on/off.
+
+The 4 States:
+1. Low-Vol Uptrend (Home Turf) → Full Kelly sizing
+2. High-Vol Uptrend (Cautious Bull) → 0.6× Kelly
+3. Low-Vol Chop (Stand Aside/Mean Reversion) → 0.3× Kelly, no momentum
+4. Crisis/Crash (Survival Mode) → 0.0× Kelly (cash), tight stops
+
+Features fed into HMM:
+- Daily Nifty Returns
+- 20-day Realized Volatility
+- VIX closing value
+- Market Breadth (McClellan approximation)
+- Distance from 200 EMA
+"""
+import numpy as np
 import pandas as pd
-import ta
-from datetime import datetime, timedelta
-from data.stock_fetcher import download_ohlcv
+from typing import Dict, Any, Optional, List, Tuple
+from datetime import datetime
+import warnings
 
-def calculate_daily_regime(nifty_close, nifty_ema20, nifty_ema50, vix_close):
-    """Calculate the raw market regime for a single day based on technicals."""
-    if vix_close > 22:
-        return "HIGH_VOLATILITY"
-    
-    if nifty_close > nifty_ema20 and nifty_close > nifty_ema50:
-        return "BULLISH_TREND"
-    elif nifty_close < nifty_ema20 and nifty_close < nifty_ema50:
-        return "BEARISH"
-    elif nifty_close < nifty_ema20 and nifty_close > nifty_ema50:
-        return "PULLBACK"
-    else:
-        return "SIDEWAYS"
+try:
+    from hmmlearn import hmm
+    HMM_AVAILABLE = True
+except ImportError:
+    HMM_AVAILABLE = False
+    warnings.warn("hmmlearn is not installed. Regime classifier will use rule-based fallback.")
 
-def get_smoothed_market_regime():
-    """
-    Get the market regime with a 3-day persistence rule.
-    If the raw regime has been the same for the last 3 days, that becomes the smoothed regime.
-    Otherwise, it returns the last established smoothed regime.
-    """
-    try:
-        # Fetch enough days to calculate 50-day EMA (needs at least ~70 trading days, so 3mo)
-        nifty_df = download_ohlcv("^NSEI", period="3mo", interval="1d")
-        vix_df = download_ohlcv("^INDIAVIX", period="3mo", interval="1d")
+try:
+    from data.stock_fetcher import download_ohlcv
+except ImportError:
+    download_ohlcv = None
+
+
+class RegimeClassifier:
+    """Hidden Markov Model for Market Regime Classification."""
+
+    def __init__(self, n_components: int = 4, random_state: int = 42):
+        self.n_components = n_components
+        self.model = None
+        self.is_fitted = False
         
-        if nifty_df is None or nifty_df.empty or vix_df is None or vix_df.empty:
-            return {"regime": "UNKNOWN", "message": "Failed to fetch market data."}
+        # We will map the HMM's arbitrary state numbers (0, 1, 2, 3) 
+        # to our semantic states based on their statistical properties.
+        self.state_map = {}
+        
+        if HMM_AVAILABLE:
+            # Gaussian HMM with full covariance matrix
+            self.model = hmm.GaussianHMM(
+                n_components=n_components,
+                covariance_type="full",
+                n_iter=1000,
+                random_state=random_state,
+            )
+
+    def prepare_features(self, nifty_df: pd.DataFrame, vix_df: pd.DataFrame, breadth_series: pd.Series = None) -> pd.DataFrame:
+        """
+        Prepare observable features for the HMM.
+        """
+        if nifty_df is None or len(nifty_df) < 252:
+            return pd.DataFrame()
             
-        # Calculate EMAs for NIFTY
-        nifty_df["EMA20"] = ta.trend.EMAIndicator(close=nifty_df["Close"], window=20).ema_indicator()
-        nifty_df["EMA50"] = ta.trend.EMAIndicator(close=nifty_df["Close"], window=50).ema_indicator()
+        df = nifty_df.copy()
         
-        # Merge NIFTY and VIX on date
-        # yfinance index is datetime
-        nifty_df = nifty_df.dropna(subset=["EMA50"])
+        # 1. Daily Returns
+        df["Return"] = df["Close"].pct_change()
         
-        raw_regimes = []
-        for i in range(len(nifty_df)):
-            date = nifty_df.index[i]
-            n_close = nifty_df["Close"].iloc[i]
-            n_ema20 = nifty_df["EMA20"].iloc[i]
-            n_ema50 = nifty_df["EMA50"].iloc[i]
+        # 2. 20-day Realized Volatility
+        df["Vol_20d"] = df["Return"].rolling(20).std() * np.sqrt(252)
+        
+        # 3. Distance from 200 EMA
+        ema200 = df["Close"].ewm(span=200, adjust=False).mean()
+        df["Dist_EMA200"] = (df["Close"] - ema200) / ema200
+        
+        # 4. VIX 
+        if vix_df is not None and not vix_df.empty:
+            df = df.join(vix_df["Close"].rename("VIX"), how="left")
+            df["VIX"] = df["VIX"].ffill() # Forward fill missing VIX days
+        else:
+            # Proxy VIX from realized vol if real VIX is missing
+            df["VIX"] = df["Vol_20d"] * 100
             
-            # Find matching VIX
-            vix_row = vix_df[vix_df.index == date]
-            if vix_row.empty:
-                v_close = 15.0 # default fallback
+        # 5. Breadth (if available, otherwise use a placeholder)
+        if breadth_series is not None:
+            df["Breadth"] = breadth_series
+        else:
+            # Proxy breadth using 20-day return of the index itself
+            df["Breadth"] = df["Close"].pct_change(20)
+            
+        df = df.dropna()
+        return df
+
+    def fit(self, features_df: pd.DataFrame) -> bool:
+        """
+        Train the HMM on historical features and map the semantic states.
+        """
+        if not HMM_AVAILABLE or features_df.empty:
+            return False
+            
+        # Select columns for HMM
+        feature_cols = ["Return", "Vol_20d", "VIX", "Dist_EMA200", "Breadth"]
+        X = features_df[feature_cols].values
+        
+        try:
+            self.model.fit(X)
+            self.is_fitted = True
+            
+            # ─── Map Arbitrary States to Semantic Regimes ───────────
+            # The HMM assigns states 0, 1, 2, 3 randomly. We need to identify
+            # which one is the crisis state, which is the bull state, etc.
+            
+            # Predict states for the training data
+            hidden_states = self.model.predict(X)
+            features_df["State"] = hidden_states
+            
+            # Calculate mean statistics for each state
+            state_stats = features_df.groupby("State").mean()
+            
+            # We map based on Volatility (VIX) and Trend (Return / Dist_EMA200)
+            states = list(range(self.n_components))
+            
+            # 1. State with highest VIX -> Crisis
+            crisis_state = state_stats["VIX"].idxmax()
+            states.remove(crisis_state)
+            
+            # 2. Among remaining, state with lowest Vol_20d -> Low-Vol Chop or Bull
+            low_vol_states = sorted(states, key=lambda x: state_stats.loc[x, "Vol_20d"])
+            
+            # State with lowest vol AND positive return -> Low-Vol Uptrend
+            # Let's sort the 3 remaining by Return
+            remaining_by_return = sorted(states, key=lambda x: state_stats.loc[x, "Return"], reverse=True)
+            
+            bull_state = remaining_by_return[0]
+            if bull_state in states: states.remove(bull_state)
+            
+            # Of the 2 remaining, the one with higher vol is High-Vol Uptrend
+            if len(states) == 2:
+                if state_stats.loc[states[0], "Vol_20d"] > state_stats.loc[states[1], "Vol_20d"]:
+                    high_vol_bull = states[0]
+                    chop_state = states[1]
+                else:
+                    high_vol_bull = states[1]
+                    chop_state = states[0]
             else:
-                v_close = vix_row["Close"].iloc[0]
+                high_vol_bull = states[0] if states else -1
+                chop_state = states[0] if states else -1
                 
-            raw = calculate_daily_regime(n_close, n_ema20, n_ema50, v_close)
-            raw_regimes.append(raw)
+            self.state_map = {
+                bull_state: "low_vol_uptrend",
+                high_vol_bull: "high_vol_uptrend",
+                chop_state: "low_vol_chop",
+                crisis_state: "crisis"
+            }
             
-        if len(raw_regimes) < 3:
-            return {"regime": "UNKNOWN", "message": "Insufficient data for regime detection."}
+            return True
             
-        # Apply 3-day smoothing
-        # We look back from the end. 
-        # The smoothed regime only changes if the raw regime is identical for 3 consecutive days.
-        smoothed_regime = raw_regimes[0] # start with oldest available
+        except Exception as e:
+            print(f"❌ HMM Fitting failed: {e}")
+            return False
+
+    def predict_current_regime(self, features_df: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Predict the current market regime based on the latest features.
+        """
+        if not self.is_fitted or not HMM_AVAILABLE or features_df.empty:
+            return self._fallback_rule_based_regime(features_df)
+            
+        feature_cols = ["Return", "Vol_20d", "VIX", "Dist_EMA200", "Breadth"]
+        X = features_df[feature_cols].values
         
-        for i in range(2, len(raw_regimes)):
-            # Check if last 3 days are the same
-            if raw_regimes[i] == raw_regimes[i-1] == raw_regimes[i-2]:
-                smoothed_regime = raw_regimes[i]
+        try:
+            # Predict state for the most recent day
+            latest_X = X[-1].reshape(1, -1)
+            state_idx = self.model.predict(latest_X)[0]
+            
+            # Get probabilities for all states
+            probs = self.model.predict_proba(latest_X)[0]
+            
+            regime_name = self.state_map.get(state_idx, "unknown")
+            confidence = probs[state_idx] * 100
+            
+            # Calculate transition probability to crisis state
+            # This is "Regime Transition Probability Matrix" from my 7 additions
+            crisis_idx = next((k for k, v in self.state_map.items() if v == "crisis"), None)
+            
+            crisis_prob_tmr = 0.0
+            if crisis_idx is not None:
+                # Transition matrix: model.transmat_[current_state, next_state]
+                crisis_prob_tmr = self.model.transmat_[state_idx, crisis_idx] * 100
                 
-        current_vix = float(vix_df["Close"].iloc[-1]) if not vix_df.empty else 0
-        current_nifty = float(nifty_df["Close"].iloc[-1])
+            return self._format_regime_output(
+                regime_name=regime_name,
+                confidence=confidence,
+                crisis_transition_prob=crisis_prob_tmr,
+                features=features_df.iloc[-1].to_dict(),
+                method="HMM"
+            )
+            
+        except Exception as e:
+            print(f"❌ HMM Prediction failed: {e}")
+            return self._fallback_rule_based_regime(features_df)
+
+    def _fallback_rule_based_regime(self, features_df: pd.DataFrame) -> Dict[str, Any]:
+        """
+        If HMM fails or isn't available, use a robust rule-based approximation.
+        This matches the 4 states of the HMM using strict VIX and EMA rules.
+        """
+        if features_df is None or features_df.empty:
+            return self._format_regime_output("unknown", 0.0, 0.0, {}, "None")
+            
+        latest = features_df.iloc[-1]
         
-        # Construct message and colors
-        messages = {
-            "BULLISH_TREND": "Favorable for Early Breakouts and Momentum trades.",
-            "BEARISH": "Defensive mode. Cash is a position. Avoid aggressive buying.",
-            "SIDEWAYS": "Range-bound market. Focus on pullbacks and mean reversion.",
-            "PULLBACK": "Market dipping in an uptrend. Watch for support bounces.",
-            "HIGH_VOLATILITY": "Fear is elevated (VIX > 22). Reduce position sizes immediately.",
-            "UNKNOWN": "Market context unavailable."
+        vix = latest.get("VIX", 15.0)
+        dist_ema200 = latest.get("Dist_EMA200", 0.0)
+        
+        if vix >= 25 or (vix >= 22 and dist_ema200 < 0):
+            regime = "crisis"
+            conf = 80.0
+        elif vix < 18 and dist_ema200 > 0.02:
+            regime = "low_vol_uptrend"
+            conf = 75.0
+        elif vix >= 18 and dist_ema200 > 0:
+            regime = "high_vol_uptrend"
+            conf = 65.0
+        else:
+            regime = "low_vol_chop"
+            conf = 60.0
+            
+        # Fast VIX spike check for crisis transition
+        crisis_prob = 0.0
+        if len(features_df) >= 5:
+            vix_5d_ago = features_df["VIX"].iloc[-5]
+            if vix > vix_5d_ago * 1.2: # 20% spike in 5 days
+                crisis_prob = 40.0
+                
+        return self._format_regime_output(
+            regime_name=regime,
+            confidence=conf,
+            crisis_transition_prob=crisis_prob,
+            features=latest.to_dict(),
+            method="Rule-Based Fallback"
+        )
+
+    def _format_regime_output(self, regime_name: str, confidence: float, 
+                              crisis_transition_prob: float, features: Dict, method: str) -> Dict[str, Any]:
+        """Standardize the output format for downstream consumption."""
+        
+        # Map to UI colors and emojis
+        visuals = {
+            "low_vol_uptrend": {"color": "#10b981", "emoji": "🟢", "status": "Home Turf (Aggressive)"},
+            "high_vol_uptrend": {"color": "#3b82f6", "emoji": "📈", "status": "Cautious Bull"},
+            "low_vol_chop": {"color": "#f59e0b", "emoji": "🟡", "status": "Mean Reversion / Chop"},
+            "crisis": {"color": "#ef4444", "emoji": "🔴", "status": "Crisis / Survival Mode"},
+            "unknown": {"color": "#6b7280", "emoji": "⚪", "status": "Unknown"}
         }
         
-        colors = {
-            "BULLISH_TREND": "#10b981", # Green
-            "PULLBACK": "#3b82f6",      # Blue
-            "SIDEWAYS": "#f59e0b",      # Orange
-            "BEARISH": "#ef4444",       # Red
-            "HIGH_VOLATILITY": "#9333ea", # Purple
-            "UNKNOWN": "#6b7280"        # Gray
-        }
-        
-        emojis = {
-            "BULLISH_TREND": "🟢",
-            "PULLBACK": "📉",
-            "SIDEWAYS": "🟡",
-            "BEARISH": "🔴",
-            "HIGH_VOLATILITY": "⚡",
-            "UNKNOWN": "⚪"
-        }
-        
-        vix_level = "Calm" if current_vix < 15 else "Elevated" if current_vix < 20 else "High Fear"
-        nifty_trend = "Uptrend" if current_nifty > n_ema50 else "Downtrend"
+        vis = visuals.get(regime_name, visuals["unknown"])
         
         return {
-            "regime": smoothed_regime,
-            "status": smoothed_regime.replace("_", " "),
-            "color": colors.get(smoothed_regime, "#6b7280"),
-            "emoji": emojis.get(smoothed_regime, "⚪"),
-            "raw_today": raw_regimes[-1],
-            "vix": round(current_vix, 2),
-            "vix_level": vix_level,
-            "nifty": round(current_nifty, 2),
-            "nifty_trend": nifty_trend,
-            "message": messages.get(smoothed_regime, "")
+            "regime": regime_name,
+            "status": vis["status"],
+            "color": vis["color"],
+            "emoji": vis["emoji"],
+            "confidence_pct": round(confidence, 1),
+            "crisis_probability_tomorrow_pct": round(crisis_transition_prob, 1),
+            "method": method,
+            "vix_level": round(features.get("VIX", 0), 2),
+            "nifty_vs_200ema_pct": round(features.get("Dist_EMA200", 0) * 100, 2),
+            "date": datetime.now().strftime("%Y-%m-%d")
         }
+
+
+# Global singleton
+regime_classifier = RegimeClassifier()
+
+def get_current_market_regime() -> Dict[str, Any]:
+    """
+    Main entry point for fetching the current market regime.
+    Handles downloading data, fitting the HMM if needed, and predicting.
+    """
+    if download_ohlcv is None:
+        return regime_classifier._fallback_rule_based_regime(pd.DataFrame())
         
+    try:
+        # Download at least 3 years of data for HMM training
+        nifty_df = download_ohlcv("^NSEI", period="3y")
+        vix_df = download_ohlcv("^INDIAVIX", period="3y")
+        
+        if nifty_df is None or nifty_df.empty:
+            return regime_classifier._fallback_rule_based_regime(pd.DataFrame())
+            
+        features_df = regime_classifier.prepare_features(nifty_df, vix_df)
+        
+        if not features_df.empty:
+            if not regime_classifier.is_fitted:
+                regime_classifier.fit(features_df)
+                
+            return regime_classifier.predict_current_regime(features_df)
+            
     except Exception as e:
-        print(f"Error calculating market regime: {e}")
-        return {"status": "UNKNOWN", "color": "#6b7280", "emoji": "⚪"}
+        print(f"❌ Regime calculation failed: {e}")
+        
+    return regime_classifier._fallback_rule_based_regime(pd.DataFrame())
