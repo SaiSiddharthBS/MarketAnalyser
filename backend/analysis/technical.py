@@ -216,3 +216,42 @@ def calculate_technical_signal(df: pd.DataFrame) -> Dict[str, Any]:
         },
         "reasons": reasons
     }
+
+from data.stock_fetcher import get_stock_data
+
+def get_technical_analysis(symbol: str, exchange: str = "NS", period: str = "1y", sector_index: str = "^NSEI") -> Optional[Dict[str, Any]]:
+    """Backward compatibility wrapper for API."""
+    # Convert period from 1y to data.stock_fetcher format if needed, but get_stock_data handles it
+    df = get_stock_data(symbol, period=period, exchange=exchange)
+    if not df or len(df) == 0:
+        return None
+        
+    signal_data = calculate_technical_signal(pd.DataFrame(df))
+    close_price = df[-1]["Close"] if isinstance(df, list) and len(df) > 0 else 0
+    
+    return {
+        "symbol": symbol,
+        "score": max(0, min(100, 50 + signal_data["technical_score"] * 10)),
+        "signal": signal_data["signal"],
+        "signals": [{"indicator": "Advanced Technicals", "signal": signal_data["signal"], "value": signal_data["technical_score"]}],
+        "score_breakdown": {"Technical": signal_data["technical_score"]},
+        "reasons": signal_data.get("reasons", []),
+        "entry": close_price,
+        "target": close_price * 1.05,
+        "stop_loss": close_price * 0.95,
+        "metrics": signal_data.get("metrics", {})
+    }
+
+def screen_stocks(symbols: list, top_n: int = 10, sector_yahoo_index: str = "^NSEI") -> list:
+    """Screen a list of symbols and return the top N by technical score."""
+    results = []
+    for symbol in symbols:
+        try:
+            ta_res = get_technical_analysis(symbol, sector_index=sector_yahoo_index)
+            if ta_res and ta_res["signal"] in ["BUY", "STRONG_BUY"]:
+                results.append(ta_res)
+        except Exception as e:
+            print(f"Error screening {symbol}: {e}")
+            
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results[:top_n]
