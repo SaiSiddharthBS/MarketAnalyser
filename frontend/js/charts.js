@@ -1,11 +1,11 @@
 /**
- * Agent Alpha — Chart Module
- * TradingView Lightweight Charts integration
+ * Agent Alpha v3.0 — Chart Module (Light Theme)
+ * TradingView Lightweight Charts — Institutional look
  */
 const Charts = {
     instances: {},
 
-    createAreaChart(containerId, data, color = '#3b82f6') {
+    createAreaChart(containerId, data, color = '#6366f1') {
         const container = document.getElementById(containerId);
         if (!container || !data || !data.length) return null;
 
@@ -19,19 +19,19 @@ const Charts = {
                 fontFamily: "'Inter', sans-serif",
             },
             grid: {
-                vertLines: { color: 'rgba(255,255,255,0.03)' },
-                horzLines: { color: 'rgba(255,255,255,0.03)' },
+                vertLines: { color: '#f1f5f9' },
+                horzLines: { color: '#f1f5f9' },
             },
             crosshair: {
                 mode: LightweightCharts.CrosshairMode.Normal,
-                vertLine: { color: 'rgba(255,255,255,0.1)', width: 1, style: 2 },
-                horzLine: { color: 'rgba(255,255,255,0.1)', width: 1, style: 2 },
+                vertLine: { color: '#cbd5e1', width: 1, style: 2 },
+                horzLine: { color: '#cbd5e1', width: 1, style: 2 },
             },
             rightPriceScale: {
-                borderColor: 'rgba(255,255,255,0.05)',
+                borderColor: '#e2e8f0',
             },
             timeScale: {
-                borderColor: 'rgba(255,255,255,0.05)',
+                borderColor: '#e2e8f0',
                 timeVisible: false,
             },
             handleScroll: { mouseWheel: true, pressedMouseMove: true },
@@ -39,7 +39,7 @@ const Charts = {
         });
 
         const series = chart.addAreaSeries({
-            topColor: color + '40',
+            topColor: color + '30',
             bottomColor: color + '05',
             lineColor: color,
             lineWidth: 2,
@@ -60,7 +60,6 @@ const Charts = {
 
         this.instances[containerId] = chart;
 
-        // Responsive resize
         const ro = new ResizeObserver(() => {
             chart.applyOptions({
                 width: container.clientWidth,
@@ -86,12 +85,12 @@ const Charts = {
                 fontFamily: "'Inter', sans-serif",
             },
             grid: {
-                vertLines: { color: 'rgba(255,255,255,0.03)' },
-                horzLines: { color: 'rgba(255,255,255,0.03)' },
+                vertLines: { color: '#f1f5f9' },
+                horzLines: { color: '#f1f5f9' },
             },
             crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-            rightPriceScale: { borderColor: 'rgba(255,255,255,0.05)' },
-            timeScale: { borderColor: 'rgba(255,255,255,0.05)' },
+            rightPriceScale: { borderColor: '#e2e8f0' },
+            timeScale: { borderColor: '#e2e8f0' },
         });
 
         const series = chart.addCandlestickSeries({

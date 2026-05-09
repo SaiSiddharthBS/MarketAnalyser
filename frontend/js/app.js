@@ -89,12 +89,26 @@ function initNavigation() {
 }
 
 function switchPage(page) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const activePages = document.querySelectorAll('.page.active');
+    
+    // Quick hide old pages
+    activePages.forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
 
     const pageEl = document.getElementById(`page-${page}`);
     const navEl = document.getElementById(`nav-${page}`);
-    if (pageEl) pageEl.classList.add('active');
+    
+    if (pageEl) {
+        pageEl.classList.add('active');
+        // GSAP Animation
+        if (typeof gsap !== 'undefined') {
+            gsap.fromTo(pageEl, 
+                { opacity: 0, y: 15 },
+                { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }
+            );
+        }
+    }
+    
     if (navEl) navEl.classList.add('active');
 
     // Load page data
@@ -309,7 +323,7 @@ async function loadNiftyChart() {
         const data = await api.getIndexData('^NSEI', '6mo');
         if (data && data.data && data.data.length > 0) {
             if (container) container.innerHTML = '';
-            Charts.createAreaChart('nifty-chart', data.data, '#3b82f6');
+            Charts.createAreaChart('nifty-chart', data.data, '#6366f1');
         } else {
             if (container) container.innerHTML = '<div class="error-state"><p>Chart data unavailable for today.</p></div>';
         }

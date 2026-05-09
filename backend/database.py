@@ -5,28 +5,40 @@ Database Module — SQLite & Postgres setup and operations
 import sqlite3
 import json
 import os
-import psycopg2
-import psycopg2.extras
-from psycopg2.pool import SimpleConnectionPool
 from pathlib import Path
 from datetime import datetime
 from config import DB_PATH
-from dotenv import load_dotenv
 
-load_dotenv()
+# Optional: PostgreSQL (only needed on cloud — Render/Neon)
+try:
+    import psycopg2
+    import psycopg2.extras
+    from psycopg2.pool import SimpleConnectionPool
+    HAS_POSTGRES = True
+except ImportError:
+    HAS_POSTGRES = False
+    psycopg2 = None
+    SimpleConnectionPool = None
+
+# Optional: dotenv (for loading .env files)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # Environment variables are set directly on cloud
 
 # Load DATABASE_URL from env if available (for cloud)
 DATABASE_URL = os.getenv("DATABASE_URL")
 pool = None
 
-if DATABASE_URL:
+if DATABASE_URL and HAS_POSTGRES:
     try:
         # Reduced to 5 to stay within Neon.tech free tier limits
         pool = SimpleConnectionPool(1, 5, DATABASE_URL)
         print("✅ Postgres Connection Pool initialized")
     except Exception as e:
         print(f"❌ Failed to initialize connection pool: {e}")
-        pool = None # Ensure it's explicitly None
+        pool = None  # Ensure it's explicitly None
 
 def get_connection():
     """Get a connection (Postgres or SQLite)."""
@@ -106,14 +118,15 @@ def init_db():
     conn = get_connection()
     cursor = get_cursor(conn)
     
-    id_type = "SERIAL" if DATABASE_URL else "INTEGER PRIMARY KEY AUTOINCREMENT"
-    now_func = "CURRENT_TIMESTAMP" if DATABASE_URL else "datetime('now')"
+    is_pg = bool(DATABASE_URL)
+    id_col = "id SERIAL PRIMARY KEY" if is_pg else "id INTEGER PRIMARY KEY AUTOINCREMENT"
+    now_func = "CURRENT_TIMESTAMP" if is_pg else "datetime('now')"
     
-    # ─── EXISTING CORE TABLES (Unchanged) ────────────────────
+    # ─── EXISTING CORE TABLES ────────────────────────────────
     
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS holdings (
-            id {id_type},
+            {id_col},
             symbol TEXT NOT NULL,
             name TEXT NOT NULL,
             asset_type TEXT NOT NULL,
@@ -125,40 +138,37 @@ def init_db():
             scheme_code TEXT,
             notes TEXT,
             created_at TEXT DEFAULT ({now_func}),
-            updated_at TEXT DEFAULT ({now_func}),
-            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
+            updated_at TEXT DEFAULT ({now_func})
         )
     """)
 
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS price_cache (
-            id {id_type},
+            {id_col},
             symbol TEXT NOT NULL,
             date TEXT NOT NULL,
             open REAL, high REAL, low REAL, close REAL,
             volume INTEGER,
             source TEXT DEFAULT 'yfinance',
-            {"PRIMARY KEY (id)," if DATABASE_URL else ""}
             UNIQUE(symbol, date)
         )
     """)
     
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS portfolio_snapshots (
-            id {id_type},
+            {id_col},
             date TEXT NOT NULL UNIQUE,
             total_invested REAL NOT NULL,
             total_current REAL NOT NULL,
             total_return_pct REAL NOT NULL,
             holdings_json TEXT NOT NULL,
-            market_data_json TEXT,
-            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
+            market_data_json TEXT
         )
     """)
     
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS paper_trades (
-            id {id_type},
+            {id_col},
             symbol TEXT NOT NULL,
             trade_type TEXT NOT NULL,
             quantity REAL NOT NULL,
@@ -167,17 +177,15 @@ def init_db():
             trade_date TEXT DEFAULT ({now_func}),
             status TEXT DEFAULT 'OPEN',
             pnl REAL DEFAULT 0,
-            notes TEXT,
-            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
+            notes TEXT
         )
     """)
 
     # ─── UPGRADED V2.0 TABLES ────────────────────────────────
 
-    # Signals table (Upgraded for Ensemble v2)
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS signals (
-            id {id_type},
+            {id_col},
             symbol TEXT NOT NULL,
             signal_type TEXT NOT NULL,
             confidence REAL NOT NULL,
@@ -192,15 +200,13 @@ def init_db():
             veto_status TEXT,
             created_at TEXT DEFAULT ({now_func}),
             expiry_date TEXT,
-            status TEXT DEFAULT 'active',
-            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
+            status TEXT DEFAULT 'active'
         )
     """)
 
-    # ML Predictions (Upgraded for LightGBM Walk-Forward)
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS ml_predictions (
-            id {id_type},
+            {id_col},
             symbol TEXT NOT NULL,
             prediction_date TEXT NOT NULL,
             target_horizon_days INTEGER NOT NULL,
@@ -210,31 +216,27 @@ def init_db():
             prob_flat REAL,
             expected_return REAL,
             feature_importance TEXT,
-            created_at TEXT DEFAULT ({now_func}),
-            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
+            created_at TEXT DEFAULT ({now_func})
         )
     """)
 
     # ─── NEW V2.0 TABLES ─────────────────────────────────────
     
-    # 1. Regime Classifier Tracking
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS market_regimes (
-            id {id_type},
+            {id_col},
             date TEXT NOT NULL UNIQUE,
             regime_name TEXT NOT NULL,
             confidence REAL NOT NULL,
             crisis_prob REAL,
             features_json TEXT,
-            created_at TEXT DEFAULT ({now_func}),
-            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
+            created_at TEXT DEFAULT ({now_func})
         )
     """)
     
-    # 2. Hard Veto Log (Compliance & Audit)
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS veto_log (
-            id {id_type},
+            {id_col},
             date TEXT NOT NULL,
             symbol TEXT,
             veto_type TEXT NOT NULL,
@@ -242,15 +244,13 @@ def init_db():
             reason TEXT NOT NULL,
             duration_days INTEGER,
             expires_at TEXT,
-            created_at TEXT DEFAULT ({now_func}),
-            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
+            created_at TEXT DEFAULT ({now_func})
         )
     """)
     
-    # 3. Error Analysis Engine
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS error_log (
-            id {id_type},
+            {id_col},
             date TEXT NOT NULL,
             symbol TEXT NOT NULL,
             signal_type TEXT,
@@ -258,15 +258,13 @@ def init_db():
             error_category TEXT NOT NULL,
             description TEXT,
             model_agreement INTEGER,
-            created_at TEXT DEFAULT ({now_func}),
-            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
+            created_at TEXT DEFAULT ({now_func})
         )
     """)
     
-    # 4. Alpha Decay Monitoring
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS model_performance (
-            id {id_type},
+            {id_col},
             date TEXT NOT NULL,
             model_name TEXT NOT NULL,
             rolling_accuracy REAL,
@@ -274,8 +272,7 @@ def init_db():
             decay_amount REAL,
             status TEXT,
             action_taken TEXT,
-            created_at TEXT DEFAULT ({now_func}),
-            {"PRIMARY KEY (id)" if DATABASE_URL else ""}
+            created_at TEXT DEFAULT ({now_func})
         )
     """)
 

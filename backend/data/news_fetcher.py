@@ -4,7 +4,6 @@ Uses multiple sources with fallback for reliability.
 """
 import requests
 import xml.etree.ElementTree as ET
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from datetime import datetime
 import ssl
 import traceback
@@ -12,7 +11,24 @@ import traceback
 # Fix Mac SSL issue
 ssl._create_default_https_context = ssl._create_unverified_context
 
-analyzer = SentimentIntensityAnalyzer()
+# Sentiment analyzer — VADER preferred, simple keyword fallback
+try:
+    from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+    analyzer = SentimentIntensityAnalyzer()
+except ImportError:
+    # Lightweight fallback when vaderSentiment isn't installed
+    class _SimpleSentiment:
+        """Basic keyword-based sentiment when VADER is unavailable."""
+        _POS = {"up", "gain", "rise", "bull", "rally", "surge", "high", "strong", "growth", "profit", "buy", "positive"}
+        _NEG = {"down", "fall", "drop", "bear", "crash", "loss", "low", "weak", "sell", "negative", "fear", "risk", "decline"}
+        def polarity_scores(self, text):
+            words = set(text.lower().split())
+            pos = len(words & self._POS)
+            neg = len(words & self._NEG)
+            total = pos + neg or 1
+            compound = (pos - neg) / total * 0.5
+            return {"compound": round(compound, 4), "pos": pos / total, "neg": neg / total, "neu": 1 - (pos + neg) / max(len(words), 1)}
+    analyzer = _SimpleSentiment()
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",

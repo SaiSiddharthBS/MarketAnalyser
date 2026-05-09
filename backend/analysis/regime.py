@@ -311,3 +311,8 @@ def get_current_market_regime() -> Dict[str, Any]:
         print(f"❌ Regime calculation failed: {e}")
         
     return regime_classifier._fallback_rule_based_regime(pd.DataFrame())
+
+def get_smoothed_market_regime() -> Dict[str, Any]:
+    """Alias for get_current_market_regime to support older API endpoints."""
+    return get_current_market_regime()
+
