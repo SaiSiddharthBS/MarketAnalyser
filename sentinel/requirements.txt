@@ -1,0 +1,5 @@
+feedparser
+websockets
+aiohttp
+requests
+python-dotenv

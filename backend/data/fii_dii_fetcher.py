@@ -55,6 +55,11 @@ def fetch_fii_dii_daily() -> Optional[Dict[str, Any]]:
                          dii_buy_cr, dii_sell_cr
         Or None if fetch fails.
     """
+    from data.cache import cache
+    cached = cache.get("fii_dii_daily")
+    if cached is not None:
+        return cached
+
     # Attempt 1: NSE Direct API
     try:
         session = _get_nse_session()
@@ -87,6 +92,7 @@ def fetch_fii_dii_daily() -> Optional[Dict[str, Any]]:
                     "fetched_at": datetime.now().isoformat(),
                 }
                 print(f"✅ FII/DII data fetched from NSE: FII net={result['fii_net_cr']:.0f}Cr, DII net={result['dii_net_cr']:.0f}Cr")
+                cache.set("fii_dii_daily", result, ttl=3600*4)
                 return result
     except Exception as e:
         print(f"⚠️ NSE FII/DII fetch failed: {e}")
@@ -111,6 +117,7 @@ def fetch_fii_dii_daily() -> Optional[Dict[str, Any]]:
                     "fetched_at": datetime.now().isoformat(),
                 }
                 print(f"✅ FII/DII data fetched from MoneyControl fallback")
+                cache.set("fii_dii_daily", result, ttl=3600*4)
                 return result
     except Exception as e:
         print(f"⚠️ MoneyControl FII/DII fallback failed: {e}")

@@ -72,37 +72,32 @@ def get_cursor(conn):
         return conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     return conn.cursor()
 
-def db_execute(query, params=None):
-    """Universal executor for both SQLite and Postgres."""
-    conn = get_connection()
-    if not conn:
-        print(f"⚠️ Skipping query (no connection): {query[:50]}...")
-        return [] if query.strip().upper().startswith("SELECT") else None
-        
+def _prepare_query(query):
+    """Convert SQLite syntax to Postgres syntax."""
+    if not DATABASE_URL or not query:
+        return query
+    query = query.replace("?", "%s")
+    # Convert INSERT OR REPLACE to Postgres ON CONFLICT
+    if "INSERT OR REPLACE INTO price_cache" in query:
+         query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (symbol, date) DO UPDATE SET open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low, close=EXCLUDED.close, volume=EXCLUDED.volume"
+    elif "INSERT OR REPLACE INTO mf_nav_cache" in query:
+         query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (scheme_code, date) DO UPDATE SET nav=EXCLUDED.nav"
+    elif "INSERT OR REPLACE INTO portfolio_snapshots" in query:
+         query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (date) DO UPDATE SET total_invested=EXCLUDED.total_invested, total_current=EXCLUDED.total_current, total_return_pct=EXCLUDED.total_return_pct, holdings_json=EXCLUDED.holdings_json, market_data_json=EXCLUDED.market_data_json"
+    elif "INSERT OR REPLACE INTO market_regimes" in query:
+         query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (date) DO UPDATE SET regime_name=EXCLUDED.regime_name, confidence=EXCLUDED.confidence, crisis_prob=EXCLUDED.crisis_prob, features_json=EXCLUDED.features_json"
+    if "datetime('now')" in query:
+        query = query.replace("datetime('now')", "CURRENT_TIMESTAMP")
+    return query
+
+def _execute_once(conn, query, params):
+    """Execute a single query on the given connection. Returns result."""
     cur = get_cursor(conn)
-    
-    # Convert '?' to '%s' for Postgres
-    if DATABASE_URL and query:
-        query = query.replace("?", "%s")
-        # Convert INSERT OR REPLACE to Postgres ON CONFLICT
-        if "INSERT OR REPLACE INTO price_cache" in query:
-             query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (symbol, date) DO UPDATE SET open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low, close=EXCLUDED.close, volume=EXCLUDED.volume"
-        elif "INSERT OR REPLACE INTO mf_nav_cache" in query:
-             query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (scheme_code, date) DO UPDATE SET nav=EXCLUDED.nav"
-        elif "INSERT OR REPLACE INTO portfolio_snapshots" in query:
-             query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (date) DO UPDATE SET total_invested=EXCLUDED.total_invested, total_current=EXCLUDED.total_current, total_return_pct=EXCLUDED.total_return_pct, holdings_json=EXCLUDED.holdings_json, market_data_json=EXCLUDED.market_data_json"
-        elif "INSERT OR REPLACE INTO market_regimes" in query:
-             query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (date) DO UPDATE SET regime_name=EXCLUDED.regime_name, confidence=EXCLUDED.confidence, crisis_prob=EXCLUDED.crisis_prob, features_json=EXCLUDED.features_json"
-             
-        if "datetime('now')" in query:
-            query = query.replace("datetime('now')", "CURRENT_TIMESTAMP")
-             
     try:
         if params:
             cur.execute(query, params)
         else:
             cur.execute(query)
-        
         if query.strip().upper().startswith("SELECT"):
             res = cur.fetchall()
             return [dict(r) for r in res]
@@ -111,7 +106,51 @@ def db_execute(query, params=None):
             return True
     finally:
         cur.close()
-        put_connection(conn)
+
+def db_execute(query, params=None):
+    """Universal executor for both SQLite and Postgres with auto-retry on stale connections."""
+    conn = get_connection()
+    if not conn:
+        print(f"⚠️ Skipping query (no connection): {query[:50]}...")
+        return [] if query.strip().upper().startswith("SELECT") else None
+
+    query = _prepare_query(query)
+
+    try:
+        return _execute_once(conn, query, params)
+    except Exception as e:
+        err_msg = str(e).lower()
+        is_connection_error = any(phrase in err_msg for phrase in [
+            "ssl connection has been closed",
+            "connection already closed",
+            "server closed the connection",
+            "connection reset",
+            "broken pipe",
+            "connection timed out",
+        ])
+        if is_connection_error and DATABASE_URL and pool:
+            # Discard dead connection, get a fresh one, retry once
+            print(f"🔄 DB connection lost, reconnecting... ({e})")
+            try:
+                pool.putconn(conn, close=True)
+            except Exception:
+                pass
+            conn = get_connection()
+            if not conn:
+                return [] if query.strip().upper().startswith("SELECT") else None
+            try:
+                result = _execute_once(conn, query, params)
+                print("✅ DB reconnection successful")
+                return result
+            finally:
+                put_connection(conn)
+        else:
+            raise
+    finally:
+        try:
+            put_connection(conn)
+        except Exception:
+            pass
 
 def init_db():
     """Initialize all database tables (v2.0)."""
@@ -170,14 +209,122 @@ def init_db():
         CREATE TABLE IF NOT EXISTS paper_trades (
             {id_col},
             symbol TEXT NOT NULL,
-            trade_type TEXT NOT NULL,
-            quantity REAL NOT NULL,
-            price REAL NOT NULL,
-            fees REAL NOT NULL,
-            trade_date TEXT DEFAULT ({now_func}),
+            trade_type TEXT NOT NULL DEFAULT 'BUY',
             status TEXT DEFAULT 'OPEN',
-            pnl REAL DEFAULT 0,
-            notes TEXT
+            signal_date TEXT NOT NULL,
+            entry_date TEXT NOT NULL,
+            entry_price REAL NOT NULL,
+            quantity INTEGER NOT NULL,
+            position_value REAL NOT NULL,
+            stop_loss REAL NOT NULL,
+            target_price REAL NOT NULL,
+            risk_reward_ratio REAL,
+            exit_date TEXT,
+            exit_price REAL,
+            exit_reason TEXT,
+            gross_pnl REAL,
+            fees REAL,
+            net_pnl REAL,
+            return_pct REAL,
+            regime_at_entry TEXT,
+            ensemble_score REAL,
+            conviction TEXT,
+            model_votes_json TEXT,
+            veto_status TEXT,
+            autopsy_json TEXT,
+            created_at TEXT DEFAULT ({now_func})
+        )
+    """)
+
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS paper_portfolio (
+            {id_col},
+            date TEXT UNIQUE NOT NULL,
+            cash REAL NOT NULL,
+            holdings_value REAL NOT NULL,
+            total_equity REAL NOT NULL,
+            open_positions INTEGER,
+            daily_return_pct REAL,
+            cumulative_return_pct REAL,
+            drawdown_from_peak_pct REAL,
+            benchmark_nifty_return_pct REAL,
+            created_at TEXT DEFAULT ({now_func})
+        )
+    """)
+
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS paper_monthly_stats (
+            {id_col},
+            month TEXT UNIQUE NOT NULL,
+            trades_taken INTEGER,
+            wins INTEGER,
+            losses INTEGER,
+            win_rate REAL,
+            total_pnl REAL,
+            sharpe_ratio REAL,
+            max_drawdown REAL,
+            best_trade TEXT,
+            worst_trade TEXT,
+            nifty_return_pct REAL
+        )
+    """)
+
+    # ─── PHASE 2: SELF-LEARNING TABLES ───────────────────────
+
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS prediction_log (
+            {id_col},
+            symbol TEXT NOT NULL,
+            signal_date TEXT NOT NULL,
+            signal_type TEXT,
+            confidence REAL,
+            ensemble_score REAL,
+            model_votes_json TEXT,
+            regime TEXT,
+            vix_level REAL,
+            day_of_week TEXT,
+            sector TEXT,
+            rvol REAL,
+            outcome TEXT,
+            actual_return_pct REAL,
+            resolved_date TEXT,
+            created_at TEXT DEFAULT ({now_func})
+        )
+    """)
+
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS learned_rules (
+            {id_col},
+            rule_type TEXT NOT NULL,
+            condition_json TEXT NOT NULL,
+            action_json TEXT NOT NULL,
+            confidence REAL,
+            sample_size INTEGER,
+            discovered_date TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT ({now_func})
+        )
+    """)
+
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS regime_weights (
+            {id_col},
+            regime TEXT NOT NULL,
+            weights_json TEXT NOT NULL,
+            accuracy_data_json TEXT,
+            updated_at TEXT DEFAULT ({now_func})
+        )
+    """)
+
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS calibration_log (
+            {id_col},
+            confidence_bucket TEXT NOT NULL,
+            predicted_win_rate REAL,
+            actual_win_rate REAL,
+            sample_size INTEGER,
+            calibration_factor REAL,
+            updated_at TEXT DEFAULT ({now_func})
         )
     """)
 
@@ -275,9 +422,126 @@ def init_db():
             created_at TEXT DEFAULT ({now_func})
         )
     """)
+    
+    # ─── UPGRADE 10 & 13: SIGNAL LOGGING & PAPER TRADES ───────────
+    
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS signal_log (
+            {id_col},
+            timestamp TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            regime TEXT,
+            signal_type TEXT NOT NULL,
+            score INTEGER,
+            confidence REAL,
+            rsi REAL,
+            rvol REAL,
+            rr_ratio REAL,
+            entry_price REAL,
+            target_price REAL,
+            conservative_target REAL,
+            stop_loss REAL,
+            qty INTEGER,
+            holding_estimate TEXT,
+            outcome TEXT,
+            outcome_date TEXT,
+            outcome_type TEXT,
+            actual_pnl_pct REAL,
+            created_at TEXT DEFAULT ({now_func})
+        )
+    """)
+
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS paper_trades (
+            {id_col},
+            signal_id INTEGER,
+            symbol TEXT NOT NULL,
+            entry_price REAL NOT NULL,
+            entry_date TEXT NOT NULL,
+            target_price REAL,
+            stop_loss REAL,
+            qty INTEGER NOT NULL,
+            status TEXT DEFAULT 'OPEN',
+            exit_price REAL,
+            exit_date TEXT,
+            pnl_absolute REAL,
+            pnl_pct REAL,
+            notes TEXT,
+            created_at TEXT DEFAULT ({now_func})
+        )
+    """)
+
+    # ─── DAILY PREDICTIONS TABLE (Bug Fix: was missing entirely) ──────
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS daily_predictions (
+            {id_col},
+            symbol TEXT NOT NULL,
+            target_date TEXT NOT NULL,
+            pred_high REAL NOT NULL,
+            pred_low REAL NOT NULL,
+            pred_support REAL,
+            pred_resistance REAL,
+            pred_direction TEXT,
+            actual_open REAL,
+            actual_high REAL,
+            actual_low REAL,
+            actual_close REAL,
+            status TEXT DEFAULT 'pending',
+            created_at TEXT DEFAULT ({now_func})
+        )
+    """)
 
     conn.commit()
     put_connection(conn)
+
+    # ─── SAFE MIGRATIONS: Add missing columns to existing tables ──────
+    # Each migration uses its own connection + commit/rollback cycle.
+    migrations = [
+        "ALTER TABLE daily_predictions ADD COLUMN pred_support REAL",
+        "ALTER TABLE daily_predictions ADD COLUMN pred_resistance REAL",
+        "ALTER TABLE daily_predictions ADD COLUMN pred_direction TEXT",
+        "ALTER TABLE daily_predictions ADD COLUMN actual_open REAL",
+        "ALTER TABLE daily_predictions ADD COLUMN actual_high REAL",
+        "ALTER TABLE daily_predictions ADD COLUMN actual_low REAL",
+        "ALTER TABLE daily_predictions ADD COLUMN actual_close REAL",
+        "ALTER TABLE daily_predictions ADD COLUMN created_at TEXT",
+        "ALTER TABLE signal_log ADD COLUMN timestamp TEXT",
+        "ALTER TABLE signal_log ADD COLUMN regime TEXT",
+        "ALTER TABLE signal_log ADD COLUMN signal_type TEXT",
+        "ALTER TABLE signal_log ADD COLUMN score INTEGER",
+        "ALTER TABLE signal_log ADD COLUMN confidence REAL",
+        "ALTER TABLE signal_log ADD COLUMN rsi REAL",
+        "ALTER TABLE signal_log ADD COLUMN rvol REAL",
+        "ALTER TABLE signal_log ADD COLUMN rr_ratio REAL",
+        "ALTER TABLE signal_log ADD COLUMN entry_price REAL",
+        "ALTER TABLE signal_log ADD COLUMN target_price REAL",
+        "ALTER TABLE signal_log ADD COLUMN conservative_target REAL",
+        "ALTER TABLE signal_log ADD COLUMN stop_loss REAL",
+        "ALTER TABLE signal_log ADD COLUMN qty INTEGER",
+        "ALTER TABLE signal_log ADD COLUMN holding_estimate TEXT",
+        "ALTER TABLE signal_log ADD COLUMN outcome TEXT",
+        "ALTER TABLE signal_log ADD COLUMN outcome_date TEXT",
+        "ALTER TABLE signal_log ADD COLUMN outcome_type TEXT",
+        "ALTER TABLE signal_log ADD COLUMN actual_pnl_pct REAL",
+        "ALTER TABLE signal_log ADD COLUMN date_generated TEXT",
+    ]
+    for migration in migrations:
+        m_conn = get_connection()
+        if not m_conn:
+            continue
+        try:
+            m_cur = get_cursor(m_conn)
+            m_cur.execute(migration)
+            m_conn.commit()
+            m_cur.close()
+        except Exception:
+            try:
+                m_conn.rollback()
+            except Exception:
+                pass
+        finally:
+            put_connection(m_conn)
+
     print("✅ Database (v2.0) initialized successfully")
 
 # ── CRUD Operations ──────────────────────────────────────────
@@ -349,6 +613,55 @@ if __name__ == "__main__":
 def get_holdings():
     return db_execute("SELECT * FROM holdings ORDER BY created_at DESC")
 
+def get_model_performance():
+    query = "SELECT * FROM model_performance ORDER BY date DESC LIMIT 50"
+    return db_execute(query)
+
+def log_signal(signal_data: dict):
+    """Upgrade 10: Log every generated signal to the database."""
+    query = """
+        INSERT INTO signal_log (
+            timestamp, symbol, regime, signal_type, score, confidence,
+            rsi, rvol, rr_ratio, entry_price, target_price, conservative_target,
+            stop_loss, qty, holding_estimate, date_generated
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    
+    # Safely extract rr_ratio from "1:2.5" format
+    rr_str = signal_data.get("risk_reward", "1:0")
+    try:
+        rr_ratio = float(rr_str.split(":")[1])
+    except:
+        rr_ratio = 0.0
+        
+    now_iso = datetime.now().isoformat()
+    params = (
+        now_iso,
+        signal_data.get("symbol"),
+        signal_data.get("regime", "UNKNOWN"),
+        signal_data.get("signal_label", signal_data.get("signal")),
+        signal_data.get("score"),
+        signal_data.get("allocation_pct", 0) * 100, # Approximate mapping
+        signal_data.get("metrics", {}).get("rsi", 0),
+        signal_data.get("metrics", {}).get("rvol", 0),
+        rr_ratio,
+        signal_data.get("entry", 0),
+        signal_data.get("target", 0),
+        signal_data.get("conservative_target", 0),
+        signal_data.get("stop_loss", 0),
+        0, # qty is calculated frontend side right now
+        signal_data.get("holding_period", ""),
+        now_iso  # date_generated
+    )
+    db_execute(query, params)
+
+def log_screener_signals(results, segment=None):
+    """Upgrade 10: Log every generated signal to the database from screener."""
+    for result in results:
+        # Only log valid BUY or SELL signals to prevent database bloat
+        if result.get("signal") in ["BUY", "SELL", "STRONG_BUY", "STRONG_SELL"]:
+            log_signal(result)
+
 def add_holding(symbol, name, asset_type, quantity, buy_price, buy_date, invested_amount, exchange="NSE", scheme_code=None, notes=None):
     query = """INSERT INTO holdings 
                (symbol, name, asset_type, exchange, quantity, buy_price, buy_date, invested_amount, scheme_code, notes)
@@ -376,8 +689,40 @@ def add_paper_trade(symbol, trade_type, quantity, price, fees, notes=None):
     return db_execute(query, (symbol, trade_type, quantity, price, fees, notes))
 
 def get_recent_intraday_verification(symbol):
-    res = db_execute("SELECT * FROM error_log WHERE symbol = ? ORDER BY created_at DESC LIMIT 1", (symbol,))
-    return res[0] if res else None
+    """Get the most recent VERIFIED prediction for a symbol (status != 'pending')."""
+    try:
+        res = db_execute(
+            "SELECT * FROM daily_predictions WHERE symbol = ? AND status != 'pending' ORDER BY created_at DESC LIMIT 1",
+            (symbol,)
+        )
+        return res[0] if res else None
+    except Exception as e:
+        print(f"Verification lookup failed for {symbol}: {e}")
+        return None
+
+def save_intraday_prediction(symbol, pred_high, pred_low, pred_support, pred_resistance, pred_direction, target_date):
+    """Save a new intraday prediction for grading tomorrow."""
+    try:
+        from datetime import datetime
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        
+        # Avoid duplicates for same symbol + date
+        existing = db_execute(
+            "SELECT id FROM daily_predictions WHERE symbol = ? AND target_date = ?",
+            (symbol, target_date)
+        )
+        if existing:
+            return  # Already have a prediction for this symbol/date
+        
+        # Include date_predicted for PostgreSQL compatibility (legacy column)
+        db_execute(
+            """INSERT INTO daily_predictions 
+               (symbol, date_predicted, target_date, pred_high, pred_low, pred_support, pred_resistance, pred_direction, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (symbol, today_str, target_date, pred_high, pred_low, pred_support, pred_resistance, pred_direction, today_str)
+        )
+    except Exception as e:
+        print(f"Failed to save prediction for {symbol}: {e}")
 
 def log_screener_signals(results, segment="NIFTY_50"):
     pass # Reserved for future ML logging

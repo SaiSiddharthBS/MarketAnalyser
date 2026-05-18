@@ -1,82 +1,19 @@
 services:
   - type: web
-    name: marketpulse-agent
+    name: marketpulse
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn backend.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
     envVars:
-      - key: DATABASE_URL
-        sync: false # Set this to your Neon.tech URL in Render UI
       - key: PYTHON_VERSION
-        value: 3.12.3
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false # User will set this in Render UI
-      - key: TELEGRAM_CHAT_ID
-        sync: false # User will set this in Render UI
+        value: 3.10.0
       - key: GEMINI_API_KEY
         sync: false
-      - key: RENDER_EXTERNAL_URL
-        fromService:
-          type: web
-          name: marketpulse-agent
-          property: host
-
-  - type: cron
-    name: morning-briefing
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python backend/bot/daily_job.py
-    schedule: "30 2 * * *" # 8:00 AM IST (2:30 AM UTC)
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.3
       - key: DATABASE_URL
-        fromService:
-          type: web
-          name: marketpulse-agent
-          envVarKey: DATABASE_URL
-      - key: TELEGRAM_BOT_TOKEN
-        fromService:
-          type: web
-          name: marketpulse-agent
-          envVarKey: TELEGRAM_BOT_TOKEN
-      - key: TELEGRAM_CHAT_ID
-        fromService:
-          type: web
-          name: marketpulse-agent
-          envVarKey: TELEGRAM_CHAT_ID
-      - key: GEMINI_API_KEY
-        fromService:
-          type: web
-          name: marketpulse-agent
-          envVarKey: GEMINI_API_KEY
+        fromDatabase:
+          name: marketpulse-db
+          property: connectionString
 
-  - type: cron
-    name: afternoon-briefing
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python backend/bot/daily_job.py
-    schedule: "15 9 * * *" # 2:45 PM IST (9:15 AM UTC)
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.3
-      - key: DATABASE_URL
-        fromService:
-          type: web
-          name: marketpulse-agent
-          envVarKey: DATABASE_URL
-      - key: TELEGRAM_BOT_TOKEN
-        fromService:
-          type: web
-          name: marketpulse-agent
-          envVarKey: TELEGRAM_BOT_TOKEN
-      - key: TELEGRAM_CHAT_ID
-        fromService:
-          type: web
-          name: marketpulse-agent
-          envVarKey: TELEGRAM_CHAT_ID
-      - key: GEMINI_API_KEY
-        fromService:
-          type: web
-          name: marketpulse-agent
-          envVarKey: GEMINI_API_KEY
+  - type: psql
+    name: marketpulse-db
+    plan: free

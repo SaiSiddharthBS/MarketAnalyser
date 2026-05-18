@@ -133,6 +133,33 @@ async def screener(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         await update.message.reply_text(f"Error running screener: {e}")
 
+async def send_urgent_news_alert(category: str, headline: str, link: str):
+    """Phase 4: Sentinel News Triage Alert Trigger"""
+    if not TOKEN or not CHAT_ID:
+        return
+        
+    import telegram
+    bot = telegram.Bot(token=TOKEN)
+    
+    icons = {
+        "CRISIS": "🚨🚨",
+        "MERGER": "🤝",
+        "EARNINGS": "💰",
+        "BULLISH": "🟢",
+        "BEARISH": "🔴"
+    }
+    icon = icons.get(category.upper(), "📰")
+    
+    msg = f"{icon} *URGENT SENTINEL ALERT* {icon}\n\n"
+    msg += f"*Category*: {category.upper()}\n"
+    msg += f"*Headline*: {headline}\n"
+    msg += f"[Read Full Story]({link})"
+    
+    try:
+        await bot.send_message(chat_id=CHAT_ID, text=msg, parse_mode='Markdown', disable_web_page_preview=True)
+    except Exception as e:
+        print(f"Failed to send Sentinel alert to Telegram: {e}")
+
 def run_bot_polling():
     """Run the bot in polling mode (for local development)."""
     if not TOKEN:

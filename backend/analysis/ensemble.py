@@ -1,325 +1,316 @@
-"""
-Agent Alpha v2.0 — Master Ensemble Engine
-==========================================
-The brain of Agent Alpha. Combines all 8 independent signal models
-into a single, weighted, conviction-scored trading decision.
+from typing import Dict, Any
+import pandas as pd
+from .technical import calculate_technical_signal
+from .transformer_engine import predict_with_transformer
+from .macro import get_macro_environment
 
-Architecture:
-    8 models → weighted vote → ensemble score → signal classification
-                                                      ↓
-                                             Hard Veto override
-                                                      ↓
-                                             Final signal output
+_fii_printed = False
 
-Signal Levels:
-    ULTRA HIGH CONVICTION BUY  — 5+ models agree, score > 70
-    HIGH CONVICTION BUY        — 4+ models agree, score > 55
-    MODERATE BUY               — 3+ models agree, score > 40
-    NEUTRAL / STAND ASIDE      — < 3 agree or score < 20
-    MODERATE SELL              — 3+ models agree SELL, score < -40
-    HIGH CONVICTION SELL       — 4+ models agree SELL, score < -55
-    ULTRA HIGH CONVICTION SELL — 5+ models agree SELL, score < -70
-
-Any active hard veto → signal forced to STAND ASIDE, no exceptions.
-"""
-from typing import Dict, Any, List, Optional
-
-
-# Default ensemble weights (from alpha_config.yaml)
-DEFAULT_WEIGHTS = {
-    "momentum": 0.20,
-    "order_flow": 0.15,
-    "options_implied": 0.15,
-    "sentiment": 0.10,
-    "institutional": 0.15,
-    "volume_profile": 0.10,
-    "seasonal": 0.05,
-    "insider": 0.10,
-}
-
-
-def calculate_ensemble_signal(
-    model_outputs: Dict[str, Dict[str, Any]],
-    weights: Optional[Dict[str, float]] = None,
-    veto_result: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+class EnsembleVoter:
     """
-    Combine all model outputs into the final ensemble signal.
-
-    Args:
-        model_outputs: Dict mapping model_name → model output dict.
-            Each model output must have: signal (BUY/SELL/NEUTRAL),
-            confidence (0-100), direction (-1/0/1)
-        weights: Optional override for model weights
-        veto_result: Output from VetoEngine.check_all_vetoes()
-
-    Returns:
-        Complete ensemble signal dict with conviction level, score,
-        model votes breakdown, and risk metrics.
+    Antigravity Module 3: The 8-Model Ensemble
+    Collects votes from 8 discrete models, checks correlation, and computes final confidence.
     """
-    if weights is None:
-        weights = DEFAULT_WEIGHTS
-
-    # ─── Step 1: Extract model signals ───────────────────────
-    model_votes = {}
-    buy_votes = 0
-    sell_votes = 0
-    neutral_votes = 0
-
-    for model_name, output in model_outputs.items():
-        if not output:
-            continue
-
-        signal = output.get("signal", "NEUTRAL")
-        confidence = output.get("confidence", 0)
-        direction = output.get("direction", 0)
-        weight = weights.get(model_name, 0)
-
-        model_votes[model_name] = {
+    
+    def __init__(self):
+        self.weights = self._load_regime_weights("unknown")
+        
+    def _load_regime_weights(self, regime: str) -> dict:
+        """Load regime-conditional weights from DB. Fall back to defaults."""
+        try:
+            from arena.weight_evolver import get_regime_weights
+            return get_regime_weights(regime)
+        except Exception as e:
+            return {
+                "technical": 15,
+                "transformer": 25,
+                "options_flow": 15,
+                "ml_engine": 15,
+                "sentiment": 10,
+                "insider": 5,
+                "macro": 5,
+                "momentum": 10
+            }
+        
+    def collect_votes(self, symbol: str, df: pd.DataFrame, regime: str) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        """Collect votes (-1 to 1) from all models and return metrics."""
+        votes = {}
+        
+        # 1. Advanced Technicals
+        tech_data = calculate_technical_signal(df)
+        tech_score = tech_data.get("technical_score", 0)
+        votes["technical"] = 1 if tech_score >= 2 else -1 if tech_score <= -2 else 0
+        
+        # 2. Transformer AI
+        try:
+            ai_data = predict_with_transformer(df, symbol)
+            pred = ai_data.get("prediction", "UNKNOWN")
+            votes["transformer"] = 1 if pred == "UP" else -1 if pred == "DOWN" else 0
+        except Exception:
+            votes["transformer"] = 0
+            
+        # 3. Momentum Factor (1M, 3M)
+        if len(df) > 60:
+            ret_1m = (df["Close"].iloc[-1] - df["Close"].iloc[-20]) / df["Close"].iloc[-20]
+            ret_3m = (df["Close"].iloc[-1] - df["Close"].iloc[-60]) / df["Close"].iloc[-60]
+            if ret_1m > 0.05 and ret_3m > 0.10:
+                votes["momentum"] = 1
+            elif ret_1m < -0.05 and ret_3m < -0.10:
+                votes["momentum"] = -1
+            else:
+                votes["momentum"] = 0
+        else:
+            votes["momentum"] = 0
+            
+        # 4. ML Engine
+        try:
+            from analysis.ml_engine import ml_predict
+            ml_pred = ml_predict(symbol, df)
+            votes["ml_engine"] = 1 if ml_pred > 0.6 else -1 if ml_pred < 0.4 else 0
+        except:
+            votes["ml_engine"] = 0
+            
+        # 5. Macro (Regime Context)
+        if regime == "high_vol_uptrend" or regime == "bullish":
+            votes["macro"] = 1
+        elif regime == "crisis" or regime == "bearish":
+            votes["macro"] = -1
+        else:
+            votes["macro"] = 0
+            
+        # 6. Institutional Flow & Options (Task 4 & Task 10)
+        inst_vote = 0
+        try:
+            from data.fii_dii_fetcher import fetch_fii_dii_daily
+            fii_data = fetch_fii_dii_daily()
+            if fii_data:
+                fii_net = fii_data.get("fii_net_cr", 0)
+                
+                global _fii_printed
+                if not _fii_printed:
+                    print(f"📈 Institutional Flow: FII Net = ₹{fii_net} Cr")
+                    _fii_printed = True
+                    
+                if fii_net > 1000:
+                    inst_vote = 1
+                elif fii_net < -1000:
+                    inst_vote = -1
+        except Exception as e:
+            print(f"Warning: FII flow check failed: {e}")
+            
+        # Task 10: Options Flow Score (Real PCR Data)
+        pcr_vote = 0
+        try:
+            from data.options_fetcher import fetch_options_chain, calculate_pcr
+            # Fetch PCR for NIFTY as macro proxy
+            opt_data = fetch_options_chain("NIFTY")
+            if opt_data:
+                pcr_data = calculate_pcr(opt_data.get("data", []))
+                if pcr_data:
+                    pcr = pcr_data.get("pcr_oi", 1.0)
+                    if pcr < 0.7:
+                        pcr_vote = 1
+                    elif pcr > 1.3:
+                        pcr_vote = -1
+        except Exception:
+            pass
+            
+        # Combine FII and PCR votes into options_flow
+        if inst_vote == 1 and pcr_vote == 1:
+            votes["options_flow"] = 1
+        elif inst_vote == -1 and pcr_vote == -1:
+            votes["options_flow"] = -1
+        elif inst_vote != 0 and pcr_vote == 0:
+            votes["options_flow"] = inst_vote
+        elif inst_vote == 0 and pcr_vote != 0:
+            votes["options_flow"] = pcr_vote
+        else:
+            votes["options_flow"] = 0
+            
+        # Placeholders for other data
+        votes["insider"] = 0       # Requires insider data
+        votes["sentiment"] = 0     # Requires NLP
+        
+        # In a real environment with missing data, we redistribute weights.
+        # For now, if a model votes 0, it contributes 0.
+        
+        return votes, tech_data.get("metrics", {})
+        
+    def calculate_confidence(self, symbol: str, df: pd.DataFrame, regime: str, weight_modifiers: Dict[str, float] = None) -> Dict[str, Any]:
+        votes, metrics = self.collect_votes(symbol, df, regime)
+        
+        current_weights = self._load_regime_weights(regime)
+        if weight_modifiers:
+            for m, factor in weight_modifiers.items():
+                if m in current_weights:
+                    current_weights[m] *= factor
+        
+        raw_score = 0
+        for model, vote in votes.items():
+            weight = current_weights.get(model, 10)
+            raw_score += vote * weight
+            
+        from analysis.patterns import detect_patterns
+        detected_pattern = detect_patterns(df)
+        if detected_pattern.get("confidence", 0) > 70:
+            if detected_pattern.get("direction") == "bullish":
+                raw_score += 5
+            elif detected_pattern.get("direction") == "bearish":
+                raw_score -= 5
+                
+        # Normalise to Confidence: (Raw_Score + 100) / 200
+        confidence = (raw_score + 100) / 200 * 100
+        
+        # Apply Confidence Calibration
+        try:
+            from arena.calibrator import ConfidenceCalibrator
+            calib = ConfidenceCalibrator()
+            factor = calib.get_calibration_factor(confidence)
+            confidence = confidence * factor
+        except Exception:
+            pass
+        
+        # Apply RVOL Penalty (Fix 5)
+        rvol = metrics.get("rvol", 1.0)
+        if rvol < 0.8:
+            confidence -= 10 # Reduce score by 10 points for low volume
+        
+        # Upgrade 1, 5, 6: Dynamic Regime Thresholds & Caps
+        if regime == "low_vol_uptrend":
+            conf_cap = 90.0
+            rvol_min_buy = 1.2
+            rsi_ceil_buy = 75
+            signal_label = "🚀 Early Breakout"
+            threshold = 60
+            sell_threshold = 20 # Very hard to short a breakout
+        elif regime == "high_vol_uptrend":
+            conf_cap = 75.0
+            rvol_min_buy = 1.3
+            rsi_ceil_buy = 72
+            signal_label = "↩ Pullback Buy"
+            threshold = 65
+            sell_threshold = 25
+        elif regime == "low_vol_chop":
+            conf_cap = 65.0
+            rvol_min_buy = 1.4
+            rsi_ceil_buy = 68
+            signal_label = "📊 Range Breakout"
+            threshold = 70
+            sell_threshold = 30
+        elif regime == "crisis":
+            conf_cap = 60.0       # Was 40 — allow strong setups to show real confidence
+            rvol_min_buy = 1.3    # Was 1.6 — still strict but allows quality volume
+            rsi_ceil_buy = 65     # Was 60 — allow moderately oversold buys
+            signal_label = "🛡 Defensive Buy (Counter-trend)"
+            threshold = 68        # Was 72 — 72 requires near-impossible consensus in a crisis
+            sell_threshold = 45   # Easier to short in a crisis (confidence <= 45 triggers short)
+        else:
+            conf_cap = 60.0
+            rvol_min_buy = 1.5
+            rsi_ceil_buy = 65
+            signal_label = "⚠ Setup"
+            threshold = 70
+            sell_threshold = 30
+            
+        # Upgrade 1: Apply Confidence Cap
+        capped_confidence = min(confidence, conf_cap)
+        confidence_display = round(capped_confidence, 1)
+        
+        # Apply Macro Adjustment
+        macro = get_macro_environment()
+        macro_status = macro.get("status", "CLEAR")
+        
+        if macro_status == "MACRO TAILWIND":
+            threshold -= 3
+            sell_threshold -= 3 # Even harder to short with macro tailwind
+            
+        # Determine signal based on RAW confidence so setups can still trigger
+        signal = "NEUTRAL"
+        if confidence >= threshold:
+            signal = "BUY"
+        elif confidence <= sell_threshold:
+            signal = "SELL"
+            
+        # Apply learned rules from Phase 2
+        modifiers = {}
+        try:
+            from arena.self_learner import apply_learned_rules
+            from datetime import datetime
+            from analysis.regime import detect_market_regime
+            
+            vix = detect_market_regime().get("vix_level", 0)
+            
+            signal_context = {
+                "regime": regime,
+                "day_of_week": datetime.now().strftime("%A"),
+                "vix_level": vix,
+                "conviction": "ULTRA" if confidence >= 85 else ("HIGH" if confidence >= 75 else "MODERATE")
+            }
+            
+            modifiers = apply_learned_rules(signal_context)
+            if modifiers.get("skip") and signal == "BUY":
+                signal = "VETOED"
+                veto_source = "Self-Learned Rule"
+            elif modifiers.get("require_conviction") == "ULTRA" and confidence < 85:
+                if signal == "BUY":
+                    signal = "VETOED"
+                    veto_source = "Self-Learned Rule (Requires ULTRA)"
+        except Exception as e:
+            pass
+            
+        # Re-calculate confidence with modifiers if we haven't already
+        if modifiers.get("weight_modifiers") and not weight_modifiers:
+            return self.calculate_confidence(symbol, df, regime, modifiers["weight_modifiers"])
+            
+        # Overwrite label if short
+        if signal == "SELL":
+            if regime == "crisis":
+                signal_label = "📉 Breakdown Short (Trend Continuation)"
+            elif regime in ["bullish", "low_vol_uptrend"]:
+                signal_label = "🔥 Counter-trend Short (High Risk)"
+            else:
+                signal_label = "📉 Short Setup"
+            
+        # Hard Veto checks
+        veto_source = "N/A"
+        rsi = metrics.get("rsi", 50)
+        
+        if macro_status in ["MACRO VETO", "FULL MACRO VETO"] and signal == "BUY":
+            signal = "VETOED"
+            veto_source = "Macro Asset Class"
+        elif signal == "BUY" and rvol < rvol_min_buy:
+            signal = "VETOED"
+            veto_source = f"RVOL {rvol}x < Regime Min ({rvol_min_buy}x)"
+        elif signal == "BUY" and rsi > rsi_ceil_buy:
+            signal = "VETOED"
+            veto_source = f"Overbought RSI ({rsi}) for Regime (Ceiling: {rsi_ceil_buy})"
+            
+        # Module 7: Event Calendar Blackout
+        try:
+            from data.macro_calendar import check_macro_veto
+            calendar_veto = check_macro_veto()
+            if calendar_veto.get("trigger", False) and signal == "BUY":
+                if calendar_veto.get("level") == "HARD_VETO":
+                    signal = "VETOED"
+                    veto_source = f"Event Calendar ({calendar_veto.get('reason')})"
+        except Exception as e:
+            print(f"Warning: Calendar engine not reachable - {e}")
+            
+        return {
+            "symbol": symbol,
+            "raw_score": raw_score,
+            "confidence": confidence_display,
+            "confidence_cap": conf_cap,
+            "threshold": threshold,
             "signal": signal,
-            "confidence": confidence,
-            "direction": direction,
-            "weight": weight,
-            "weighted_contribution": round(confidence * weight * direction, 2),
+            "signal_label": signal_label,
+            "veto_source": veto_source,
+            "macro_status": macro_status,
+            "votes": votes,
+            "pattern": detected_pattern
         }
 
-        if signal == "BUY":
-            buy_votes += 1
-        elif signal == "SELL":
-            sell_votes += 1
-        else:
-            neutral_votes += 1
+ensemble_engine = EnsembleVoter()
 
-    total_models = len(model_votes)
-    if total_models == 0:
-        return _empty_signal("No model outputs available")
-
-    # ─── Step 2: Calculate Weighted Ensemble Score ───────────
-    # Score = Σ(model_confidence × model_weight × model_direction)
-    # Range: approximately -100 to +100
-    ensemble_score = sum(
-        v["weighted_contribution"] for v in model_votes.values()
-    )
-
-    # Normalize to ensure the score is on a consistent scale
-    total_weight = sum(weights.get(m, 0) for m in model_votes)
-    if total_weight > 0:
-        normalized_score = ensemble_score / total_weight
-    else:
-        normalized_score = 0
-
-    # ─── Step 3: Calculate Model Agreement ───────────────────
-    agreement_ratio = max(buy_votes, sell_votes) / total_models if total_models > 0 else 0
-    dominant_direction = "BUY" if buy_votes > sell_votes else "SELL" if sell_votes > buy_votes else "NEUTRAL"
-
-    # ─── Step 4: Signal Classification ───────────────────────
-    signal_info = _classify_signal(
-        normalized_score, buy_votes, sell_votes, total_models
-    )
-
-    # ─── Step 5: Apply Hard Veto ─────────────────────────────
-    vetoed = False
-    veto_override = None
-
-    if veto_result and veto_result.get("vetoed", False):
-        vetoed = True
-        veto_override = veto_result.get("signal_override", "STAND ASIDE")
-
-        # Override signal
-        if veto_override == "EXIT ALL POSITIONS":
-            signal_info = {
-                "signal": "EXIT ALL POSITIONS",
-                "conviction": "CRITICAL",
-                "kelly_multiplier": 0.0,
-                "action": "Liquidate all holdings immediately",
-            }
-        else:
-            signal_info = {
-                "signal": "STAND ASIDE",
-                "conviction": "VETOED",
-                "kelly_multiplier": 0.0,
-                "action": "No new positions — hard veto active",
-            }
-
-    # ─── Step 6: Confidence Score ────────────────────────────
-    # Final confidence combines: ensemble score strength + model agreement
-    if not vetoed:
-        base_confidence = abs(normalized_score)
-        agreement_boost = agreement_ratio * 20
-        final_confidence = min(100, int(base_confidence + agreement_boost))
-    else:
-        final_confidence = 0
-
-    # ─── Assemble Output ─────────────────────────────────────
-    return {
-        "symbol": _get_symbol_from_outputs(model_outputs),
-        "date": _get_date(),
-        "signal": signal_info["signal"],
-        "conviction": signal_info.get("conviction", ""),
-        "ensemble_score": round(normalized_score, 2),
-        "raw_ensemble_score": round(ensemble_score, 2),
-        "final_confidence": final_confidence,
-        "kelly_multiplier": signal_info.get("kelly_multiplier", 0),
-
-        "model_votes": model_votes,
-        "vote_summary": {
-            "buy_votes": buy_votes,
-            "sell_votes": sell_votes,
-            "neutral_votes": neutral_votes,
-            "total_models": total_models,
-            "agreement_ratio": round(agreement_ratio, 2),
-            "dominant_direction": dominant_direction,
-        },
-
-        "vetoed": vetoed,
-        "veto_override": veto_override,
-        "active_vetoes": veto_result.get("active_vetoes", []) if veto_result else [],
-
-        "action": signal_info.get("action", ""),
-    }
-
-
-def _classify_signal(
-    score: float,
-    buy_votes: int,
-    sell_votes: int,
-    total_models: int,
-) -> Dict[str, Any]:
-    """Classify the final signal based on score and vote counts."""
-
-    # ─── BUY Signals ─────────────────────────────────────────
-    if buy_votes >= 5 and score > 70:
-        return {
-            "signal": "ULTRA HIGH CONVICTION BUY",
-            "conviction": "ULTRA",
-            "kelly_multiplier": 1.5,
-            "action": "Size up to 1.5× half-Kelly — maximum conviction",
-        }
-    elif buy_votes >= 4 and score > 55:
-        return {
-            "signal": "HIGH CONVICTION BUY",
-            "conviction": "HIGH",
-            "kelly_multiplier": 1.0,
-            "action": "Full half-Kelly position size",
-        }
-    elif buy_votes >= 3 and score > 40:
-        return {
-            "signal": "MODERATE BUY",
-            "conviction": "MODERATE",
-            "kelly_multiplier": 0.5,
-            "action": "0.5× half-Kelly — partial position",
-        }
-
-    # ─── SELL Signals ────────────────────────────────────────
-    elif sell_votes >= 5 and score < -70:
-        return {
-            "signal": "ULTRA HIGH CONVICTION SELL",
-            "conviction": "ULTRA",
-            "kelly_multiplier": 1.5,
-            "action": "Exit or short — maximum conviction sell",
-        }
-    elif sell_votes >= 4 and score < -55:
-        return {
-            "signal": "HIGH CONVICTION SELL",
-            "conviction": "HIGH",
-            "kelly_multiplier": 1.0,
-            "action": "Exit positions — high conviction sell",
-        }
-    elif sell_votes >= 3 and score < -40:
-        return {
-            "signal": "MODERATE SELL",
-            "conviction": "MODERATE",
-            "kelly_multiplier": 0.5,
-            "action": "Reduce or exit positions",
-        }
-
-    # ─── Neutral / Stand Aside ───────────────────────────────
-    elif buy_votes <= 1 and sell_votes <= 1:
-        return {
-            "signal": "STAND ASIDE",
-            "conviction": "NONE",
-            "kelly_multiplier": 0.0,
-            "action": "No clear edge — do not trade",
-        }
-    else:
-        return {
-            "signal": "NEUTRAL",
-            "conviction": "LOW",
-            "kelly_multiplier": 0.0,
-            "action": "Mixed signals — no trade recommended",
-        }
-
-
-def _empty_signal(reason: str) -> Dict[str, Any]:
-    """Return an empty/default signal when no data is available."""
-    return {
-        "signal": "NO DATA",
-        "conviction": "NONE",
-        "ensemble_score": 0,
-        "final_confidence": 0,
-        "kelly_multiplier": 0,
-        "model_votes": {},
-        "vote_summary": {"buy_votes": 0, "sell_votes": 0, "total_models": 0},
-        "vetoed": False,
-        "reason": reason,
-    }
-
-
-def _get_symbol_from_outputs(outputs: Dict) -> str:
-    """Extract symbol from any model output."""
-    for model_output in outputs.values():
-        if model_output and "symbol" in model_output:
-            return model_output["symbol"]
-    return "UNKNOWN"
-
-
-def _get_date() -> str:
-    """Get today's date string."""
-    from datetime import datetime
-    return datetime.now().strftime("%Y-%m-%d")
-
-
-def update_ensemble_weights(
-    current_weights: Dict[str, float],
-    decay_report: Dict[str, Any],
-) -> Dict[str, float]:
-    """
-    Dynamically adjust ensemble weights based on alpha decay data.
-
-    If a model's accuracy has decayed:
-    - < 8% drop: reduce weight proportionally
-    - > 15% drop: suspend model (weight = 0)
-
-    After adjustment, re-normalize weights to sum to 1.0.
-
-    Args:
-        current_weights: Current model weights
-        decay_report: Output from alpha_decay monitor
-
-    Returns:
-        Updated weights dict (normalized to sum to 1.0)
-    """
-    updated = dict(current_weights)
-
-    for model_name, decay_info in decay_report.items():
-        if model_name not in updated:
-            continue
-
-        severity = decay_info.get("severity", 0)
-
-        if severity > 0.15:
-            # Suspend model entirely
-            updated[model_name] = 0
-            print(f"⚠️ ENSEMBLE: Model '{model_name}' SUSPENDED (decay: {severity:.1%})")
-        elif severity > 0.08:
-            # Proportional reduction
-            reduction = severity / 0.15
-            updated[model_name] *= (1 - reduction)
-            print(f"⚠️ ENSEMBLE: Model '{model_name}' weight reduced by {reduction:.0%}")
-
-    # Re-normalize to sum to 1.0
-    total = sum(updated.values())
-    if total > 0:
-        updated = {k: v / total for k, v in updated.items()}
-
-    return updated
+def get_ensemble_analysis(symbol: str, df: pd.DataFrame, regime: str = "YELLOW") -> Dict[str, Any]:
+    return ensemble_engine.calculate_confidence(symbol, df, regime)

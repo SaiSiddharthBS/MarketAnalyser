@@ -8,9 +8,9 @@ from data.stock_fetcher import download_ohlcv
 import database as db
 
 
-def update_signal_outcomes():
+def resolve_pending_signals():
     """Check open signals and update outcomes based on actual price data.
-    Run this daily after market close (e.g., 4 PM IST).
+    Run this daily after market close.
     """
     conn = db.get_connection()
     if not conn:
@@ -20,192 +20,209 @@ def update_signal_outcomes():
     updated = 0
 
     try:
-        # Get all open signals
-        db.db_execute(cursor, """
-            SELECT id, symbol, entry_price, target_price, stop_loss, date_generated
-            FROM signal_log WHERE outcome = 'open'
-        """)
+        # Get all pending signals from the last 5 days
+        five_days_ago = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d')
+        cursor.execute("""
+            SELECT id, symbol, entry_price, target_price, stop_loss, signal_type, date_generated 
+            FROM signal_log 
+            WHERE (outcome IS NULL OR outcome = 'open') AND date_generated >= %s
+        """ if db.DATABASE_URL else """
+            SELECT id, symbol, entry_price, target_price, stop_loss, signal_type, date_generated 
+            FROM signal_log 
+            WHERE (outcome IS NULL OR outcome = 'open') AND date_generated >= ?
+        """, (five_days_ago,))
         rows = cursor.fetchall()
-
+        
         for row in rows:
             sig_id = row[0] if isinstance(row, (list, tuple)) else row["id"]
             symbol = row[1] if isinstance(row, (list, tuple)) else row["symbol"]
             entry = row[2] if isinstance(row, (list, tuple)) else row["entry_price"]
             target = row[3] if isinstance(row, (list, tuple)) else row["target_price"]
             sl = row[4] if isinstance(row, (list, tuple)) else row["stop_loss"]
-            date_gen = row[5] if isinstance(row, (list, tuple)) else row["date_generated"]
-
+            signal_type = row[5] if isinstance(row, (list, tuple)) else row["signal_type"]
+            
             if not entry or not target or not sl:
                 continue
-
+                
             try:
-                ticker = f"{symbol}.NS"
-                df = download_ohlcv(ticker, period="1mo", interval="1d")
-                if df is None or df.empty:
+                from data.stock_fetcher import get_stock_data
+                df = get_stock_data(symbol, period="5d", interval="1d")
+                if not df or len(df) == 0:
                     continue
-
-                # Get data after signal date
-                actual_open = float(df["Open"].iloc[-1]) if len(df) > 0 else None
-                actual_high = float(df["High"].iloc[-1]) if len(df) > 0 else None
-                actual_low = float(df["Low"].iloc[-1]) if len(df) > 0 else None
-                actual_close = float(df["Close"].iloc[-1]) if len(df) > 0 else None
-
-                # Check outcome: did price hit target or stop loss first?
-                outcome = "open"
-                days_to_outcome = None
-
-                # Look through recent price data
-                for i in range(len(df)):
-                    high = float(df["High"].iloc[i])
-                    low = float(df["Low"].iloc[i])
-
-                    if high >= target:
-                        outcome = "hit_target"
-                        days_to_outcome = i + 1
-                        break
-                    elif low <= sl:
-                        outcome = "hit_sl"
-                        days_to_outcome = i + 1
-                        break
-
-                # Update the record
-                db.db_execute(cursor, """
-                    UPDATE signal_log 
-                    SET actual_open = ?, actual_high = ?, actual_low = ?, actual_close = ?,
-                        outcome = ?, days_to_outcome = ?
-                    WHERE id = ?
-                """, (actual_open, actual_high, actual_low, actual_close,
-                      outcome, days_to_outcome, sig_id))
-                updated += 1
-
+                    
+                current_price = float(df[-1]["Close"])
+                
+                outcome = None
+                actual_return_pct = 0.0
+                if signal_type == "BUY":
+                    actual_return_pct = ((current_price - entry) / entry) * 100
+                    if current_price > entry:
+                        outcome = "WIN"
+                    elif current_price < sl:
+                        outcome = "LOSS"
+                elif signal_type == "SELL":
+                    actual_return_pct = ((entry - current_price) / entry) * 100
+                    if current_price < entry:
+                        outcome = "WIN"
+                    elif current_price > sl:
+                        outcome = "LOSS"
+                        
+                if outcome:
+                    cursor.execute("""
+                        UPDATE signal_log 
+                        SET outcome = ?
+                        WHERE id = ?
+                    """, (outcome, sig_id))
+                    
+                    # Phase 3: Also update prediction_log for Championship
+                    try:
+                        cursor.execute("""
+                            UPDATE prediction_log
+                            SET outcome = ?, resolved_date = ?, actual_return_pct = ?
+                            WHERE symbol = ? AND signal_type = ? AND outcome IS NULL
+                        """, (outcome, datetime.now().strftime('%Y-%m-%d'), round(actual_return_pct, 4), symbol, signal_type))
+                        
+                        # Trigger Alpha Decay Monitor & Calibrator
+                        try:
+                            from analysis.alpha_decay import AlphaDecayMonitor
+                            from arena.calibrator import ConfidenceCalibrator
+                            
+                            models = ["technical", "transformer", "options_flow", "ml_engine", "sentiment", "insider", "macro", "momentum"]
+                            decay = AlphaDecayMonitor(signal_names=models)
+                            
+                            # Parse model votes to update decay monitor
+                            cursor.execute("SELECT model_votes_json, confidence FROM prediction_log WHERE symbol = ? AND signal_type = ? AND outcome = ?", (symbol, signal_type, outcome))
+                            row = cursor.fetchone()
+                            if row:
+                                import json
+                                votes = json.loads(row[0])
+                                conf = row[1]
+                                for m, vote in votes.items():
+                                    if vote != 0:
+                                        # If vote > 0 and outcome WIN -> 1. If vote < 0 and outcome LOSS -> 1. Else 0.
+                                        is_correct = 1 if ((vote > 0 and outcome == 'WIN') or (vote < 0 and outcome == 'LOSS')) else 0
+                                        decay.update(m, prediction=1, actual=is_correct)
+                                        
+                                # Update calibrator
+                                calib = ConfidenceCalibrator()
+                                calib.log_outcome(conf, outcome == 'WIN')
+                                
+                        except Exception as mon_ex:
+                            print(f"Failed to update monitors: {mon_ex}")
+                            
+                    except Exception as ex:
+                        print(f"Failed to update prediction_log: {ex}")
+                        
+                    updated += 1
             except Exception as e:
-                print(f"⚠️ Outcome check failed for {symbol}: {e}")
-
+                print(f"Warning: Failed to resolve {symbol}: {e}")
+                
         conn.commit()
     except Exception as e:
-        print(f"❌ Accuracy update error: {e}")
+        print(f"❌ Error resolving signals: {e}")
     finally:
         db.put_connection(conn)
-
-    print(f"✅ Updated {updated} signal outcomes")
+        
+    print(f"✅ Resolved {updated} signal outcomes")
     return {"updated": updated}
 
 
 def get_accuracy_stats():
-    """Get accuracy statistics from signal log."""
-    conn = db.get_connection()
-    if not conn:
-        return {"error": "No DB connection"}
-
-    cursor = db.get_cursor(conn)
+    """Calculate historical accuracy of signals."""
     stats = {}
 
     try:
         # Total signals
-        db.db_execute(cursor, "SELECT COUNT(*) FROM signal_log")
-        total = cursor.fetchone()[0]
+        res = db.db_execute("SELECT COUNT(*) as count FROM signal_log")
+        total = res[0]["count"] if res else 0
 
         # Outcome breakdown
-        db.db_execute(cursor, """
-            SELECT outcome, COUNT(*) FROM signal_log GROUP BY outcome
-        """)
-        outcomes = {r[0]: r[1] for r in cursor.fetchall()}
+        out_res = db.db_execute("SELECT outcome, COUNT(*) as count FROM signal_log GROUP BY outcome")
+        outcomes = {r["outcome"]: r["count"] for r in (out_res or [])}
 
-        hit_target = outcomes.get("hit_target", 0)
-        hit_sl = outcomes.get("hit_sl", 0)
-        still_open = outcomes.get("open", 0)
-        evaluated = hit_target + hit_sl
+        wins = outcomes.get("WIN", 0)
+        losses = outcomes.get("LOSS", 0)
+        pending = outcomes.get(None, 0)
+        evaluated = wins + losses
 
-        win_rate = round((hit_target / evaluated) * 100, 1) if evaluated > 0 else 0
-
-        # Average days to outcome
-        db.db_execute(cursor, """
-            SELECT AVG(days_to_outcome) FROM signal_log 
-            WHERE outcome != 'open' AND days_to_outcome IS NOT NULL
-        """)
-        avg_days_row = cursor.fetchone()
-        avg_days = round(float(avg_days_row[0]), 1) if avg_days_row and avg_days_row[0] else 0
+        win_rate = round((wins / evaluated) * 100, 1) if evaluated > 0 else 0
 
         # By signal type
-        db.db_execute(cursor, """
+        sig_res = db.db_execute("""
             SELECT signal_type, 
                    COUNT(*) as total,
-                   SUM(CASE WHEN outcome = 'hit_target' THEN 1 ELSE 0 END) as wins
+                   SUM(CASE WHEN outcome = 'WIN' THEN 1 ELSE 0 END) as wins
             FROM signal_log 
-            WHERE outcome != 'open'
+            WHERE outcome IS NOT NULL
             GROUP BY signal_type
         """)
         by_signal = []
-        for r in cursor.fetchall():
-            sig_type = r[0]
-            sig_total = r[1]
-            sig_wins = r[2]
+        for r in (sig_res or []):
+            sig_total = r["total"]
+            sig_wins = r["wins"]
             by_signal.append({
-                "signal": sig_type,
+                "signal": r["signal_type"],
                 "total": sig_total,
                 "wins": sig_wins,
                 "win_rate": round((sig_wins / sig_total) * 100, 1) if sig_total > 0 else 0,
             })
 
-        # By segment
-        db.db_execute(cursor, """
-            SELECT segment,
+        # By regime
+        regime_res = db.db_execute("""
+            SELECT regime, 
                    COUNT(*) as total,
-                   SUM(CASE WHEN outcome = 'hit_target' THEN 1 ELSE 0 END) as wins
-            FROM signal_log
-            WHERE outcome != 'open'
-            GROUP BY segment
+                   SUM(CASE WHEN outcome = 'WIN' THEN 1 ELSE 0 END) as wins
+            FROM signal_log 
+            WHERE outcome IS NOT NULL AND regime IS NOT NULL
+            GROUP BY regime
         """)
-        by_segment = []
-        for r in cursor.fetchall():
-            by_segment.append({
-                "segment": r[0],
-                "total": r[1],
-                "wins": r[2],
-                "win_rate": round((r[2] / r[1]) * 100, 1) if r[1] > 0 else 0,
+        by_regime = []
+        for r in (regime_res or []):
+            reg_total = r["total"]
+            reg_wins = r["wins"]
+            by_regime.append({
+                "regime": r["regime"],
+                "total": reg_total,
+                "wins": reg_wins,
+                "win_rate": round((reg_wins / reg_total) * 100, 1) if reg_total > 0 else 0,
             })
 
-        # Recent signals log (for transparency table)
-        db.db_execute(cursor, """
-            SELECT symbol, signal_type, score, entry_price, target_price, stop_loss,
-                   outcome, days_to_outcome, segment, date_generated
-            FROM signal_log ORDER BY date_generated DESC LIMIT 50
+        # Recent resolved signals (last 20)
+        recent_res = db.db_execute("""
+            SELECT symbol, signal_type, score, entry_price, target_price, 
+                   stop_loss, outcome, timestamp
+            FROM signal_log 
+            WHERE outcome IS NOT NULL
+            ORDER BY id DESC LIMIT 20
         """)
-        recent = []
-        for r in cursor.fetchall():
-            recent.append({
-                "symbol": r[0], "signal": r[1], "score": r[2],
-                "entry": r[3], "target": r[4], "sl": r[5],
-                "outcome": r[6], "days": r[7], "segment": r[8], "date": r[9],
+        recent_signals = []
+        for r in (recent_res or []):
+            recent_signals.append({
+                "symbol": r["symbol"],
+                "signal": r["signal_type"],
+                "score": r["score"],
+                "entry": r["entry_price"],
+                "target": r["target_price"],
+                "sl": r["stop_loss"],
+                "outcome": r["outcome"],
+                "date": r["timestamp"],
             })
-
-        # Average return for hit_target signals
-        db.db_execute(cursor, """
-            SELECT AVG((target_price - entry_price) / entry_price * 100)
-            FROM signal_log WHERE outcome = 'hit_target' AND entry_price > 0
-        """)
-        avg_ret_row = cursor.fetchone()
-        avg_return = round(float(avg_ret_row[0]), 2) if avg_ret_row and avg_ret_row[0] else 0
 
         stats = {
             "total_signals": total,
-            "evaluated": evaluated,
-            "hit_target": hit_target,
-            "hit_sl": hit_sl,
-            "still_open": still_open,
+            "wins": wins,
+            "losses": losses,
+            "pending": pending,
             "win_rate": win_rate,
-            "avg_holding_days": avg_days,
-            "avg_return": avg_return,
-            "by_signal_type": by_signal,
-            "by_segment": by_segment,
-            "recent_signals": recent,
+            "by_signal": by_signal,
+            "by_regime": by_regime,
+            "recent_signals": recent_signals,
         }
+        return stats
 
     except Exception as e:
         print(f"❌ Accuracy stats error: {e}")
         stats = {"error": str(e)}
-    finally:
-        db.put_connection(conn)
 
     return stats
 

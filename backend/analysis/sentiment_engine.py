@@ -131,6 +131,76 @@ def _get_analyzer() -> Optional[Any]:
 
     return analyzer
 
+# ─── FinBERT & Lexical Fallback ──────────────────────────────
+
+_finbert_pipeline = None
+
+def _score_finbert(text: str) -> Optional[Dict[str, float]]:
+    """Lazy load FinBERT and score text. Returns VADER-like dict."""
+    import sys
+    import os
+    
+    # Avoid running PyTorch models automatically in some simple CI or restricted environments
+    # but we will try importing transformers.
+    try:
+        from data.cache import cache
+        import hashlib
+        
+        key = "finbert_" + hashlib.md5(text.encode('utf-8')).hexdigest()
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+
+        from transformers import pipeline
+        global _finbert_pipeline
+        
+        if _finbert_pipeline is None:
+            _finbert_pipeline = pipeline("sentiment-analysis", model="ProsusAI/finbert", truncation=True, max_length=512)
+            
+        result = _finbert_pipeline(text)[0]
+        label = result['label']
+        score = result['score']
+        
+        pos = score if label == "positive" else 0.0
+        neg = score if label == "negative" else 0.0
+        neu = score if label == "neutral" else 0.0
+        
+        if label == "positive":
+            compound = score
+        elif label == "negative":
+            compound = -score
+        else:
+            compound = 0.0
+            
+        res = {
+            "compound": round(compound, 4),
+            "pos": round(pos, 4),
+            "neg": round(neg, 4),
+            "neu": round(neu, 4)
+        }
+        
+        cache.set(key, res, ttl=3600)  # 1 hour cache
+        return res
+    except ImportError:
+        return None
+    except Exception as e:
+        print(f"FinBERT Error: {e}")
+        return None
+
+class _SimpleSentimentLexical:
+    """Keyword-based lexical fallback."""
+    _POS = {"up", "gain", "rise", "bull", "rally", "surge", "high", "strong", "growth", "profit", "buy", "positive", "beat"}
+    _NEG = {"down", "fall", "drop", "bear", "crash", "loss", "low", "weak", "sell", "negative", "fear", "risk", "decline", "miss"}
+    def polarity_scores(self, text):
+        words = set(text.lower().split())
+        pos = len(words & self._POS)
+        neg = len(words & self._NEG)
+        total = pos + neg or 1
+        compound = (pos - neg) / total * 0.5
+        return {"compound": round(compound, 4), "pos": round(pos / total, 4), "neg": round(neg / total, 4), "neu": round(1 - (pos + neg) / max(len(words), 1), 4)}
+
+_lexical_analyzer = _SimpleSentimentLexical()
+
 
 def analyze_sentiment_text(
     text: str,
@@ -138,6 +208,7 @@ def analyze_sentiment_text(
 ) -> Dict[str, Any]:
     """
     Analyze sentiment of a single text (headline/article).
+    3-tier fallback: FinBERT -> VADER -> Lexical.
 
     Returns:
         Dict with: compound (-1 to +1), positive, negative, neutral, label
@@ -145,17 +216,23 @@ def analyze_sentiment_text(
     if not text or not text.strip():
         return {"compound": 0, "label": "NEUTRAL", "positive": 0, "negative": 0, "neutral": 1}
 
-    if analyzer is None:
-        analyzer = _get_analyzer()
-        if analyzer is None:
-            return {"compound": 0, "label": "NEUTRAL", "error": "VADER not installed"}
-
-    # Preprocess: lowercase for lexicon matching
     clean_text = text.strip()
 
-    scores = analyzer.polarity_scores(clean_text)
+    # Tier 1: FinBERT
+    scores = _score_finbert(clean_text)
+    
+    # Tier 2: VADER
+    if scores is None:
+        if analyzer is None:
+            analyzer = _get_analyzer()
+        if analyzer is not None:
+            scores = analyzer.polarity_scores(clean_text)
+            
+    # Tier 3: Keyword Lexical
+    if scores is None:
+        scores = _lexical_analyzer.polarity_scores(clean_text)
 
-    compound = scores["compound"]
+    compound = scores.get("compound", 0.0)
 
     if compound >= 0.5:
         label = "STRONG_POSITIVE"

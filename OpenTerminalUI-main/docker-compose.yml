@@ -1,0 +1,60 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openterminalui:latest
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      OPENTERMINALUI_ENV: "${OPENTERMINALUI_ENV:-development}"
+      FMP_API_KEY: "${FMP_API_KEY:-}"
+      FINNHUB_API_KEY: "${FINNHUB_API_KEY:-}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:-}"
+      CACHE_SIGNING_KEY: "${CACHE_SIGNING_KEY:-}"
+      DATABASE_URL: "${DATABASE_URL:-sqlite+aiosqlite:////data/openterminal.db}"
+      KITE_API_KEY: "${KITE_API_KEY:-}"
+      KITE_API_SECRET: "${KITE_API_SECRET:-}"
+      KITE_ACCESS_TOKEN: "${KITE_ACCESS_TOKEN:-}"
+      REDIS_URL: "${REDIS_URL:-redis://redis:6379/0}"
+      OPENTERMINALUI_PREFETCH_ENABLED: "${OPENTERMINALUI_PREFETCH_ENABLED:-${OPENSCREENS_PREFETCH_ENABLED:-0}}"
+      OPENTERMINALUI_SQLITE_URL: "${OPENTERMINALUI_SQLITE_URL:-${OPENSCREENS_SQLITE_URL:-sqlite:////data/openterminalui.db}}"
+      OPENTERMINALUI_CORS_ORIGINS: "${OPENTERMINALUI_CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}"
+    volumes:
+      - openterminalui_data:/data
+    develop:
+      watch:
+        - action: rebuild
+          path: ./Dockerfile
+        - action: rebuild
+          path: ./backend
+        - action: rebuild
+          path: ./frontend
+        - action: rebuild
+          path: ./config
+        - action: rebuild
+          path: ./data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-openterminalui}"
+      POSTGRES_USER: "${POSTGRES_USER:-openterminalui}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-openterminalui}"
+    ports:
+      - "5432:5432"
+    volumes:
+      - openterminalui_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  openterminalui_data:
+  openterminalui_postgres_data:

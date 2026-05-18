@@ -7,7 +7,11 @@ const API_BASE = window.location.origin + '/api';
 const api = {
     async get(endpoint) {
         try {
-            const res = await fetch(`${API_BASE}${endpoint}`);
+            // 10-minute timeout for long screener scans
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 600000);
+            const res = await fetch(`${API_BASE}${endpoint}`, { signal: controller.signal });
+            clearTimeout(timeoutId);
             if (!res.ok) throw new Error(`API error: ${res.status}`);
             return await res.json();
         } catch (err) {
@@ -46,20 +50,34 @@ const api = {
     getPortfolio: () => api.get('/portfolio'),
     getStockDetail: (symbol) => api.get(`/stock/${symbol}`),
     getStockChart: (symbol, period) => api.get(`/stock/${symbol}/chart?period=${period || '1y'}`),
-    getIndexData: (symbol, period) => api.get(`/market/index/${symbol}?period=${period || '6mo'}`),
-    getScreenerTop: (n, segment) => api.get(`/screener/top?n=${n || 10}&segment=${segment || 'NIFTY_50'}`),
+    getIndexData: (symbol, period) => api.get(`/market/index/${encodeURIComponent(symbol)}?period=${period || '6mo'}`),
+    getScreenerTop: (n, segment, direction) => api.get(`/screener/top?n=${n || 10}&segment=${segment || 'NIFTY_50'}&direction=${direction || 'LONG'}`),
     getSignals: () => api.get('/signals'),
     generateSignals: () => api.get('/signals/generate'),
     getMfDetail: (code) => api.get(`/mf/${code}`),
     addHolding: (data) => api.post('/portfolio/add', data),
     removeHolding: (id) => api.del(`/portfolio/${id}`),
     
-    // Telegram Alert
+    // Phase 1: Arena
+    getArenaPortfolio: () => api.get('/arena/portfolio'),
+    getArenaTrades: () => api.get('/arena/trades'),
+    getArenaEquityCurve: () => api.get('/arena/equity-curve'),
+    getArenaStats: () => api.get('/arena/stats'),
+    executeArena: () => api.post('/arena/execute', {}),
+    
+    // Phase 3: Championship
+    getChampionship: () => api.get('/championship'),
+    // Accuracy & Championship
+    getAccuracyStats: () => api.get('/accuracy/stats'),
+    getChampionship: () => api.get('/championship'),
     sendTelegramAlert: () => api.post('/bot/alert', {}),
     
-    // Paper Trading
-    getPaperPortfolio: () => api.get('/paper/portfolio'),
-    executePaperTrade: (data) => api.post('/paper/trade', data),
+    // Arena (Paper Trading)
+    getPaperPortfolio: () => api.get('/arena/portfolio'),
+    getPaperTrades: () => api.get('/arena/trades'),
+    getPaperEquityCurve: () => api.get('/arena/equity-curve'),
+    getPaperStats: () => api.get('/arena/stats'),
+    executePaperTrade: () => api.post('/arena/execute', {}),
 
     // Market Regime
     getRegime: () => api.get('/regime'),

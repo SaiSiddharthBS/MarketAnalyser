@@ -1,0 +1,143 @@
+name: MarketPulse Daily Alerts
+
+on:
+  schedule:
+    # 8:00 AM IST (2:30 AM UTC) — Pre-Market Briefing
+    - cron: '30 2 * * 1-5'
+    # 9:20 AM IST (3:50 AM UTC) — Arena Execute
+    - cron: '50 3 * * 1-5'
+    # 3:35 PM IST (10:05 AM UTC) — Arena Execute
+    - cron: '5 10 * * 1-5'
+    # 3:45 PM IST (10:15 AM UTC) — Post-Market Briefing
+    - cron: '15 10 * * 1-5'
+    # Saturday 10:00 AM IST (4:30 AM UTC) — The War Room Report
+    - cron: '30 4 * * 6'
+    # Sunday Midnight UTC — Self-Learner
+    - cron: '0 0 * * 0'
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  daily-alert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Daily Alert Pipeline
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: |
+        cd backend
+        python -m bot.daily_job
+
+  arena-execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Arena Execution
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      run: |
+        cd backend
+        python -m arena.arena_scheduler
+
+  self-learner:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 0 * * 0' || github.event_name == 'workflow_dispatch'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Self-Learner
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      run: |
+        cd backend
+        python -m arena.self_learner
+
+  test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Pytest
+      run: |
+        python -m pytest backend/tests/ -v
+
+  war-room:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '30 4 * * 6' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Generate and Send War Room PDF
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      run: |
+        cd backend
+        python -m reports.war_room

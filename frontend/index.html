@@ -5,21 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Alpha — Institutional Trading Intelligence</title>
     <meta name="description" content="Agent Alpha v3.0 — Institutional-grade systematic trading engine with 8-model ensemble, HMM regime detection, and walk-forward validated ML predictions.">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32-v7.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16-v7.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/styles.css?v=30">
+    <link rel="stylesheet" href="/static/css/styles.css?v=71">
     <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#f8f9fc">
+    <meta name="theme-color" content="#080c14">
 
     <!-- iOS PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Agent Alpha">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/apple-touch-icon-v7.png">
 
     <script>
         if ('serviceWorker' in navigator) {
@@ -36,7 +36,7 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <img src="/static/images/icon-192.png" alt="Agent Alpha" class="logo-icon-img">
+                <img src="/static/images/icon-192-v7.png" alt="Agent Alpha" class="logo-icon-img">
                 <span class="logo-text">Agent Alpha</span>
             </div>
         </div>
@@ -68,8 +68,14 @@
             <li><a href="#" class="nav-link" data-page="accuracy" id="nav-accuracy">
                 <span class="nav-icon">🎯</span> Accuracy
             </a></li>
+            <li><a href="#" class="nav-link" data-page="alerts" id="nav-alerts">
+                <span class="nav-icon">🔔</span> Alerts
+            </a></li>
             <li><a href="#" class="nav-link" data-page="watchlist" id="nav-watchlist">
                 <span class="nav-icon">👀</span> Watchlist
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="paper" id="nav-paper">
+                <span class="nav-icon">⚔️</span> Arena
             </a></li>
         </ul>
         <div class="sidebar-footer">
@@ -245,39 +251,85 @@
         <!-- Paper Trading Page -->
         <section class="page" id="page-paper">
             <div class="page-header">
-                <h1>Paper Trading</h1>
-                <p class="subtitle">Simulate real market trades with 0.1% slippage/fees</p>
-            </div>
-            <div class="card-grid summary-grid" id="paper-summary">
-                <div class="summary-card">
-                    <div class="card-label">Net P&L</div>
-                    <div class="card-value" id="paper-pnl">₹0.00</div>
-                </div>
-                <div class="summary-card">
-                    <div class="card-label">Total Fees Paid</div>
-                    <div class="card-value negative" id="paper-fees">₹0.00</div>
+                <h1>Arena Engine (Paper Trading)</h1>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-primary" id="btn-arena-execute" onclick="triggerArena()">🚀 Trigger Arena Execution</button>
                 </div>
             </div>
-            <div class="glass-card">
-                <h3>Execute Trade</h3>
-                <div class="two-col" style="margin-bottom: 0;">
-                    <input type="text" id="paper-symbol" placeholder="Symbol (e.g. RELIANCE)" class="search-input">
-                    <div style="display:flex;gap:12px">
-                        <input type="number" id="paper-qty" placeholder="Quantity" class="search-input" style="flex:1">
-                        <input type="number" id="paper-price" placeholder="Price (Optional)" class="search-input" style="flex:1">
-                        <button class="btn btn-primary" id="btn-paper-buy" style="background:var(--green)">Buy</button>
-                        <button class="btn btn-primary" id="btn-paper-sell" style="background:var(--red)">Sell</button>
+
+            <!-- Portfolio Summary -->
+            <div class="card-grid summary-grid" id="arena-summary">
+                <div class="summary-card">
+                    <div class="card-label">Total Equity</div>
+                    <div class="card-value" id="arena-total-equity">₹0.00</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Cash Available</div>
+                    <div class="card-value" id="arena-cash">₹0.00</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Cumulative Return</div>
+                    <div class="card-value" id="arena-return">0.00%</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Open Positions</div>
+                    <div class="card-value" id="arena-open-positions">0/5</div>
+                </div>
+            </div>
+
+            <!-- Equity Curve -->
+            <div class="glass-card chart-card">
+                <h3>Equity Curve vs Benchmark (Nifty 50)</h3>
+                <div id="arena-equity-chart" class="chart-container" style="height: 300px;"></div>
+            </div>
+
+            <div class="card-grid two-grid">
+                <!-- Live Positions -->
+                <div class="glass-card">
+                    <h3>Live Positions</h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead><tr><th>Symbol</th><th>Qty</th><th>Entry Price</th><th>Target</th><th>SL</th></tr></thead>
+                            <tbody id="arena-open-body">
+                                <tr><td colspan="5" class="loading-skeleton">Loading positions...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <p id="paper-msg" style="margin-top:12px;font-size:12px;color:var(--text-muted)"></p>
+
+                <!-- Overall Stats -->
+                <div class="glass-card">
+                    <h3>Overall Stats</h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <tbody id="arena-stats-body">
+                                <tr><td colspan="2" class="loading-skeleton">Loading stats...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Monthly Stats Heatmap -->
+                <div class="glass-card">
+                    <h3>Monthly Stats (Calendar Heatmap)</h3>
+                    <div id="arena-heatmap" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
+                        <div class="loading-skeleton">Loading heatmap...</div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Trade History -->
             <div class="glass-card">
-                <h3>Active Positions</h3>
+                <h3>Trade History & Autopsies</h3>
                 <div class="table-container">
                     <table class="data-table">
-                        <thead><tr><th>Symbol</th><th>Qty</th><th>Avg Price</th><th>Invested</th></tr></thead>
-                        <tbody id="paper-positions-body">
-                            <tr><td colspan="4">No active positions.</td></tr>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th><th>Entry Date</th><th>Exit Date</th><th>Outcome</th><th>Net P&L</th><th>Return %</th><th>Autopsy Summary</th>
+                            </tr>
+                        </thead>
+                        <tbody id="arena-closed-body">
+                            <tr><td colspan="7" class="loading-skeleton">Loading history...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -295,7 +347,11 @@
                     <select id="segment-selector" class="segment-select">
                         <option value="NIFTY_50">Loading segments...</option>
                     </select>
-                    <button class="btn btn-primary" id="btn-run-screener">🔍 Run Screener</button>
+                    <select id="direction-selector" class="segment-select" style="margin-left: 10px; width: 120px;">
+                        <option value="LONG">🟢 Longs</option>
+                        <option value="SHORT">🔴 Shorts</option>
+                    </select>
+                    <button class="btn btn-primary" id="btn-run-screener" style="margin-left: 10px;">🔍 Run Screener</button>
                     <span class="screener-info" id="screener-info">Select a segment and run</span>
                 </div>
                 <div class="table-container">
@@ -405,10 +461,25 @@
                     <div id="acc-by-signal"><div class="loading-skeleton">Loading accuracy data...</div></div>
                 </div>
                 <div class="glass-card">
-                    <h3>By Segment</h3>
-                    <div id="acc-by-segment"><div class="loading-skeleton">Loading accuracy data...</div></div>
+                    <h3>Win Rate by Regime</h3>
+                    <div id="acc-by-segment"><div class="loading-skeleton">Loading regime data...</div></div>
                 </div>
             </div>
+            <!-- Model Championship -->
+            <div class="glass-card">
+                <h3>🏆 Model Championship Leaderboard</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Model Engine</th><th>Status</th><th>Accuracy</th><th>Weight (Cur vs Base)</th><th>Trades Evaluated</th><th>Sparkline</th></tr>
+                        </thead>
+                        <tbody id="championship-board">
+                            <tr><td colspan="5" class="loading-skeleton">Loading leaderboard...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="glass-card">
                 <h3>📋 Signal History Log</h3>
                 <div class="table-container" id="acc-signal-log">
@@ -439,12 +510,52 @@
                     </table>
                 </div>
             </div>
+    </section>
+
+        <!-- Task 25: Alert Builder Page -->
+        <section class="page" id="page-alerts">
+            <div class="page-header">
+                <h1>Alert Builder</h1>
+                <p class="subtitle">Set custom Price and Volume triggers</p>
+            </div>
+            <div class="glass-card">
+                <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;">
+                    <input type="text" class="form-input" id="alert-symbol" placeholder="Symbol (e.g. TCS)" style="flex:1">
+                    <select id="alert-condition" class="form-input" style="flex:1">
+                        <option value="PRICE_ABOVE">Price &gt;</option>
+                        <option value="PRICE_BELOW">Price &lt;</option>
+                        <option value="VOLUME_ABOVE">Volume &gt;</option>
+                    </select>
+                    <input type="number" class="form-input" id="alert-value" placeholder="Value" style="flex:1">
+                    <button class="btn btn-primary" onclick="addAlert()">+ Create Alert</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="alerts-table">
+                        <thead>
+                            <tr><th>Symbol</th><th>Condition</th><th>Target Value</th><th>Last Checked</th><th>Status</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="alerts-body">
+                            <tr><td colspan="6">No active alerts. Create one above 🔔</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
     </main>
 
-    <script src="/static/js/api.js?v=30"></script>
-    <script src="/static/js/charts.js?v=30"></script>
-    <script src="/static/js/app.js?v=30"></script>
+    <!-- Task 19: Signal Detail Modal -->
+    <div class="modal-overlay" id="signal-modal-overlay" onclick="closeSignalModal()">
+        <div class="signal-modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeSignalModal()">&times;</button>
+            <div id="signal-modal-content">
+                <div class="loading-skeleton">Loading signal details...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js?v=71"></script>
+    <script src="/static/js/charts.js?v=71"></script>
+    <script src="/static/js/app.js?v=71"></script>
 </body>
 </html>

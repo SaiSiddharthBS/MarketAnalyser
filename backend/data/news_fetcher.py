@@ -11,24 +11,7 @@ import traceback
 # Fix Mac SSL issue
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# Sentiment analyzer — VADER preferred, simple keyword fallback
-try:
-    from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-    analyzer = SentimentIntensityAnalyzer()
-except ImportError:
-    # Lightweight fallback when vaderSentiment isn't installed
-    class _SimpleSentiment:
-        """Basic keyword-based sentiment when VADER is unavailable."""
-        _POS = {"up", "gain", "rise", "bull", "rally", "surge", "high", "strong", "growth", "profit", "buy", "positive"}
-        _NEG = {"down", "fall", "drop", "bear", "crash", "loss", "low", "weak", "sell", "negative", "fear", "risk", "decline"}
-        def polarity_scores(self, text):
-            words = set(text.lower().split())
-            pos = len(words & self._POS)
-            neg = len(words & self._NEG)
-            total = pos + neg or 1
-            compound = (pos - neg) / total * 0.5
-            return {"compound": round(compound, 4), "pos": pos / total, "neg": neg / total, "neu": 1 - (pos + neg) / max(len(words), 1)}
-    analyzer = _SimpleSentiment()
+from analysis.sentiment_engine import analyze_sentiment_text
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -56,7 +39,7 @@ def _fetch_google_news(query, max_results=10):
             source_el = item.find("source")
             source = source_el.text if source_el is not None else "Unknown"
             
-            sentiment = analyzer.polarity_scores(title)
+            sentiment = analyze_sentiment_text(title)
             articles.append({
                 "title": title,
                 "link": link,
@@ -82,7 +65,7 @@ def _fetch_yahoo_news(query="market", max_results=10):
         articles = []
         for item in data.get("news", [])[:max_results]:
             title = item.get("title", "")
-            sentiment = analyzer.polarity_scores(title)
+            sentiment = analyze_sentiment_text(title)
             articles.append({
                 "title": title,
                 "link": item.get("link", ""),

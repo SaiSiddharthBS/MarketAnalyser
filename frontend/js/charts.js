@@ -1,37 +1,39 @@
 /**
- * Agent Alpha v3.0 — Chart Module (Light Theme)
- * TradingView Lightweight Charts — Institutional look
+ * Agent Alpha v4.0 — Chart Module (Obsidian Terminal Dark Theme)
+ * TradingView Lightweight Charts — Institutional dark mode
  */
 const Charts = {
     instances: {},
 
-    createAreaChart(containerId, data, color = '#6366f1') {
+    createAreaChart(containerId, data, color = '#00d4aa') {
         const container = document.getElementById(containerId);
         if (!container || !data || !data.length) return null;
 
         container.innerHTML = '';
 
         const chart = LightweightCharts.createChart(container, {
+            width: container.clientWidth,
+            height: container.clientHeight || 280,
             layout: {
                 background: { type: 'solid', color: 'transparent' },
-                textColor: '#94a3b8',
+                textColor: '#8b95a8',
                 fontSize: 11,
                 fontFamily: "'Inter', sans-serif",
             },
             grid: {
-                vertLines: { color: '#f1f5f9' },
-                horzLines: { color: '#f1f5f9' },
+                vertLines: { color: 'rgba(255,255,255,0.04)' },
+                horzLines: { color: 'rgba(255,255,255,0.04)' },
             },
             crosshair: {
                 mode: LightweightCharts.CrosshairMode.Normal,
-                vertLine: { color: '#cbd5e1', width: 1, style: 2 },
-                horzLine: { color: '#cbd5e1', width: 1, style: 2 },
+                vertLine: { color: 'rgba(255,255,255,0.15)', width: 1, style: 2 },
+                horzLine: { color: 'rgba(255,255,255,0.15)', width: 1, style: 2 },
             },
             rightPriceScale: {
-                borderColor: '#e2e8f0',
+                borderColor: 'rgba(255,255,255,0.08)',
             },
             timeScale: {
-                borderColor: '#e2e8f0',
+                borderColor: 'rgba(255,255,255,0.08)',
                 timeVisible: false,
             },
             handleScroll: { mouseWheel: true, pressedMouseMove: true },
@@ -61,10 +63,11 @@ const Charts = {
         this.instances[containerId] = chart;
 
         const ro = new ResizeObserver(() => {
-            chart.applyOptions({
-                width: container.clientWidth,
-                height: container.clientHeight,
-            });
+            const w = container.clientWidth;
+            const h = container.clientHeight || 280;
+            if (w > 0 && h > 0) {
+                chart.applyOptions({ width: w, height: h });
+            }
         });
         ro.observe(container);
 
@@ -78,28 +81,30 @@ const Charts = {
         container.innerHTML = '';
 
         const chart = LightweightCharts.createChart(container, {
+            width: container.clientWidth,
+            height: container.clientHeight || 280,
             layout: {
                 background: { type: 'solid', color: 'transparent' },
-                textColor: '#94a3b8',
+                textColor: '#8b95a8',
                 fontSize: 11,
                 fontFamily: "'Inter', sans-serif",
             },
             grid: {
-                vertLines: { color: '#f1f5f9' },
-                horzLines: { color: '#f1f5f9' },
+                vertLines: { color: 'rgba(255,255,255,0.04)' },
+                horzLines: { color: 'rgba(255,255,255,0.04)' },
             },
             crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-            rightPriceScale: { borderColor: '#e2e8f0' },
-            timeScale: { borderColor: '#e2e8f0' },
+            rightPriceScale: { borderColor: 'rgba(255,255,255,0.08)' },
+            timeScale: { borderColor: 'rgba(255,255,255,0.08)' },
         });
 
         const series = chart.addCandlestickSeries({
-            upColor: '#10b981',
-            downColor: '#ef4444',
-            borderUpColor: '#10b981',
-            borderDownColor: '#ef4444',
-            wickUpColor: '#10b981',
-            wickDownColor: '#ef4444',
+            upColor: '#00e68a',
+            downColor: '#ff4d6a',
+            borderUpColor: '#00e68a',
+            borderDownColor: '#ff4d6a',
+            wickUpColor: '#00e68a',
+            wickDownColor: '#ff4d6a',
         });
 
         const chartData = data
@@ -121,7 +126,11 @@ const Charts = {
         this.instances[containerId] = chart;
 
         const ro = new ResizeObserver(() => {
-            chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+            const w = container.clientWidth;
+            const h = container.clientHeight || 280;
+            if (w > 0 && h > 0) {
+                chart.applyOptions({ width: w, height: h });
+            }
         });
         ro.observe(container);
 

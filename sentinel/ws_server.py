@@ -1,0 +1,47 @@
+"""
+WebSocket Server for Pushing Alerts to Mac
+"""
+import asyncio
+import websockets
+import json
+import logging
+from config import WS_HOST, WS_PORT
+
+logger = logging.getLogger("Sentinel_WS")
+logger.setLevel(logging.INFO)
+
+connected_clients = set()
+
+async def handler(websocket, path=None): # Note: websockets 10+ handles path differently but we keep signature generic
+    connected_clients.add(websocket)
+    logger.info(f"Client connected. Total clients: {len(connected_clients)}")
+    try:
+        async for message in websocket:
+            # We just expect to push, but handle incoming if needed
+            pass
+    except websockets.exceptions.ConnectionClosed:
+        pass
+    finally:
+        connected_clients.remove(websocket)
+        logger.info(f"Client disconnected. Total clients: {len(connected_clients)}")
+
+async def broadcast_alert(alert_data: dict):
+    if not connected_clients:
+        return
+    
+    msg = json.dumps(alert_data)
+    # create tasks to send to all clients
+    tasks = [asyncio.create_task(client.send(msg)) for client in connected_clients]
+    await asyncio.gather(*tasks, return_exceptions=True)
+    logger.info(f"Broadcasted alert to {len(connected_clients)} clients.")
+
+async def start_server():
+    server = await websockets.serve(handler, WS_HOST, WS_PORT)
+    logger.info(f"WebSocket Server running on ws://{WS_HOST}:{WS_PORT}")
+    await server.wait_closed()
+
+def run_ws_server_in_thread():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(start_server())
+    loop.run_forever()

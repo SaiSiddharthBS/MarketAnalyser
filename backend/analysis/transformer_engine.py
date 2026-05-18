@@ -43,15 +43,8 @@ class LightweightSequenceModel:
         self._init_backend()
     
     def _init_backend(self):
-        """Try PyTorch first, fall back to sklearn."""
-        try:
-            import torch
-            import torch.nn as nn
-            self.is_torch = True
-            print("  ✅ Transformer: PyTorch backend detected")
-        except ImportError:
-            self.is_torch = False
-            print("  ℹ️ Transformer: Using sklearn sequence model (CPU fallback)")
+        """Use fast sklearn HistGradientBoosting backend."""
+        self.is_torch = False
     
     def prepare_features(self, df: pd.DataFrame) -> np.ndarray:
         """
@@ -190,7 +183,7 @@ class LightweightSequenceModel:
         y_train, y_test = y_seq[:split_idx], y_seq[split_idx:]
         
         try:
-            from sklearn.ensemble import GradientBoostingClassifier
+            from sklearn.ensemble import HistGradientBoostingClassifier
             from sklearn.preprocessing import StandardScaler
             from sklearn.metrics import accuracy_score
             
@@ -199,12 +192,11 @@ class LightweightSequenceModel:
             X_train_scaled = self.scaler.fit_transform(X_train)
             X_test_scaled = self.scaler.transform(X_test)
             
-            # Train Gradient Boosting on sequential features
-            self.model = GradientBoostingClassifier(
-                n_estimators=100,
+            # Train Lightning-Fast HistGradient Boosting on sequential features
+            self.model = HistGradientBoostingClassifier(
+                max_iter=30,  # fast approximation
                 max_depth=4,
                 learning_rate=0.1,
-                subsample=0.8,
                 random_state=42,
             )
             self.model.fit(X_train_scaled, y_train)

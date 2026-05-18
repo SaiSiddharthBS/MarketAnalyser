@@ -44,7 +44,7 @@ from data.macro_calendar import check_macro_veto
 # ─── Analysis Layers ───────────────────────────────────────
 from analysis.regime import get_current_market_regime
 from analysis.veto_engine import veto_engine  # Use the singleton
-from analysis.ensemble import calculate_ensemble_signal
+from analysis.ensemble import get_ensemble_analysis
 from analysis.position_sizing import calculate_position_size
 from analysis.portfolio_optimizer import optimize_portfolio_selection
 
@@ -205,42 +205,13 @@ def _run_alpha_v2_pipeline() -> str:
 
             returns_data[symbol] = df["Close"].pct_change().dropna()
 
-            # Build model outputs for ensemble
-            # In production, each model would be called individually.
-            # For the free-tier MVP, we use the technical analysis as
-            # the primary signal and build synthetic ensemble inputs.
+            # The TA engine now has the 8-model ensemble built-in
             from analysis.technical import get_technical_analysis
             ta = get_technical_analysis(symbol)
-
             if not ta:
                 continue
-
-            ta_score = ta.get("score", 50)
-            ta_signal = ta.get("signal", "NEUTRAL")
-
-            # Map TA signal to ensemble format
-            if ta_signal in ("EARLY_MOMENTUM", "CONTINUATION"):
-                direction = 1
-                signal = "BUY"
-            elif ta_signal in ("WEAK", "AVOID"):
-                direction = -1
-                signal = "SELL"
-            else:
-                direction = 0
-                signal = "NEUTRAL"
-
-            # Build model outputs dict
-            model_outputs = {
-                "momentum": {
-                    "signal": signal,
-                    "confidence": ta_score,
-                    "direction": direction,
-                    "symbol": symbol,
-                },
-            }
-
-            # Calculate ensemble
-            ensemble = calculate_ensemble_signal(model_outputs)
+                
+            ensemble = ta  # Use the integrated ensemble signal
 
             if "BUY" in ensemble.get("signal", ""):
                 # Layer 5: Position Sizing
@@ -277,6 +248,23 @@ def _run_alpha_v2_pipeline() -> str:
                 # Log to DB
                 try:
                     db.save_ensemble_signal(symbol, ensemble)
+                    
+                    # Phase 3: Log to prediction_log for Self-Learning & Championship
+                    import json
+                    import pytz
+                    
+                    db.db_execute("""
+                        INSERT INTO prediction_log (
+                            symbol, signal_date, signal_type, confidence, ensemble_score,
+                            model_votes_json, regime, vix_level, day_of_week
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        symbol, datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d"), 
+                        ensemble.get("signal"), ensemble.get("final_confidence", 0), 
+                        ensemble.get("ensemble_score", 0), json.dumps(ensemble.get("votes", {})), 
+                        regime_data.get("regime", "unknown"), regime_data.get("vix_level", 15), 
+                        datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%A")
+                    ))
                 except Exception:
                     pass
 
@@ -402,3 +390,12 @@ async def send_daily_alert():
 
 if __name__ == "__main__":
     asyncio.run(send_daily_alert())
+    
+    # Phase 2 Layer 2: Resolve any pending outcomes (if T+5 days passed)
+    try:
+        from analysis.accuracy import resolve_pending_signals
+        print("🔍 Resolving past prediction outcomes (Layer 2)...")
+        resolve_pending_signals()
+        print("✅ Outcome resolution complete.")
+    except Exception as e:
+        print(f"❌ Failed to resolve pending signals: {e}")

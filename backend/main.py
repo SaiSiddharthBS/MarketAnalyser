@@ -21,6 +21,10 @@ from typing import Optional
 from datetime import datetime
 import traceback
 
+# Task 15: Structured Logging
+from config.logging import setup_logging, RequestTimingMiddleware
+logger = setup_logging()
+
 import database as db
 from data import stock_fetcher, news_fetcher
 from data.stock_fetcher import (
@@ -34,6 +38,31 @@ from config import NIFTY_50_SYMBOLS, USER_MF_HOLDINGS, SECTOR_INDICES, SIGNAL_LA
 
 app = FastAPI(title="MarketPulse - Agent Alpha", version="3.0.0")
 
+
+# ─── Task 13: Standardized Error Response ─────────────────────
+
+class ErrorResponse(BaseModel):
+    error: bool = True
+    message: str
+    code: str
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    """Catch all unhandled exceptions and return a consistent JSON structure."""
+    logger.error(f"Unhandled exception on {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": True, "message": str(exc), "code": "INTERNAL_ERROR"}
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    """Standardize HTTPException responses."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": True, "message": exc.detail, "code": f"HTTP_{exc.status_code}"}
+    )
+
 # CORS for frontend
 app.add_middleware(
     CORSMiddleware,
@@ -43,6 +72,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Task 15: Request timing middleware
+app.add_middleware(RequestTimingMiddleware)
+
 # Serve frontend static files
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 if FRONTEND_DIR.exists():
@@ -51,17 +83,33 @@ if FRONTEND_DIR.exists():
 
 @app.on_event("startup")
 async def startup():
+    # Task 14: Print validated config summary
+    try:
+        from config.settings import settings
+        settings.print_startup_summary()
+    except Exception as se:
+        logger.warning("Settings validation: %s", se)
     try:
         db.init_db()
         _seed_portfolio()
+        
         # Verify any pending intraday predictions from previous days
-        try:
-            from analysis.accuracy import verify_intraday_predictions
-            verify_intraday_predictions()
-        except Exception as ve:
-            print(f"⚠️ Prediction verification on startup failed (non-fatal): {ve}")
+        # Do this in the background so it doesn't block server startup
+        import asyncio
+        from starlette.concurrency import run_in_threadpool
+        
+        async def background_verification():
+            try:
+                from analysis.accuracy import verify_intraday_predictions, resolve_pending_signals
+                await run_in_threadpool(verify_intraday_predictions)
+                # Task 7: Signal Outcome Resolver
+                await run_in_threadpool(resolve_pending_signals)
+            except Exception as ve:
+                logger.warning("Prediction verification on startup failed: %s", ve)
+                
+        asyncio.create_task(background_verification())
     except Exception as e:
-        print(f"⚠️ Startup error (non-fatal): {e}")
+        logger.warning("Startup error (non-fatal): %s", e)
 
 
 def _seed_portfolio():
@@ -80,9 +128,9 @@ def _seed_portfolio():
                     invested_amount=info["invested"],
                     scheme_code=info["scheme_code"],
                 )
-            print("✅ Pre-loaded user MF holdings")
+            logger.info("Pre-loaded user MF holdings")
     except Exception as e:
-        print(f"⚠️ Seed error: {e}")
+        logger.warning("Seed error: %s", e)
 
 
 # ─── Frontend Routes ─────────────────────────────────────
@@ -93,6 +141,14 @@ async def serve_frontend():
     if index.exists():
         return FileResponse(str(index))
     return {"message": "MarketPulse API is running. Frontend not found."}
+
+
+# ─── Cache Management ──────────────────────────────────────
+
+@app.get("/api/cache/stats")
+async def cache_stats():
+    from data.cache import cache
+    return cache.get_stats()
 
 
 # ─── Market Overview ─────────────────────────────────────
@@ -112,18 +168,18 @@ async def market_overview():
                 timeout=45.0
             )
         except asyncio.TimeoutError:
-            print("⚠️ Market overview fetch timed out!")
+            logger.warning("Market overview fetch timed out!")
             indices, news, sentiment = Exception("Timeout"), Exception("Timeout"), Exception("Timeout")
 
         # Handle partial failures gracefully
         if isinstance(indices, Exception):
-            print(f"⚠️ Indices fetch failed: {indices}")
+            logger.warning("Indices fetch failed: %s", indices)
             indices = {}
         if isinstance(news, Exception):
-            print(f"⚠️ News fetch failed: {news}")
+            logger.warning("News fetch failed: %s", news)
             news = []
         if isinstance(sentiment, Exception):
-            print(f"⚠️ Sentiment fetch failed: {sentiment}")
+            logger.warning("Sentiment fetch failed: %s", sentiment)
             sentiment = {"score": 0, "label": "Unavailable", "positive_pct": 0, "negative_pct": 0}
 
         from data.stock_fetcher import get_market_status
@@ -140,7 +196,7 @@ async def market_overview():
             "news": (news if isinstance(news, list) else [])[:15],
         }
     except Exception as e:
-        print(f"❌ Market overview error: {traceback.format_exc()}")
+        logger.error("Market overview error: %s", traceback.format_exc())
         from data.stock_fetcher import get_market_status
         return {
             "timestamp": datetime.now().isoformat(),
@@ -165,6 +221,51 @@ async def index_data(symbol: str, period: str = "6mo"):
     except Exception as e:
         raise HTTPException(500, f"Error fetching {symbol}: {str(e)}")
 
+# Task 25: Lightweight Price Endpoint for Alerts
+@app.get("/api/price/{symbol}")
+async def get_current_price(symbol: str):
+    """Fetch only the latest price and volume for a symbol (cached)."""
+    try:
+        from data.stock_fetcher import get_stock_data
+        data = await run_in_threadpool(get_stock_data, symbol, period="5d")
+        if not data:
+            raise HTTPException(404, "Data unavailable")
+        latest = data[-1]
+        return {
+            "symbol": symbol,
+            "price": latest["Close"],
+            "volume": latest["Volume"],
+            "timestamp": latest["Date"]
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+# Task 22: F&O Options Chain Endpoint
+@app.get("/api/options/{symbol}")
+async def get_options_data(symbol: str):
+    """Get basic F&O options data (PCR, Max Pain) for a symbol."""
+    try:
+        from data.options_fetcher import fetch_options_chain, calculate_pcr, calculate_max_pain
+        opt_data = await run_in_threadpool(fetch_options_chain, symbol)
+        if not opt_data:
+            raise HTTPException(404, f"Options data unavailable for {symbol}")
+        
+        data = opt_data.get("data", [])
+        underlying = opt_data.get("underlying_value", 0)
+        pcr_stats = calculate_pcr(data)
+        max_pain = calculate_max_pain(data, underlying_price=underlying)
+        
+        return {
+            "symbol": symbol,
+            "pcr": pcr_stats,
+            "max_pain": max_pain,
+            "timestamp": datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Options API Error for {symbol}: {e}")
+        raise HTTPException(500, f"Error fetching options: {str(e)}")
 
 # ─── Stock Analysis ──────────────────────────────────────
 
@@ -176,6 +277,86 @@ def _find_sector_for_symbol(symbol):
         if symbol.upper() in seg["symbols"]:
             return seg.get("yahoo_index", "^NSEI")
     return "^NSEI"
+
+def _compute_retroactive_verification(symbol: str, ta_result) -> dict:
+    """
+    Compute a real-time 'Yesterday Prediction vs Today Reality' using historical data.
+    Uses day T-2's close + ATR to predict day T-1's range, then grades against T-1's actual OHLC.
+    This ensures the verification section is NEVER empty.
+    """
+    try:
+        import pandas as pd
+        import ta as ta_lib
+
+        data = get_stock_data(symbol, period="10d", interval="1d")
+        if not data or len(data) < 3:
+            return None
+
+        df = pd.DataFrame(data)
+        if len(df) < 3:
+            return None
+
+        # Yesterday's close = prediction base (what we would have predicted yesterday evening)
+        yesterday = df.iloc[-2]
+        # Today's completed OHLC = the reality we grade against
+        today = df.iloc[-1]
+
+        prev_close = float(yesterday["Close"])
+
+        # Compute ATR using data up to yesterday for the prediction
+        atr_series = ta_lib.volatility.AverageTrueRange(
+            df["High"], df["Low"], df["Close"], window=min(14, len(df) - 1)
+        ).average_true_range()
+        atr_val = float(atr_series.iloc[-2]) if len(atr_series) >= 2 and pd.notna(atr_series.iloc[-2]) else prev_close * 0.02
+
+        pred_high = round(prev_close + atr_val, 2)
+        pred_low = round(prev_close - atr_val, 2)
+
+        # Determine predicted direction from the technical result
+        if ta_result and not isinstance(ta_result, Exception):
+            sig = ta_result.get("signal", "NEUTRAL")
+            if sig in ["BUY", "STRONG_BUY"]:
+                pred_direction = "Bullish"
+            elif sig in ["SELL", "STRONG_SELL"]:
+                pred_direction = "Bearish"
+            else:
+                pred_direction = "Neutral"
+        else:
+            pred_direction = "Neutral"
+
+        actual_open = round(float(today["Open"]), 2)
+        actual_high = round(float(today["High"]), 2)
+        actual_low = round(float(today["Low"]), 2)
+        actual_close = round(float(today["Close"]), 2)
+
+        # Grade it
+        status_parts = []
+        if actual_high <= pred_high and actual_low >= pred_low:
+            status_parts.append("✅ Within Range")
+        else:
+            status_parts.append("❌ Range Breached")
+
+        actual_dir = "Bullish" if actual_close > actual_open else ("Bearish" if actual_close < actual_open else "Neutral")
+        if pred_direction == actual_dir:
+            status_parts.append("✅ Direction Hit")
+        else:
+            status_parts.append("❌ Direction Missed")
+
+        return {
+            "pred_high": pred_high,
+            "pred_low": pred_low,
+            "pred_direction": pred_direction,
+            "actual_open": actual_open,
+            "actual_high": actual_high,
+            "actual_low": actual_low,
+            "actual_close": actual_close,
+            "status": " | ".join(status_parts),
+            "target_date": str(today.get("Date", "Today")),
+        }
+    except Exception as e:
+        logger.warning("Retroactive verification failed for %s: %s", symbol, e)
+        return None
+
 
 @app.get("/api/stock/{symbol}")
 async def stock_detail(symbol: str):
@@ -191,15 +372,10 @@ async def stock_detail(symbol: str):
             return_exceptions=True
         )
 
-        # Verify any pending predictions for this symbol before returning
-        try:
-            from analysis.accuracy import verify_intraday_predictions
-            await run_in_threadpool(verify_intraday_predictions)
-        except Exception as ve:
-            print(f"⚠️ Prediction verification failed for {symbol}: {ve}")
-
-        import database as db
-        verification = db.get_recent_intraday_verification(symbol)
+        # Always compute fresh verification from live data (DB records can be stale)
+        verification = await run_in_threadpool(
+            _compute_retroactive_verification, symbol, ta_result
+        )
 
         return {
             "info": info if not isinstance(info, Exception) else None,
@@ -252,22 +428,32 @@ async def screener_segments():
 
 
 @app.get("/api/screener/top")
-async def screener_top(n: int = 10, segment: str = "NIFTY_50"):
+async def screener_top(n: int = 10, segment: str = "NIFTY_50", direction: str = "LONG"):
     """Get top N stocks by technical score from a segment."""
     try:
         if segment == "ALL_SECTORS":
-            # Scan top 3 from each sector, merge and rank
+            # Scan top 2 from each sector, merge and rank
             all_results = []
+            import time as _time
+            start_ts = _time.time()
+            MAX_SCREENER_SECONDS = 180  # 3 min hard cap — return partial results after this
+            
             for seg_key, seg_data in SECTOR_INDICES.items():
+                # If we've been running too long, return what we have
+                if _time.time() - start_ts > MAX_SCREENER_SECONDS:
+                    logger.warning("Screener hit 3-min cap after %d sectors. Returning partial results.", len(all_results))
+                    break
                 try:
-                    symbols = seg_data["symbols"][:15]  # Limit per sector for speed
+                    # Upgrade 12: Permanent Exclusion List
+                    EXCLUSIONS = {"LIQUIDBEES", "LIQUIDCASE", "LIQUIDETF", "LICNETFGSC"}
+                    symbols = [s for s in seg_data["symbols"] if s not in EXCLUSIONS][:8]  # 8 per sector for speed
                     yahoo_idx = seg_data.get("yahoo_index", "^NSEI")
-                    results = await run_in_threadpool(screen_stocks, symbols, top_n=3, sector_yahoo_index=yahoo_idx)
+                    results = await run_in_threadpool(screen_stocks, symbols, top_n=2, sector_yahoo_index=yahoo_idx, direction=direction.upper())
                     for r in results:
                         r["sector_name"] = seg_data["name"]
                     all_results.extend(results)
                 except Exception as seg_err:
-                    print(f"⚠️ Skipping {seg_key}: {seg_err}")
+                    logger.warning("Skipping %s: %s", seg_key, seg_err)
             phase_priority = {"EARLY_MOMENTUM": 6, "CONTINUATION": 5, "PULLBACK": 4, "EXTENDED": 3, "WEAK": 2, "AVOID": 1}
             all_results.sort(key=lambda x: (phase_priority.get(x["signal"], 0), x["score"]), reverse=True)
             # Deduplicate by symbol (keep highest score)
@@ -278,9 +464,10 @@ async def screener_top(n: int = 10, segment: str = "NIFTY_50"):
                     seen.add(r["symbol"])
                     deduped.append(r)
             all_results = deduped[:n]
+            elapsed = round(_time.time() - start_ts, 1)
             return {
                 "segment": "ALL_SECTORS",
-                "segment_name": "🔥 All Sectors — Top Picks",
+                "segment_name": f"🔥 All Sectors — Top {direction.upper()} Picks ({elapsed}s)",
                 "count": len(all_results),
                 "stocks": all_results,
                 "signal_labels": SIGNAL_LABELS,
@@ -290,10 +477,12 @@ async def screener_top(n: int = 10, segment: str = "NIFTY_50"):
         if not seg_data:
             return {"count": 0, "stocks": [], "error": f"Unknown segment: {segment}"}
 
-        symbols = seg_data["symbols"]
+        # Upgrade 12: Permanent Exclusion List
+        EXCLUSIONS = {"LIQUIDBEES", "LIQUIDCASE", "LIQUIDETF", "LICNETFGSC"}
+        symbols = [s for s in seg_data["symbols"] if s not in EXCLUSIONS]
         yahoo_index = seg_data.get("yahoo_index", "^NSEI")
         results = await run_in_threadpool(
-            screen_stocks, symbols, top_n=n, sector_yahoo_index=yahoo_index
+            screen_stocks, symbols, top_n=n, sector_yahoo_index=yahoo_index, direction=direction.upper()
         )
 
         # Log signals for accuracy tracking (Day 1)
@@ -301,17 +490,22 @@ async def screener_top(n: int = 10, segment: str = "NIFTY_50"):
             import database as db
             db.log_screener_signals(results, segment=segment)
         except Exception as log_err:
-            print(f"⚠️ Signal logging failed: {log_err}")
+            logger.warning("Signal logging failed: %s", log_err)
 
+        error_msg = "🛡️ No stocks met the strict institutional criteria for the current market regime. Capital preservation is active."
+        if direction.upper() == "SHORT":
+            error_msg = "📉 No short setups met the criteria. Markets might be bouncing."
+            
         return {
             "segment": segment,
-            "segment_name": seg_data["name"],
+            "segment_name": seg_data["name"] + f" ({direction.upper()}S)",
             "count": len(results),
             "stocks": results,
             "signal_labels": SIGNAL_LABELS,
+            "error": error_msg if len(results) == 0 else None
         }
     except Exception as e:
-        print(f"❌ Screener error: {e}")
+        logger.error("Screener error: %s", e)
         return {"count": 0, "stocks": [], "error": str(e)}
 
 
@@ -338,7 +532,7 @@ async def sector_rotation():
         data = await run_in_threadpool(get_sector_rotation)
         return data
     except Exception as e:
-        print(f"❌ Sector rotation error: {e}")
+        logger.error("Sector rotation error: %s", e)
         return {"sectors": [], "error": str(e)}
 
 
@@ -365,7 +559,7 @@ async def why_this_trade(symbol: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Why This Trade error: {e}")
+        logger.error("Why This Trade error: %s", e)
         return {"symbol": symbol, "explanation": f"Error: {str(e)}"}
 
 
@@ -382,10 +576,29 @@ async def calculate_position_size(
         result = calculate_position(entry, stop_loss, capital, risk_pct)
         return result
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=400, detail=f"Position calculation failed: {e}")
 
 
 # ─── Accuracy Analyser ───────────────────────────────────
+
+@app.get("/api/accuracy/walk-forward")
+async def walk_forward_endpoint(symbol: str = "RELIANCE", folds: int = 5):
+    """Run Walk-Forward Validation on historical data."""
+    try:
+        from data.stock_fetcher import get_stock_data
+        from analysis.walk_forward import run_walk_forward_validation
+        import pandas as pd
+        
+        # We need lots of data for walk-forward
+        data = get_stock_data(symbol, period="5y", interval="1d")
+        if not data:
+            raise HTTPException(status_code=404, detail=f"Could not fetch data for {symbol}")
+            
+        df = pd.DataFrame(data)
+        result = await run_in_threadpool(run_walk_forward_validation, df, folds=folds)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Walk-forward validation failed: {e}")
 
 @app.get("/api/accuracy/stats")
 async def accuracy_stats():
@@ -394,18 +607,28 @@ async def accuracy_stats():
         from analysis.accuracy import get_accuracy_stats
         return await run_in_threadpool(get_accuracy_stats)
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=f"Accuracy stats unavailable: {e}")
 
 
 @app.get("/api/accuracy/update")
 async def accuracy_update(background_tasks: BackgroundTasks):
     """Trigger outcome update for open signals (run after market close)."""
     try:
-        from analysis.accuracy import update_signal_outcomes
-        background_tasks.add_task(update_signal_outcomes)
+        from analysis.accuracy import resolve_pending_signals
+        background_tasks.add_task(resolve_pending_signals)
         return {"status": "Accuracy update started in background"}
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=f"Accuracy update failed: {e}")
+
+
+@app.get("/api/championship")
+async def get_championship_leaderboard():
+    """Phase 3: Championship Leaderboard"""
+    try:
+        from arena.championship import get_leaderboard
+        return get_leaderboard()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Leaderboard error: {e}")
 
 
 # ─── Portfolio ───────────────────────────────────────────
@@ -438,6 +661,40 @@ async def add_holding_api(holding: HoldingInput):
         return {"success": True, "message": f"Added {holding.symbol.upper()}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+class PaperTradeInput(BaseModel):
+    symbol: str
+    entry_price: float
+    target_price: float = None
+    stop_loss: float = None
+    qty: int
+    notes: str = ""
+
+@app.post("/api/paper_trades")
+async def add_paper_trade(trade: PaperTradeInput):
+    """Upgrade 13: Create a paper trade."""
+    try:
+        query = """INSERT INTO paper_trades 
+                   (symbol, entry_price, entry_date, target_price, stop_loss, qty, notes) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?)"""
+        db.db_execute(query, (
+            trade.symbol.upper(), trade.entry_price, datetime.now().isoformat(),
+            trade.target_price, trade.stop_loss, trade.qty, trade.notes
+        ))
+        return {"success": True, "message": f"Paper trade started for {trade.symbol}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/paper_trades")
+async def get_paper_trades():
+    """Upgrade 13: Get all paper trades."""
+    try:
+        query = "SELECT * FROM paper_trades ORDER BY created_at DESC"
+        trades = db.db_execute(query)
+        # Convert sqlite3.Row objects to dicts
+        return [dict(t) for t in trades] if trades else []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Paper trades unavailable: {e}")
 
 @app.delete("/api/portfolio/holdings/{holding_id}")
 async def delete_holding_api(holding_id: int):
@@ -499,7 +756,7 @@ async def get_portfolio():
             "stocks": stock_data,
         }
     except Exception as e:
-        print(f"❌ Portfolio error: {traceback.format_exc()}")
+        logger.error("Portfolio error: %s", traceback.format_exc())
         return {
             "summary": {"total_invested": 0, "total_current": 0, "total_returns": 0, "total_returns_pct": 0},
             "mutual_funds": None,
@@ -585,7 +842,7 @@ async def generate_signals():
                 signals.append(r)
         return {"generated": len(signals), "signals": signals}
     except Exception as e:
-        print(f"❌ Signal generation error: {e}")
+        logger.error("Signal generation error: %s", e)
         return {"generated": 0, "signals": [], "error": str(e)}
 
 
@@ -620,6 +877,23 @@ async def execute_paper_trade(t: TradeCreate):
     db.add_paper_trade(t.symbol.upper(), t.trade_type.upper(), t.quantity, price, fees, t.notes)
     return {"status": "ok", "price": price, "fees": fees}
 
+class NewsAlertPayload(BaseModel):
+    type: str
+    category: str
+    headline: str
+    link: str
+
+@app.post("/api/bot/alert/news")
+async def trigger_news_alert(payload: NewsAlertPayload, background_tasks: BackgroundTasks):
+    """Phase 4: Sentinel News Triage Alert"""
+    try:
+        from bot.telegram_bot import send_urgent_news_alert
+        background_tasks.add_task(send_urgent_news_alert, payload.category, payload.headline, payload.link)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"News alert failed: {e}")
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/bot/alert")
 @app.post("/api/bot/alert")
 async def trigger_telegram_alert(background_tasks: BackgroundTasks):
@@ -642,10 +916,10 @@ def _run_daily_alert_sync():
     loop = asyncio.new_event_loop()
     try:
         result = loop.run_until_complete(send_daily_alert())
-        print(f"✅ Background alert completed: {result.get('status', 'unknown')}")
+        logger.info("Background alert completed: %s", result.get('status', 'unknown'))
         return result
     except Exception as e:
-        print(f"❌ Background alert failed: {e}")
+        logger.error("Background alert failed: %s", e)
     finally:
         loop.close()
 
@@ -696,6 +970,54 @@ async def debug_env():
     
     return results
 
+# ─── Arena (Paper Trading) ───────────────────────────────
+
+@app.get("/api/arena/portfolio")
+async def get_arena_portfolio():
+    from arena.paper_trading import get_latest_portfolio
+    return get_latest_portfolio()
+
+@app.get("/api/arena/trades")
+async def get_arena_trades():
+    import database as db
+    open_trades = db.db_execute("SELECT * FROM paper_trades WHERE status = 'OPEN' ORDER BY entry_date DESC")
+    closed_trades = db.db_execute("SELECT * FROM paper_trades WHERE status != 'OPEN' ORDER BY exit_date DESC")
+    return {"open": open_trades, "closed": closed_trades}
+
+@app.get("/api/arena/equity-curve")
+async def get_arena_equity_curve():
+    import database as db
+    history = db.db_execute("SELECT date, total_equity, benchmark_nifty_return_pct FROM paper_portfolio ORDER BY date ASC")
+    return {"history": history}
+
+@app.get("/api/arena/stats")
+async def get_arena_stats():
+    import database as db
+    res = db.db_execute("SELECT * FROM paper_monthly_stats ORDER BY month DESC")
+    
+    total_trades_res = db.db_execute("SELECT COUNT(*) as count FROM paper_trades WHERE status != 'OPEN'")
+    total_trades = total_trades_res[0]["count"] if total_trades_res else 0
+    
+    wins_res = db.db_execute("SELECT COUNT(*) as count FROM paper_trades WHERE status = 'CLOSED_WIN'")
+    wins = wins_res[0]["count"] if wins_res else 0
+    
+    win_rate = (wins / total_trades * 100) if total_trades > 0 else 0.0
+    
+    return {
+        "monthly_stats": res,
+        "overall": {
+            "total_trades": total_trades,
+            "wins": wins,
+            "win_rate": win_rate
+        }
+    }
+
+@app.post("/api/arena/execute")
+async def trigger_arena_execute(background_tasks: BackgroundTasks):
+    from arena.paper_trading import execute_daily_arena
+    background_tasks.add_task(execute_daily_arena)
+    return {"status": "Execution triggered"}
+
 
 # ─── Health ──────────────────────────────────────────────
 
@@ -726,7 +1048,7 @@ async def start_keep_alive():
             while True:
                 try:
                     await client.get(f"{url}/api/health", timeout=10)
-                    print("🏓 Keep-alive ping sent")
+                    logger.debug("Keep-alive ping sent")
                 except Exception:
                     pass
                 await asyncio.sleep(600) # Every 10 mins

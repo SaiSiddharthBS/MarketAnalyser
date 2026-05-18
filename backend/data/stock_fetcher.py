@@ -7,6 +7,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import ssl
 import requests
+from .cache import cache
 
 # Fix Mac SSL issue
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -67,18 +68,88 @@ def download_ohlcv(symbol, period="1y", interval="1d"):
     return None
 
 
+def is_market_open():
+    try:
+        from zoneinfo import ZoneInfo
+        now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    except Exception:
+        now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    
+    if now.weekday() >= 5:
+        return False
+        
+    market_start = now.replace(hour=9, minute=15, second=0, microsecond=0)
+    market_end = now.replace(hour=15, minute=30, second=0, microsecond=0)
+    
+    return market_start <= now <= market_end
+
 def get_stock_data(symbol, period="1y", interval="1d", exchange="NS"):
-    """Fetch OHLCV data for a stock."""
+    """Fetch OHLCV data for a stock with caching."""
     ticker = f"{symbol}.{exchange}" if exchange else symbol
+    
+    cache_key = f"ohlcv_{ticker}_{period}_{interval}"
+    cached_data = cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
+        
     try:
         df = download_ohlcv(ticker, period=period, interval=interval)
+        
+        from .data_validator import validator, DataQualityError
+        validator.strict_mode = True
+        df, report = validator.validate_ohlcv(df, ticker)
+        
         if df is None or df.empty:
-            return None
+            raise DataQualityError(f"Data became empty after validation for {ticker}")
+            
         df.index = df.index.strftime("%Y-%m-%d") if interval == "1d" else df.index.strftime("%Y-%m-%d %H:%M")
-        return df.reset_index().to_dict("records")
+        result = df.reset_index().to_dict("records")
+        
+        # TTL: 15 mins during market hours, 12 hours otherwise
+        ttl = 15 * 60 if is_market_open() else 12 * 60 * 60
+        cache.set(cache_key, result, ttl=ttl)
+        
+        return result
+    except DataQualityError:
+        raise
     except Exception as e:
         print(f"Error fetching {ticker}: {e}")
         return None
+
+
+def _get_delivery_percentage(symbol: str) -> float:
+    """Fetch delivery percentage from NSE. Returns 100.0 if failed to bypass filters."""
+    cache_key = f"delivery_pct_{symbol}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    try:
+        from data.fii_dii_fetcher import _get_nse_session
+        session = _get_nse_session()
+        from urllib.parse import quote
+        safe_symbol = quote(symbol)
+        
+        url = f"https://www.nseindia.com/api/quote-equity?symbol={safe_symbol}"
+        r = session.get(url, timeout=10)
+        
+        if r.status_code == 200:
+            data = r.json()
+            dp = data.get("securityWiseDP", {})
+            pct = dp.get("deliveryToTradedQuantity", 100.0)
+            
+            if pct is None:
+                pct = 100.0
+            pct = float(pct)
+            
+            cache.set(cache_key, pct, ttl=3600 * 4) # cache for 4 hours
+            return pct
+    except Exception as e:
+        pass
+        
+    # Cache the fallback so we don't hammer the blocked API
+    cache.set(cache_key, 100.0, ttl=3600 * 4)
+    return 100.0
 
 
 def get_stock_info(symbol, exchange="NS"):

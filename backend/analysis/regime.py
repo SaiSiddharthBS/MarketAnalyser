@@ -223,7 +223,7 @@ class RegimeClassifier:
         vix = latest.get("VIX", 15.0)
         dist_ema200 = latest.get("Dist_EMA200", 0.0)
         
-        if vix >= 25 or (vix >= 22 and dist_ema200 < 0):
+        if dist_ema200 < 0 or vix >= 25:
             regime = "crisis"
             conf = 80.0
         elif vix < 18 and dist_ema200 > 0.02:
@@ -282,12 +282,22 @@ class RegimeClassifier:
 
 # Global singleton
 regime_classifier = RegimeClassifier()
+_cached_regime = None
+_last_regime_fetch = None
 
 def get_current_market_regime() -> Dict[str, Any]:
     """
     Main entry point for fetching the current market regime.
     Handles downloading data, fitting the HMM if needed, and predicting.
     """
+    global _cached_regime, _last_regime_fetch
+    from datetime import datetime
+    
+    now = datetime.now()
+    if _cached_regime and _last_regime_fetch:
+        if (now - _last_regime_fetch).total_seconds() < 300: # 5 minutes cache
+            return _cached_regime
+
     if download_ohlcv is None:
         return regime_classifier._fallback_rule_based_regime(pd.DataFrame())
         
@@ -305,12 +315,18 @@ def get_current_market_regime() -> Dict[str, Any]:
             if not regime_classifier.is_fitted:
                 regime_classifier.fit(features_df)
                 
-            return regime_classifier.predict_current_regime(features_df)
+            res = regime_classifier.predict_current_regime(features_df)
+            _cached_regime = res
+            _last_regime_fetch = now
+            return res
             
     except Exception as e:
         print(f"❌ Regime calculation failed: {e}")
         
-    return regime_classifier._fallback_rule_based_regime(pd.DataFrame())
+    res = regime_classifier._fallback_rule_based_regime(pd.DataFrame())
+    _cached_regime = res
+    _last_regime_fetch = now
+    return res
 
 def get_smoothed_market_regime() -> Dict[str, Any]:
     """Alias for get_current_market_regime to support older API endpoints."""

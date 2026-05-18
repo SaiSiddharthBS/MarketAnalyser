@@ -15,9 +15,11 @@ import pytz
 IST = pytz.timezone("Asia/Kolkata")
 
 
-class DataValidationError(Exception):
+class DataQualityError(Exception):
     """Raised when data fails validation."""
     pass
+
+DataValidationError = DataQualityError # Alias for backward compatibility
 
 
 class DataValidator:
@@ -83,7 +85,7 @@ class DataValidator:
             report["warnings"].append("DataFrame is empty or None")
             self._log("ERROR", f"OHLCV:{symbol}", "Empty DataFrame received")
             if self.strict_mode:
-                return pd.DataFrame(), report
+                raise DataQualityError(f"DataFrame is empty or None for {symbol}")
             return pd.DataFrame(), report
 
         report["rows_before"] = len(df)
@@ -95,6 +97,8 @@ class DataValidator:
             report["valid"] = False
             report["warnings"].append(f"Missing columns: {missing}")
             self._log("ERROR", f"OHLCV:{symbol}", f"Missing columns: {missing}")
+            if self.strict_mode:
+                raise DataQualityError(f"Missing columns for {symbol}: {missing}")
             return pd.DataFrame(), report
 
         # Check 3: Null Close values
@@ -152,9 +156,26 @@ class DataValidator:
             report["warnings"].append(f"{len(oob)} rows with Open/Close outside [Low, High]")
             self._log("WARN", f"OHLCV:{symbol}", f"{len(oob)} out-of-bounds Open/Close values")
 
+        # Check 8: No negative prices
+        negatives = df[(df["Open"] < 0) | (df["High"] < 0) | (df["Low"] < 0) | (df["Close"] < 0)]
+        if len(negatives) > 0:
+            report["valid"] = False
+            report["warnings"].append(f"{len(negatives)} rows with negative prices")
+            self._log("ERROR", f"OHLCV:{symbol}", f"{len(negatives)} negative prices detected")
+            if self.strict_mode:
+                raise DataQualityError(f"Negative prices detected for {symbol}")
+            df = df[(df["Open"] >= 0) & (df["High"] >= 0) & (df["Low"] >= 0) & (df["Close"] >= 0)]
+
         report["rows_after"] = len(df)
         if len(df) == 0:
             report["valid"] = False
+            if self.strict_mode:
+                raise DataQualityError(f"DataFrame became empty after filtering for {symbol}")
+
+        if report.get("staleness_hours") and report["staleness_hours"] > max_staleness_hours:
+            report["valid"] = False
+            if self.strict_mode:
+                raise DataQualityError(f"Data is {report['staleness_hours']}h old for {symbol}")
 
         if not report["warnings"]:
             self._log("INFO", f"OHLCV:{symbol}", f"Validated OK — {len(df)} rows")
