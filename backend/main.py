@@ -1020,6 +1020,53 @@ async def trigger_arena_execute(background_tasks: BackgroundTasks):
     background_tasks.add_task(execute_daily_arena)
     return {"status": "Execution triggered"}
 
+# ─── AI Insights (Phase 4) ──────────────────────────────
+
+class ArenaExplainRequest(BaseModel):
+    regime: str
+    trades: list
+    
+class RiskInsightRequest(BaseModel):
+    stats: dict
+
+@app.get("/api/ai/briefing/{ticker}")
+async def get_ai_briefing(ticker: str):
+    import yfinance as yf
+    from services.ai_insights import get_stock_briefing
+    try:
+        t = yf.Ticker(f"{ticker}.NS" if not ticker.endswith(".NS") and ticker != "^NSEI" else ticker)
+        info = t.info
+        news = t.news
+        
+        fundamentals = {
+            "marketCap": info.get("marketCap"),
+            "forwardPE": info.get("forwardPE"),
+            "trailingPE": info.get("trailingPE"),
+            "priceToBook": info.get("priceToBook"),
+            "debtToEquity": info.get("debtToEquity"),
+            "revenueGrowth": info.get("revenueGrowth"),
+            "profitMargins": info.get("profitMargins")
+        }
+        
+        headlines = [n.get("title") for n in news[:5]] if news else []
+        briefing = await get_stock_briefing(ticker, fundamentals, headlines)
+        return briefing
+    except Exception as e:
+        logger.error(f"Error fetching AI briefing for {ticker}: {e}")
+        raise HTTPException(500, f"Error generating briefing: {e}")
+
+@app.post("/api/ai/arena-explain")
+async def get_arena_explain(req: ArenaExplainRequest):
+    from services.ai_insights import explain_arena_decision
+    explanation = await explain_arena_decision(req.regime, req.trades)
+    return {"explanation": explanation}
+
+@app.post("/api/ai/risk-insights")
+async def get_risk_insights(req: RiskInsightRequest):
+    from services.ai_insights import generate_risk_insights
+    insights = await generate_risk_insights(req.stats)
+    return {"insights": insights}
+
 @app.post("/api/arena/monte-carlo")
 async def arena_monte_carlo():
     from analysis.montecarlo import run_monte_carlo

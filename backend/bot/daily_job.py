@@ -352,11 +352,31 @@ async def send_daily_alert():
         pipeline_results = _run_alpha_v2_pipeline()
         result["steps"].append("✅ Pipeline completed")
 
+        # Get AI Risk Narrative
+        print("\n── Step 2.5: AI Risk Narrative ──")
+        ai_narrative = ""
+        try:
+            from services.ai_insights import generate_risk_insights
+            import database as db
+            
+            # Get basic portfolio stats for the AI
+            portfolio = db.db_execute("SELECT * FROM paper_portfolio ORDER BY id DESC LIMIT 1")
+            stats = {"total_equity": 0, "open_positions": 0}
+            if portfolio:
+                stats = dict(portfolio[0])
+            
+            ai_narrative = await generate_risk_insights(stats)
+            result["steps"].append("✅ AI Narrative generated")
+        except Exception as e:
+            ai_narrative = f"AI Analysis unavailable: {e}"
+            print(f"AI Narrative error: {e}")
+
         # Compose final message
         final_message = (
             f"🤖 *AGENT ALPHA v2.0*\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             f"{pipeline_results}\n\n"
+            f"🧠 *AI Portfolio Briefing:*\n{ai_narrative}\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"📊 *Market Pulse:*\n{market_text}"
         )
