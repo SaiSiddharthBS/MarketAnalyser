@@ -111,13 +111,15 @@ class AgentAlphaTrayApp(rumps.App):
     @rumps.timer(60)
     def update_data(self, _):
         """Polls the backend API for live data every 60 seconds"""
+        self.update_server_status()
+        
         if not self.is_server_running():
-            self.menu["🟢 Server: Online"].title = "🔴 Server: Offline (Click to Start)"
             self._update_title()
-            self.menu["Regime: ⏳ Loading..."].title = "Regime: 🔴 Server Offline"
+            for key in list(self.menu.keys()):
+                if key and "Regime:" in key:
+                    self.menu[key].title = "Regime: 🔴 Server Offline"
             return
-            
-        self.menu["🟢 Server: Online"].title = "🟢 Server: Online (Click to Stop)"
+
         
         # 1. Fetch Regime
         try:
