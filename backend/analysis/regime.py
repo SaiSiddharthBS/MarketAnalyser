@@ -223,15 +223,22 @@ class RegimeClassifier:
         vix = latest.get("VIX", 15.0)
         dist_ema200 = latest.get("Dist_EMA200", 0.0)
         
-        if dist_ema200 < 0 or vix >= 25:
+        # CRISIS: Only true systemic panic — VIX ≥ 30 OR (VIX ≥ 22 AND deeply below EMA)
+        # This prevents normal corrections from being classified as crisis
+        if (dist_ema200 < -0.08 and vix >= 22) or vix >= 30:
             regime = "crisis"
             conf = 80.0
-        elif vix < 18 and dist_ema200 > 0.02:
+        elif vix < 16 and dist_ema200 > 0.02:
             regime = "low_vol_uptrend"
             conf = 75.0
-        elif vix >= 18 and dist_ema200 > 0:
+        elif vix < 20 and dist_ema200 > 0:
             regime = "high_vol_uptrend"
-            conf = 65.0
+            conf = 70.0
+        elif dist_ema200 < -0.02 and vix < 22:
+            # NEW: Market pulled back below EMA but VIX is manageable
+            # This is the "buy the dip" regime — mean reversion plays work here
+            regime = "high_vol_chop"
+            conf = 60.0
         else:
             regime = "low_vol_chop"
             conf = 60.0
@@ -259,7 +266,8 @@ class RegimeClassifier:
         visuals = {
             "low_vol_uptrend": {"color": "#10b981", "emoji": "🟢", "status": "Home Turf (Aggressive)"},
             "high_vol_uptrend": {"color": "#3b82f6", "emoji": "📈", "status": "Cautious Bull"},
-            "low_vol_chop": {"color": "#f59e0b", "emoji": "🟡", "status": "Mean Reversion / Chop"},
+            "high_vol_chop": {"color": "#f97316", "emoji": "📉", "status": "Dip Opportunity (Mean Reversion)"},
+            "low_vol_chop": {"color": "#f59e0b", "emoji": "🟡", "status": "Sideways / Chop"},
             "crisis": {"color": "#ef4444", "emoji": "🔴", "status": "Crisis / Survival Mode"},
             "unknown": {"color": "#6b7280", "emoji": "⚪", "status": "Unknown"}
         }

@@ -152,37 +152,57 @@ def execute_daily_arena():
         regime_data = get_current_market_regime()
         regime = regime_data.get("regime", "unknown")
         
+        # Only block ALL buys during true systemic crisis (VIX >= 30)
         if regime == "crisis":
             logger.info("Regime is CRISIS. Not opening new positions.")
         else:
+            # Regime-based position sizing adjustment
+            regime_size_factor = {
+                "low_vol_uptrend": 1.0,      # Full size — home turf
+                "high_vol_uptrend": 0.75,     # Slightly cautious
+                "high_vol_chop": 0.50,        # Buy the dip — half size
+                "low_vol_chop": 0.40,         # Minimal allocation
+            }.get(regime, 0.50)
+            
+            # Regime-based minimum score
+            min_score = {
+                "low_vol_uptrend": 55,        # Aggressive — lower bar
+                "high_vol_uptrend": 60,        # Moderate bar
+                "high_vol_chop": 60,           # Dip buying — moderate bar
+                "low_vol_chop": 65,            # Higher bar in chop
+            }.get(regime, 60)
+            
             scored_stocks = []
             for symbol in NIFTY_50_SYMBOLS:
                 ticker = f"{symbol}.NS"
                 df = download_ohlcv(ticker, period="6mo", interval="1d")
                 if df is None or len(df) < 50: continue
                 
-                tech_analysis = get_technical_analysis(symbol, df)
+                tech_analysis = get_technical_analysis(symbol)
                 if not tech_analysis: continue
                 
-                ensemble = get_ensemble_analysis(symbol, df, regime)
-                confidence = ensemble.get("confidence", 0)
-                signal = ensemble.get("signal", "NEUTRAL")
+                confidence = tech_analysis.get("score", 0)
+                signal = tech_analysis.get("signal", "NEUTRAL")
                 
                 # Veto check
                 veto = veto_engine.check_all_vetoes(symbol, {}, {"regime_state": regime, "vix": regime_data.get("vix_level", 15)}, {})
-                if veto.get("vetoed") or signal != "BUY":
+                
+                # Accept BUY and STRONG_BUY signals
+                if veto.get("vetoed") or signal not in ("BUY", "STRONG_BUY"):
+                    continue
+                
+                # Score must meet regime-adjusted minimum
+                if confidence < min_score:
                     continue
                     
-                conviction = "HIGH" if confidence >= 75 else ("ULTRA" if confidence >= 85 else "MODERATE")
-                if conviction not in ["HIGH", "ULTRA"]:
-                    continue
-                    
+                conviction = "ULTRA" if confidence >= 80 else ("HIGH" if confidence >= 65 else "MODERATE")
+                
                 scored_stocks.append({
                     "symbol": symbol,
                     "confidence": confidence,
                     "conviction": conviction,
-                    "ensemble": ensemble,
-                    "tech": tech_analysis
+                    "tech": tech_analysis,
+                    "regime_size_factor": regime_size_factor
                 })
                 
             # Sort by confidence
@@ -192,7 +212,6 @@ def execute_daily_arena():
             for candidate in scored_stocks[:slots_available]:
                 symbol = candidate["symbol"]
                 tech = candidate["tech"]
-                ensemble = candidate["ensemble"]
                 
                 # Entry price is today's open + slippage
                 df = download_ohlcv(f"{symbol}.NS", period="5d", interval="1d")
@@ -201,7 +220,10 @@ def execute_daily_arena():
                 
                 entry_price = today_open * (1 + SLIPPAGE_PCT)
                 
-                alloc = min(cash, INITIAL_CAPITAL * 0.20)
+                # Regime-adjusted position sizing
+                size_factor = candidate.get("regime_size_factor", 0.5)
+                max_alloc_pct = 0.20 * size_factor  # Base 20% × regime factor
+                alloc = min(cash, INITIAL_CAPITAL * max_alloc_pct)
                 qty = int(alloc / entry_price)
                 if qty == 0: continue
                 
@@ -224,7 +246,7 @@ def execute_daily_arena():
                 """, (
                     symbol, "BUY", get_current_date_ist(), today, entry_price, qty,
                     pos_value, sl, target, 2.0, fees, regime, candidate["confidence"],
-                    candidate["conviction"], json.dumps(ensemble.get("votes", {}))
+                    candidate["conviction"], "{}"
                 ))
                 
                 cash -= (pos_value + fees)
@@ -286,6 +308,13 @@ def execute_daily_arena():
         """, (today, cash, holdings_value, total_equity, len(open_positions), daily_return, cum_return_pct, drawdown, nifty_return))
     
     logger.info(f"Arena daily execution complete. Equity: ₹{total_equity:.2f} ({cum_return_pct:.2f}%)")
+    
+    if len(new_trades) == 0 and len(closed_trades) == 0:
+        if regime == "crisis":
+            msg = "🏟️ *ARENA UPDATE*\nRegime is CRISIS. Market volatility is too high.\nPreserving 100% Cash. No trades placed today."
+        else:
+            msg = f"🏟️ *ARENA UPDATE*\nScanned NIFTY 50.\nNo setups met the required conviction threshold for the current `{regime}` regime.\nPreserving Cash."
+        send_telegram_sync(msg)
 
 if __name__ == "__main__":
     execute_daily_arena()

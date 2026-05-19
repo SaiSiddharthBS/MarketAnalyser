@@ -19,6 +19,7 @@ on:
 jobs:
   daily-alert:
     runs-on: ubuntu-latest
+    if: github.event.schedule == '30 2 * * 1-5' || github.event.schedule == '15 10 * * 1-5' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v4
@@ -46,7 +47,8 @@ jobs:
 
   arena-execute:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    if: github.event.schedule == '50 3 * * 1-5' || github.event.schedule == '5 10 * * 1-5'
+    timeout-minutes: 15
     steps:
     - uses: actions/checkout@v4
 
