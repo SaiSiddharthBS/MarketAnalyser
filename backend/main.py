@@ -9,10 +9,12 @@ from pathlib import Path
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.concurrency import run_in_threadpool
 import uvicorn
 import asyncio
@@ -973,25 +975,25 @@ async def debug_env():
 # ─── Arena (Paper Trading) ───────────────────────────────
 
 @app.get("/api/arena/portfolio")
-async def get_arena_portfolio():
+def get_arena_portfolio():
     from arena.paper_trading import get_latest_portfolio
     return get_latest_portfolio()
 
 @app.get("/api/arena/trades")
-async def get_arena_trades():
+def get_arena_trades():
     import database as db
     open_trades = db.db_execute("SELECT * FROM paper_trades WHERE status = 'OPEN' ORDER BY entry_date DESC")
     closed_trades = db.db_execute("SELECT * FROM paper_trades WHERE status != 'OPEN' ORDER BY exit_date DESC")
     return {"open": open_trades, "closed": closed_trades}
 
 @app.get("/api/arena/equity-curve")
-async def get_arena_equity_curve():
+def get_arena_equity_curve():
     import database as db
     history = db.db_execute("SELECT date, total_equity, benchmark_nifty_return_pct FROM paper_portfolio ORDER BY date ASC")
     return {"history": history}
 
 @app.get("/api/arena/stats")
-async def get_arena_stats():
+def get_arena_stats():
     import database as db
     res = db.db_execute("SELECT * FROM paper_monthly_stats ORDER BY month DESC")
     
@@ -1017,6 +1019,35 @@ async def trigger_arena_execute(background_tasks: BackgroundTasks):
     from arena.paper_trading import execute_daily_arena
     background_tasks.add_task(execute_daily_arena)
     return {"status": "Execution triggered"}
+
+@app.post("/api/arena/monte-carlo")
+async def arena_monte_carlo():
+    from analysis.montecarlo import run_monte_carlo
+    curve_data = get_arena_equity_curve()
+    
+    # Extract just the equity values
+    equity_values = []
+    if "history" in curve_data and curve_data["history"]:
+        equity_values = [row["total_equity"] for row in curve_data["history"]]
+        
+    result = run_monte_carlo(equity_curve=equity_values, paths=1000)
+    return result
+
+@app.get("/api/arena/tearsheet")
+async def arena_tearsheet():
+    from reports.tearsheet import generate_strategy_tearsheet_html
+    
+    curve_data = get_arena_equity_curve()
+    stats = get_arena_stats()
+    
+    # Construct a report object similar to what tearsheet expects
+    report = {
+        "equity_curve": curve_data.get("history", []),
+        "overall_stats": stats.get("overall", {})
+    }
+    
+    html = generate_strategy_tearsheet_html(run_id="arena_latest", lab="Arena Engine", report=report)
+    return HTMLResponse(content=html)
 
 
 # ─── Health ──────────────────────────────────────────────
