@@ -24,12 +24,13 @@ class EnsembleVoter:
             return {
                 "technical": 15,
                 "transformer": 25,
-                "options_flow": 15,
+                "options_flow": 10,
+                "fno_bias": 10,
                 "ml_engine": 15,
                 "sentiment": 10,
                 "insider": 5,
                 "macro": 5,
-                "momentum": 10
+                "momentum": 5
             }
         
     def collect_votes(self, symbol: str, df: pd.DataFrame, regime: str) -> tuple[Dict[str, Any], Dict[str, Any]]:
@@ -126,6 +127,20 @@ class EnsembleVoter:
             votes["options_flow"] = pcr_vote
         else:
             votes["options_flow"] = 0
+            
+        # 9. F&O Signal Bias (Phase 2 Upgrade)
+        votes["fno_bias"] = 0
+        try:
+            from analysis.fno_signals import get_option_chain_signals
+            fno_data = get_option_chain_signals(symbol)
+            if fno_data.get("available"):
+                bias = fno_data.get("directional_bias", 0.0)
+                if bias > 0.2:
+                    votes["fno_bias"] = 1
+                elif bias < -0.2:
+                    votes["fno_bias"] = -1
+        except Exception as e:
+            print(f"Warning: FNO signal check failed for {symbol}: {e}")
             
         # Placeholders for other data
         votes["insider"] = 0       # Requires insider data

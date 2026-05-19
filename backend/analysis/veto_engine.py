@@ -124,6 +124,23 @@ class VetoEngine:
                 severity="HIGH",
                 duration_days=90,
             ))
+            
+        # Veto 6b: F&O Options Warning (High IV + Short Buildup)
+        try:
+            from analysis.fno_signals import get_option_chain_signals
+            fno_data = get_option_chain_signals(symbol)
+            if fno_data.get("available"):
+                iv_pct = fno_data.get("iv_percentile", 0)
+                buildup = fno_data.get("oi_buildup", "")
+                if iv_pct > 85 and buildup == "short_buildup":
+                    active.append(self._create_veto(
+                        symbol, "OPTIONS_DANGER",
+                        f"Extreme options volatility (IV %ile > 85) combined with Short Buildup",
+                        severity="HIGH",
+                        duration_days=2,
+                    ))
+        except Exception:
+            pass
 
         # ─── MARKET-LEVEL VETOES (Block ALL buys) ────────────
 
