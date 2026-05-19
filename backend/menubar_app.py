@@ -12,7 +12,8 @@ from pathlib import Path
 # Configuration
 API_BASE = "http://127.0.0.1:8000/api"
 PROJECT_ROOT = Path(__file__).parent.parent
-ICON_PATH = str(PROJECT_ROOT / "frontend" / "images" / "favicon-32-v7.png")
+_CUSTOM_LOGO = PROJECT_ROOT / "frontend" / "images" / "logo.png"
+ICON_PATH = str(_CUSTOM_LOGO) if _CUSTOM_LOGO.exists() else str(PROJECT_ROOT / "frontend" / "images" / "favicon-32-v7.png")
 VENV_PYTHON = str(PROJECT_ROOT / "venv" / "bin" / "python3")
 
 class AgentAlphaTrayApp(rumps.App):
