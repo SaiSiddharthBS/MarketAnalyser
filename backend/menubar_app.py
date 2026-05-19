@@ -38,15 +38,23 @@ class AgentAlphaTrayApp(rumps.App):
                 rumps.MenuItem("Show Ticker in Menu Bar", callback=self.toggle_ticker),
                 rumps.MenuItem("Auto-Launch on Login", callback=self.toggle_autolaunch)
             ]),
-            rumps.MenuItem("🟢 Server: Online", callback=self.toggle_server),
+            rumps.MenuItem("Turn Server ON", callback=self.turn_server_on),
+            rumps.MenuItem("Turn Server OFF", callback=self.turn_server_off),
             None,
             rumps.MenuItem("🚨 HALT SYSTEM (Kill Switch)", callback=self.kill_switch)
         ]
+        
+        # Initialize Settings state
+        plist_path = Path.home() / "Library" / "LaunchAgents" / "com.agentalpha.menubar.plist"
+        self.menu["⚙️ Settings"]["Auto-Launch on Login"].state = plist_path.exists()
         
         self.show_ticker = False
         self.server_process = None
         self.long_keys = ["  - Long 1 Loading...", "  - Long 2 Loading...", "  - Long 3 Loading..."]
         self.short_keys = ["  - Short 1 Loading...", "  - Short 2 Loading...", "  - Short 3 Loading..."]
+        
+        # Initialize server status visually
+        self.update_server_status()
         
         # Sentinel Integration
         self.sentinel_alerts = 0
@@ -219,7 +227,52 @@ class AgentAlphaTrayApp(rumps.App):
 
     def toggle_autolaunch(self, sender):
         sender.state = not sender.state
-        rumps.notification("Agent Alpha", "Settings", "Auto-launch settings will be applied on next boot.")
+        plist_path = Path.home() / "Library" / "LaunchAgents" / "com.agentalpha.menubar.plist"
+        
+        if sender.state:
+            # Enable auto-launch
+            python_path = str(PROJECT_ROOT / "venv" / "bin" / "python3")
+            script_path = str(PROJECT_ROOT / "backend" / "menubar_app.py")
+            plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.agentalpha.menubar</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{python_path}</string>
+        <string>{script_path}</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardErrorPath</key>
+    <string>/tmp/agentalpha.err</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/agentalpha.out</string>
+</dict>
+</plist>"""
+            try:
+                plist_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(plist_path, "w") as f:
+                    f.write(plist_content)
+                subprocess.run(["launchctl", "load", str(plist_path)], capture_output=True)
+                rumps.notification("Agent Alpha", "Auto-Launch Enabled", "Agent Alpha will now start automatically when you log in.")
+            except Exception as e:
+                rumps.notification("Agent Alpha", "Auto-Launch Failed", f"Could not enable auto-launch: {e}")
+                sender.state = False
+        else:
+            # Disable auto-launch
+            try:
+                if plist_path.exists():
+                    subprocess.run(["launchctl", "unload", str(plist_path)], capture_output=True)
+                    plist_path.unlink()
+                rumps.notification("Agent Alpha", "Auto-Launch Disabled", "Agent Alpha will no longer start automatically.")
+            except Exception as e:
+                rumps.notification("Agent Alpha", "Disable Failed", f"Could not disable auto-launch: {e}")
+                sender.state = True
 
     def is_server_running(self):
         for proc in psutil.process_iter(['name', 'cmdline']):
@@ -230,9 +283,13 @@ class AgentAlphaTrayApp(rumps.App):
                 pass
         return False
 
-    def toggle_server(self, sender):
+    def update_server_status(self):
+        running = self.is_server_running()
+        self.menu["Turn Server ON"].state = running
+        self.menu["Turn Server OFF"].state = not running
+
+    def turn_server_off(self, _):
         if self.is_server_running():
-            # Stop server
             for proc in psutil.process_iter(['name', 'cmdline']):
                 try:
                     if proc.info['cmdline'] and 'uvicorn' in ' '.join(proc.info['cmdline']):
@@ -240,13 +297,14 @@ class AgentAlphaTrayApp(rumps.App):
                 except Exception:
                     pass
             rumps.notification("Agent Alpha", "Server Offline", "Backend services have been shut down.")
-            self.update_data(None)
-        else:
-            # Start server
+        self.update_server_status()
+
+    def turn_server_on(self, _):
+        if not self.is_server_running():
             rumps.notification("Agent Alpha", "Server Starting", "Booting up Uvicorn ASGI server...")
             subprocess.Popen([VENV_PYTHON, "-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"], cwd=str(PROJECT_ROOT / "backend"))
             time.sleep(3)
-            self.update_data(None)
+        self.update_server_status()
 
     def kill_switch(self, _):
         # Emergency halt!
