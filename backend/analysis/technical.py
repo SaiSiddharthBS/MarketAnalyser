@@ -524,9 +524,12 @@ def screen_stocks(symbols: list, top_n: int = 10, sector_yahoo_index: str = "^NS
         try:
             ta_res = get_technical_analysis(symbol, sector_index=sector_yahoo_index)
             if ta_res:
-                if direction == "LONG" and ta_res["signal"] in ["BUY", "STRONG_BUY"]:
+                # UX Transparency Upgrade: Allow NEUTRAL signals through to the UI so the user 
+                # can see *why* the top stocks in a sector aren't actionable. 
+                # (Note: The Arena Engine still strictly filters for BUY/STRONG_BUY internally).
+                if direction == "LONG" and ta_res["signal"] not in ["SELL", "STRONG_SELL"]:
                     return ta_res
-                elif direction == "SHORT" and ta_res["signal"] in ["SELL", "STRONG_SELL"]:
+                elif direction == "SHORT" and ta_res["signal"] not in ["BUY", "STRONG_BUY"]:
                     return ta_res
         except Exception as e:
             print(f"Error screening {symbol}: {e}")
