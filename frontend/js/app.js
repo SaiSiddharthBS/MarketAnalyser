@@ -87,6 +87,7 @@ async function loadMarketRegime() {
                     'low_vol_uptrend': { rvol: '1.2x', rsi: '75', cap: '90%', tip: 'Aggressive mode — full Kelly sizing, early breakouts.' },
                     'high_vol_uptrend': { rvol: '1.3x', rsi: '72', cap: '75%', tip: 'Cautious bull — pullback buys only, 0.6× Kelly.' },
                     'low_vol_chop': { rvol: '1.4x', rsi: '68', cap: '65%', tip: 'Sideways chop — mean reversion plays, tight stops.' },
+                    'high_vol_chop': { rvol: '1.5x', rsi: '65', cap: '55%', tip: 'High vol dip buying — deep mean reversion, scaled entry.' },
                     'crisis': { rvol: '1.6x', rsi: '60', cap: '40%', tip: '⚠️ Survival mode — capital preservation, 0× Kelly.' },
                 };
                 const regime = d.regime || '';
@@ -181,6 +182,7 @@ function switchPage(page) {
         dashboard: loadDashboard,
         portfolio: loadPortfolio,
         paper: loadPaperTrading,
+        arena: loadArenaTrading,
         screener: () => {},
         signals: loadSignals,
         analysis: () => {},
@@ -200,6 +202,8 @@ function setupButtonHandlers() {
         'btn-generate-signals': generateSignals,
         'btn-analyse': () => analyseStock(document.getElementById('analysis-search').value.trim()),
         'btn-send-alert': sendTelegramAlert,
+        'btn-paper-buy': () => executeTrade('BUY'),
+        'btn-paper-sell': () => executeTrade('SELL'),
     };
 
     Object.entries(handlers).forEach(([id, fn]) => {
@@ -941,7 +945,7 @@ let arenaChart = null;
 let arenaLineSeries = null;
 let arenaBenchmarkSeries = null;
 
-async function loadPaperTrading() {
+async function loadArenaTrading() {
     const portfolio = await api.getPaperPortfolio();
     const trades = await api.getPaperTrades();
     const curve = await api.getPaperEquityCurve();
@@ -1048,20 +1052,81 @@ function renderArenaHeatmap(history) {
     let html = '';
     last30.forEach(day => {
         const ret = parseFloat(day.daily_return_pct) || 0;
-        let color = 'var(--bg-lighter)';
-        
-        if (ret > 0) {
-            const intensity = Math.min(0.2 + (ret / 2), 1);
-            color = `rgba(34, 197, 94, ${intensity})`;
-        } else if (ret < 0) {
-            const intensity = Math.min(0.2 + (Math.abs(ret) / 2), 1);
-            color = `rgba(239, 68, 68, ${intensity})`;
-        }
-        
-        html += `<div style="width: 20px; height: 20px; background-color: ${color}; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer;" title="${day.date}: ${ret.toFixed(2)}%"></div>`;
+        const color = ret > 1 ? '#00e68a' : ret > 0 ? '#00a65a' : ret < -1 ? '#ff4d6a' : ret < 0 ? '#cc0000' : '#475569';
+        const title = `${day.date}: ${ret.toFixed(2)}%`;
+        html += `<div style="width:20px;height:20px;border-radius:3px;background:${color}" title="${title}"></div>`;
     });
-    
     container.innerHTML = html;
+}
+
+/* ─── Manual Paper Trading ──────────────────────────── */
+async function loadPaperTrading() {
+    const data = await api.getPaperPortfolio();
+    if (!data) return;
+
+    renderPaperMetrics(data.metrics);
+    renderPaperPositions(data.positions);
+}
+
+function renderPaperMetrics(m) {
+    if (!m) return;
+    const pnlEl = document.getElementById('paper-pnl');
+    const feesEl = document.getElementById('paper-fees');
+    if (pnlEl) {
+        pnlEl.textContent = `₹${formatNumber(m.net_realized_pnl || 0)}`;
+        pnlEl.className = 'card-value ' + ((m.net_realized_pnl || 0) >= 0 ? 'positive' : 'negative');
+    }
+    if (feesEl) feesEl.textContent = `₹${formatNumber(m.total_fees || 0)}`;
+}
+
+function renderPaperPositions(positions) {
+    const tbody = document.getElementById('paper-positions-body');
+    if (!tbody) return;
+    
+    if (!positions || positions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">No active positions. Find a signal and trade! 🚀</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = positions.map(p => `
+        <tr>
+            <td><strong>${p.symbol}</strong></td>
+            <td>${p.quantity}</td>
+            <td>₹${formatNumber(p.avg_price)}</td>
+            <td>₹${formatNumber(p.invested)}</td>
+        </tr>
+    `).join('');
+}
+
+async function executeTrade(type) {
+    const symbol = document.getElementById('paper-symbol').value.toUpperCase().trim();
+    const quantity = parseFloat(document.getElementById('paper-qty').value);
+    const price = parseFloat(document.getElementById('paper-price').value) || null;
+    const msg = document.getElementById('paper-msg');
+
+    if (!symbol || !quantity || quantity <= 0) {
+        if (msg) msg.textContent = '❌ Please enter a valid symbol and quantity';
+        return;
+    }
+
+    if (msg) msg.textContent = '⏳ Executing trade...';
+
+    const result = await api.executePaperTrade({
+        symbol,
+        trade_type: type,
+        quantity,
+        price
+    });
+
+    if (result && result.status === 'ok') {
+        if (msg) msg.textContent = `✅ ${type} ${quantity} ${symbol} at ₹${result.price.toFixed(2)}`;
+        document.getElementById('paper-symbol').value = '';
+        document.getElementById('paper-qty').value = '';
+        document.getElementById('paper-price').value = '';
+        loadPaperTrading();
+    } else {
+        if (msg) msg.textContent = '❌ Trade failed. ' + (result ? result.error : 'Unknown error');
+    }
 }
 
 function renderArenaCurve(history) {
