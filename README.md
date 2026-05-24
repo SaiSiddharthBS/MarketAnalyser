@@ -53,8 +53,8 @@ mindmap
     Risk Management
       HMM Regime Classifier
       12-Rule Veto Firewall
-      ATR Position Sizing
-      Kelly Criterion Allocation
+      Sector Correlation Heatmap
+      ATR & Kelly Position Sizing
     Data & Infrastructure
       yfinance & FRED APIs
       Neon PostgreSQL
@@ -71,70 +71,53 @@ mindmap
 
 ## 🏗️ Hardware Architecture: The Dual-Node Setup
 
-Agent Alpha operates on a resilient, distributed physical architecture split across two synchronized machines. This ensures zero downtime, complete isolation of the execution environment, and dedicated compute for UI rendering.
+Agent Alpha operates on a resilient, distributed physical architecture split across two synchronized machines. This ensures absolute separation of heavy quantitative compute processes and the executive visualization/monitoring dashboard.
 
 ```mermaid
 graph TB
-    subgraph "Node 1: Primary Visualization & Dev Station (MacBook Pro)"
-        UI["Obsidian Glass UI (Local PWA)"]
-        Dev["Codebase & Strategy Backtesting"]
-        UI_Browser["Google Chrome / Safari<br/>(60 FPS Chart Rendering)"]
-    end
-
-    subgraph "Node 2: The Sentinel Execution Node (Secondary Laptop)"
+    subgraph "Node 1: Primary Compute & Dev Station (MacBook Pro)"
         direction TB
         Docker["Docker Engine"]
         FastAPI["FastAPI Uvicorn Backend"]
         Cron["Background Scheduler Daemon"]
         Quant["15-Model Quant Engine"]
+        Dev["Codebase & Strategy Backtesting"]
         
         Docker --> FastAPI
         Docker --> Cron
         Cron --> Quant
     end
 
+    subgraph "Node 2: The Sentinel UI Node (Secondary Laptop)"
+        UI["Obsidian Glass UI (Local PWA)"]
+        UI_Browser["Google Chrome / Safari<br/>(60 FPS Chart Rendering)"]
+    end
+
     subgraph "Cloud Infrastructure"
         DB[("Neon PostgreSQL<br/>(Serverless Cluster)")]
         TG["Telegram API"]
-        Data["yfinance / APIs"]
+        Data["yfinance / FRED APIs"]
     end
 
     UI_Browser -.->|Local Network REST / WebSockets| FastAPI
     Quant -->|Write P&L / Read Ledger| DB
-    Quant -->|Fetch OHLCV| Data
+    Quant -->|Fetch OHLCV / Auto-Heal Cache| Data
     Cron -->|Dispatch Alerts| TG
-    Dev -.->|Git Push Deployment| Docker
 ```
 
-**Node 1 (Primary):** Serves as the executive dashboard. It handles the heavy graphical rendering of the Obsidian Glass UI and TradingView charts, entirely decoupled from the trading logic.
-**Node 2 (Sentinel Node):** A dedicated, always-on secondary machine running the core Dockerized backend. It is immune to user interruptions, ensuring cron jobs (like the 8:00 AM pre-market scan and 3:45 PM execution) fire with absolute precision.
+**Node 1 (Primary Station - MacBook Pro):** The computational powerhouse. This machine runs the `docker-compose` stack housing the FastAPI backend, the automated cron daemons, the machine learning models, and the data-fetching architecture. It is fully responsible for all algorithmic heavy-lifting and trade generation.
+**Node 2 (Sentinel Display Node - Secondary Laptop):** A dedicated, always-on executive monitor. It runs the Obsidian Glass UI web app locally, fetching JSON payloads and rendering the 60FPS TradingView charts via WebSockets/REST. It remains untouched by backend latency, serving solely as the CEO's dashboard.
 
 ---
 
-## 📈 Global Alpha: Performance & Accuracy Benchmark
-
-Agent Alpha's ensemble voting architecture drastically reduces the false positive rate inherent in traditional trading systems. Below is a comparative representation of Agent Alpha's directional prediction accuracy versus standard market benchmarks.
-
-```mermaid
-xychart-beta
-    title "Predictive Accuracy vs. Market Benchmarks"
-    x-axis ["Retail Retailers", "Standard Algo (RSI/MACD)", "S&P 500 Buy & Hold", "Tier-2 Hedge Funds", "Agent Alpha v3.0"]
-    y-axis "Directional Accuracy (%)" 0 --> 100
-    bar [35, 52, 55, 62, 81]
-    line [35, 52, 55, 62, 81]
-```
-*(Note: Represents walk-forward validation accuracy on the Nifty 50 universe during the 2020-2026 backtest window, prioritizing capital preservation over maximum drawdown).*
-
----
-
-## 🧠 Core System Modules (Deep Dive)
+## 🧠 Core System Modules & Deep Dives
 
 ### 1. The 15-Model Quantitative Ensemble Engine
 
 At the heart of Agent Alpha lies a weighted voting ensemble that outputs a continuous directional bias. 
 
 #### 🚀 Machine Learning Classifiers: XGBoost & LightGBM
-*   **XGBoost Classifier:** Trained on historical OHLCV data using an advanced walk-forward cross-validation window. Emits probabilities for 3 classes: Up (>2% in 5 days), Down (<-2% in 5 days), and Flat.
+*   **XGBoost Classifier:** Emits probabilities for 3 classes: Up (>2% in 5 days), Down (<-2% in 5 days), and Flat.
 *   **LightGBM Classifier:** Highly optimized, gradient-boosted decision tree layer natively handling complex engineered features (e.g. microstructure shadows, volume profiles).
 *   **Lightweight Sequence Model & Short-Term MLP:** Temporal classifiers mimicking LSTM networks to capture cyclical wave patterns and order imbalances.
 
@@ -144,7 +127,33 @@ At the heart of Agent Alpha lies a weighted voting ensemble that outputs a conti
 
 ---
 
-### 2. The Paper Trading Arena (The 10L Crucible)
+### 2. Walk-Forward Optimization (WFO) Backtesting Logic
+
+Agent Alpha’s Machine Learning classifiers were explicitly engineered to prevent "curve-fitting" and overfitting, utilizing a strict **Walk-Forward Optimization** protocol rather than a standard static backtest.
+*   **The Problem with Static Data:** Traditional algorithms train on a random 80/20 split, failing to account for evolving market regimes.
+*   **The WFO Solution:** Agent Alpha models are trained sequentially. A model is trained on the 2018-2022 window, then tested strictly on unseen 2023 data. The engine then rolls forward, re-training on 2019-2023, and testing on 2024. This simulates genuine "out-of-sample" predictive logic, ensuring the XGBoost and LightGBM models understand shifting macro-dynamics before they are deployed to the live Arena.
+
+---
+
+### 3. Risk Heatmap & Sector Correlation Matrix
+
+Capital preservation relies heavily on preventing sector overexposure. 
+Agent Alpha continuously calculates a dynamic **Pearson Correlation Matrix** across the active portfolio. 
+*   **The Overexposure Veto:** If the system attempts to buy 5 different highly correlated IT stocks (e.g., TCS, INFY, HCLTECH), the Correlation Matrix flags the beta-cluster.
+*   **Dynamic Trimming:** The system will execute the highest-conviction signal in the cluster and automatically veto the redundant, correlated trades. This forces capital to be deployed across orthogonal (uncorrelated) vectors, actively dampening portfolio variance and shielding the 10L capital pool from localized sector collapses.
+
+---
+
+### 4. The "Self-Healing" Data Pipeline
+
+Data is the lifeblood of a quant engine. External APIs (`yfinance`, FRED) are inherently unstable, often suffering rate limits, timeouts, or corrupted OHLCV prints. Agent Alpha employs a **Self-Healing Data Pipeline**:
+*   **Exponential Backoff Retries:** If the yfinance server drops the connection, the cron engine automatically halts, waits, and retries the fetch with an exponential backoff.
+*   **SQLite Fallback Cache:** If an API goes completely dark, the engine falls back to the local SQLite database snapshot from the previous close, preventing the ML ensemble from executing on NULL vectors.
+*   **Anomaly Detection:** Any sudden 20%+ unverified spike in a single 15-minute candle is quarantined by the data validator as a "Bad Tick" until cross-verified, preventing catastrophic execution errors.
+
+---
+
+### 5. The Paper Trading Arena (The 10L Crucible)
 
 The **Paper Trading Arena** is where models prove their worth. Rigorously stress-tested, the Arena operates with a strict **₹10 Lakh (`₹1,000,000`) Base Capital**.
 
@@ -154,7 +163,7 @@ The **Paper Trading Arena** is where models prove their worth. Rigorously stress
 
 ---
 
-### 3. The 12-Rule Hard Veto Firewall
+### 6. The 12-Rule Hard Veto Firewall
 
 Before a signal generated by the Ensemble hits the 10L Arena, it is subjected to a **Zero-Trust Veto**:
 
@@ -171,15 +180,6 @@ flowchart LR
 
 ---
 
-### 4. Telegram Bot Integration
-
-Immediate, asynchronous notification is a staple of a CEO-level system. The **Agent Alpha Telegram Bot** acts as the direct line of communication between the engine and the executive.
-*   **Daily Executive Briefings:** Triggered at 8:00 AM IST.
-*   **Live Execution Alerts:** Instant push notification when a position is opened or closed in the Arena.
-*   **P&L Snapshots:** End-of-day ledger summaries of the 10L capital pool.
-
----
-
 ## 🧮 Quantitative Mathematics & Formulas
 
 Agent Alpha relies on rigorous mathematical foundations for regime classification, volatility scaling, and position sizing.
@@ -189,12 +189,6 @@ We model the market environment as a Hidden Markov Process to prevent lagging ex
 
 $$ \mathbf{X}_t = \{ R_t, \sigma_{20}, \text{VIX}_t, \text{Breadth}_t, \Delta_{\text{EMA200}} \} $$
 
-*   **$R_t$:** Daily logarithmic return.
-*   **$\sigma_{20}$:** 20-day rolling standard deviation of returns.
-*   **$\text{VIX}_t$:** India VIX closing value.
-*   **$\text{Breadth}_t$:** Nifty 50 Advance-Decline Ratio.
-*   **$\Delta_{\text{EMA200}}$:** Percentage distance from the 200-day Exponential Moving Average.
-
 ### 2. Average True Range (ATR) Volatility Sizing
 Position size is dynamically adjusted so that the stop-loss distance equates to a maximum risk limit of $2\%$ of overall portfolio equity ($E$):
 
@@ -202,9 +196,6 @@ $$ \text{True Range (TR)} = \max(H - L, |H - C_{prev}|, |L - C_{prev}|) $$
 $$ \text{ATR}_{14} = \frac{13 \times \text{ATR}_{prev} + \text{TR}}{14} $$
 $$ \text{Stop Loss Distance} = 2 \times \text{ATR}_{14} $$
 $$ \text{Position Value} = \frac{E \times 0.02}{\text{Stop Loss Distance} / \text{Price}} $$
-
-*   **$E$:** Current Equity in the Paper Trading Arena (e.g., ₹10,000,000 base).
-*   **$H, L, C_{prev}$:** High, Low, and Previous Close prices.
 
 ### 3. Kelly Criterion Position Scaling
 To prevent over-leveraging and drawdowns, raw Kelly fractions ($K_{\text{raw}}$) are computed based on historical win rates ($W$) and profit factors ($R$):
@@ -215,10 +206,6 @@ This fraction is scaled dynamically by the regime modifier ($M_{\text{regime}}$)
 
 $$ K_{\text{final}} = K_{\text{raw}} \times M_{\text{regime}} \times (1 + B_{\text{global}}) $$
 
-*   **$W$:** Historical probability of a winning trade.
-*   **$R$:** Ratio of average profit to average loss.
-*   **$M_{\text{regime}}$:** Scaling multiplier based on the HMM State (e.g., $1.0$ for Low-Volatility Uptrend, $0.3$ for Low-Volatility Chop).
-
 ---
 
 ## 🐳 Dockerization & Cloud Deployment Topology
@@ -228,7 +215,7 @@ Agent Alpha relies on a pristine, containerized deployment matrix to guarantee e
 ### Architecture Highlights:
 *   **`docker-compose.yml` orchestration:** The backend FastAPI server, the cron scheduler, and the Python execution environments are wrapped into lightweight Docker containers.
 *   **Stateless Compute:** All persistent state (Paper Arena Ledgers, Historical P&L) is pushed to **Neon Serverless PostgreSQL**. If a Docker container goes down, it can be instantaneously rebuilt without losing a single cent of paper trading data.
-*   **Dependency Locking:** `requirements.txt` maps explicitly verified library versions to prevent `yfinance` or `xgboost` upstream breaks from crashing the Sentinel Node.
+*   **Dependency Locking:** `requirements.txt` maps explicitly verified library versions to prevent `yfinance` or `xgboost` upstream breaks from crashing the engine.
 
 ### Local Ignition Commands
 ```bash
