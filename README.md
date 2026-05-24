@@ -22,8 +22,8 @@ Every signal generated is backtested instantly via Walk-Forward Validation and e
 
 ## 🔥 Key Architectures (Deployed April 30 - May 24, 2026)
 
-### 1. The 15-Model Institutional Ensemble
-Rather than relying on singular technical indicators, Agent Alpha aggregates 15 discrete models across 4 unique alpha-generating dimensions:
+### 1. The 15-Model Institutional Ensemble (Powered by XGBoost & LightGBM)
+Rather than relying on singular technical indicators, Agent Alpha aggregates 15 discrete models across 4 unique alpha-generating dimensions, heavily anchored by **XGBoost** and **LightGBM** gradient boosting classifiers for state-of-the-art predictive accuracy:
 *   **Technical Matrix:** Moving Average Ribbons (KAMA, EMA), RSI bounds, ATR Volatility.
 *   **Momentum Matrix:** MACD Histograms, Rate of Change (ROC), On-Balance Volume (OBV).
 *   **Transformer AI Patterns:** Deep learning integration for recognizing double-tops, ascending triangles, and structural exhaustion.
