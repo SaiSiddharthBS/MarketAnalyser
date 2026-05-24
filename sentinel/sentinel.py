@@ -43,7 +43,16 @@ def init_db():
 
 init_db()
 
-SEEN_URLS = set()
+SEEN_URLS_FILE = "seen_urls.txt"
+if os.path.exists(SEEN_URLS_FILE):
+    with open(SEEN_URLS_FILE, "r", encoding="utf-8") as f:
+        SEEN_URLS = set(f.read().splitlines())
+else:
+    SEEN_URLS = set()
+
+def save_seen_urls():
+    with open(SEEN_URLS_FILE, "w", encoding="utf-8") as f:
+        f.write("\n".join(list(SEEN_URLS)[-2000:]))
 
 def triage_news(headline: str, summary: str) -> dict:
     """Uses Llama 3.3 70B via Groq to classify the news."""
@@ -93,8 +102,10 @@ def run_sentinel():
             for entry in headlines:
                 if entry['link'] not in SEEN_URLS:
                     SEEN_URLS.add(entry['link'])
+                    save_seen_urls()
                     if len(SEEN_URLS) > 2000:
                         SEEN_URLS.clear()
+                        save_seen_urls()
                         
                     logger.info(f"Scanning: {entry['headline']}")
                     classification = triage_news(entry['headline'], entry['summary'])
