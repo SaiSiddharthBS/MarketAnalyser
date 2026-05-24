@@ -36,51 +36,47 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <span style="font-weight: 800; font-size: 1.6rem; letter-spacing: -1px; color: var(--accent);">AA</span>
+                <img src="/static/images/icon-192-v7.png" alt="Agent Alpha" class="logo-icon-img">
                 <span class="logo-text">Agent Alpha</span>
             </div>
         </div>
-        
-        <!-- AVATAR BLOCK (Mockup Match) -->
-        <div class="avatar-block">
-            <img src="/static/images/icon-192-v7.png" alt="Avatar" class="avatar-img">
-            <div class="avatar-info">
-                <div class="avatar-name">Avatar</div>
-                <div class="avatar-status"><span class="status-dot-small"></span> Status: <span style="color:var(--green)">Active</span></div>
-                <div class="avatar-wallet">Wallet: $2.41M</div>
-                <div class="avatar-portfolio">Portfolio: <span style="color:var(--green)">+18.4%</span></div>
-            </div>
-        </div>
-
         <ul class="nav-links">
             <li><a href="#" class="nav-link active" data-page="dashboard" id="nav-dashboard">
-                <span class="nav-icon">⊞</span> Dashboard
-            </a></li>
-            <li><a href="#" class="nav-link" data-page="screener" id="nav-screener">
-                <span class="nav-icon">📈</span> Markets
-            </a></li>
-            <li><a href="#" class="nav-link" data-page="signals" id="nav-signals">
-                <span class="nav-icon">⚡</span> Strategies
-            </a></li>
-            <li><a href="#" class="nav-link" data-page="analysis" id="nav-analysis">
-                <span class="nav-icon">📊</span> Analytics
+                <span class="nav-icon">📊</span> Dashboard
             </a></li>
             <li><a href="#" class="nav-link" data-page="portfolio" id="nav-portfolio">
-                <span class="nav-icon">👤</span> Account
+                <span class="nav-icon">💼</span> Portfolio
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="paper" id="nav-paper">
+                <span class="nav-icon">🎮</span> Paper Trading
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="screener" id="nav-screener">
+                <span class="nav-icon">🔍</span> Screener
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="signals" id="nav-signals">
+                <span class="nav-icon">🎯</span> Signals
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="analysis" id="nav-analysis">
+                <span class="nav-icon">📈</span> Analysis
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="rotation" id="nav-rotation">
+                <span class="nav-icon">🌡️</span> Sectors
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="news" id="nav-news">
+                <span class="nav-icon">📰</span> News
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="accuracy" id="nav-accuracy">
+                <span class="nav-icon">🎯</span> Accuracy
             </a></li>
             <li><a href="#" class="nav-link" data-page="alerts" id="nav-alerts">
-                <span class="nav-icon">⚙️</span> Settings
+                <span class="nav-icon">🔔</span> Alerts
             </a></li>
-            
-            <!-- Hide remaining links to preserve JS bindings -->
-            <div style="display:none">
-                <li><a href="#" class="nav-link" data-page="paper" id="nav-paper">Paper</a></li>
-                <li><a href="#" class="nav-link" data-page="rotation" id="nav-rotation">Sectors</a></li>
-                <li><a href="#" class="nav-link" data-page="news" id="nav-news">News</a></li>
-                <li><a href="#" class="nav-link" data-page="accuracy" id="nav-accuracy">Accuracy</a></li>
-                <li><a href="#" class="nav-link" data-page="watchlist" id="nav-watchlist">Watchlist</a></li>
-                <li><a href="#" class="nav-link" data-page="arena" id="nav-arena">Arena</a></li>
-            </div>
+            <li><a href="#" class="nav-link" data-page="watchlist" id="nav-watchlist">
+                <span class="nav-icon">👀</span> Watchlist
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="arena" id="nav-arena">
+                <span class="nav-icon">⚔️</span> Arena
+            </a></li>
         </ul>
         <div class="sidebar-footer">
             <div class="market-status" id="market-status">
@@ -115,114 +111,46 @@
 
         <!-- Dashboard Page -->
         <section class="page active" id="page-dashboard">
-            <div class="page-header" style="margin-bottom: 24px;">
-                <h1 style="font-size: 1.8rem; font-weight: 600;">Overview</h1>
-                <div style="display:none">
+            <div class="page-header">
+                <h1>Market Dashboard</h1>
+                <div style="display:flex;gap:12px;align-items:center">
                     <p class="subtitle" id="dashboard-time"></p>
                     <button class="btn btn-primary" id="btn-send-alert">📱 Send Alert</button>
                 </div>
             </div>
 
-            <!-- Bento Top Row -->
-            <div class="bento-top-row">
-                <div class="glass-card metric-card">
-                    <div class="metric-header">Total Portfolio <span class="trend up">↗</span></div>
-                    <div class="metric-value">$2,410,380.12</div>
-                    <div class="metric-sub"><span class="trend up">+18.42%</span> <span class="muted">| $374k</span></div>
+            <!-- Market Indices -->
+            <div class="card-grid indices-grid" id="indices-grid"></div>
+
+            <!-- Sentiment + Chart -->
+            <div class="two-col">
+                <div class="glass-card sentiment-card">
+                    <h3>Market Sentiment</h3>
+                    <div class="sentiment-display" id="sentiment-display">
+                        <div class="sentiment-score" id="sentiment-score">--</div>
+                        <div class="sentiment-label" id="sentiment-label">Loading...</div>
+                        <div class="sentiment-bar-container">
+                            <div class="sentiment-bar positive" id="sentiment-positive" style="width: 0%"></div>
+                            <div class="sentiment-bar negative" id="sentiment-negative" style="width: 0%"></div>
+                        </div>
+                        <div class="sentiment-legend">
+                            <span class="legend-positive">Positive: <span id="pos-pct">0</span>%</span>
+                            <span class="legend-negative">Negative: <span id="neg-pct">0</span>%</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="glass-card metric-card">
-                    <div class="metric-header">Today's P&L <span class="trend up">↗</span></div>
-                    <div class="metric-value trend up">+448,930</div>
-                    <div class="metric-sub"><span class="trend up">+3.15%</span></div>
-                </div>
-                <div class="glass-card metric-card">
-                    <div class="metric-header" style="justify-content: space-between;">Active Agents <span>💼</span></div>
-                    <div class="metric-value" style="font-size: 2rem;">8<span class="muted">/12</span></div>
+                <div class="glass-card chart-card">
+                    <h3>Nifty 50</h3>
+                    <div id="nifty-chart" class="chart-container"></div>
                 </div>
             </div>
 
-            <!-- Bento Main Grid -->
-            <div class="bento-main-grid">
-                <!-- Left: Big Chart -->
-                <div class="glass-card chart-panel">
-                    <div class="chart-panel-header">
-                        <div class="chart-title">AAPL - 1H</div>
-                        <div class="chart-indicators">
-                            <span class="ind green">MA: $184.20</span> <span class="ind amber">EMA: $183.85</span>
-                        </div>
-                        <div class="pill-group">
-                            <span>1H</span><span>4H</span><span>1D</span><span class="active">Indicators</span>
-                        </div>
-                    </div>
-                    <div id="nifty-chart" class="chart-container" style="height: 380px;"></div>
+            <!-- News Feed -->
+            <div class="glass-card">
+                <h3>Latest Market News</h3>
+                <div class="news-feed" id="news-feed">
+                    <div class="loading-skeleton">Loading news...</div>
                 </div>
-
-                <!-- Right: Side Panels -->
-                <div class="bento-side-column">
-                    <div class="glass-card list-panel">
-                        <div class="panel-header">Open Positions <span class="dots">...</span></div>
-                        <div class="list-items">
-                            <div class="list-item">
-                                <div class="item-icon orange">₿</div>
-                                <div class="item-details"><div style="font-weight:600">BTC/USD</div><div class="muted">Crypto</div></div>
-                                <div class="item-stats"><div class="trend up">+51.6%</div><div class="muted">$69,450</div></div>
-                            </div>
-                            <div class="list-item">
-                                <div class="item-icon green">N</div>
-                                <div class="item-details"><div style="font-weight:600">NVDA</div><div class="muted">Stock</div></div>
-                                <div class="item-stats"><div class="trend up">+4.2%</div><div class="muted">$895</div></div>
-                            </div>
-                            <div class="list-item">
-                                <div class="item-icon red">T</div>
-                                <div class="item-details"><div style="font-weight:600">TSLA</div><div class="muted">Stock</div></div>
-                                <div class="item-stats"><div class="trend down">-1.1%</div><div class="muted">$178</div></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="glass-card builder-panel">
-                        <div class="panel-header">Strategy Builder <span class="dots">...</span></div>
-                        <button class="btn btn-outline-full">Create New Strategy</button>
-                    </div>
-
-                    <div class="glass-card perf-panel">
-                        <div class="panel-header">Performance Metrics <span class="dots">...</span></div>
-                        <div class="perf-grid">
-                            <div><div class="perf-label">Sharpe<br>Ratio</div><div class="perf-value">2.14</div></div>
-                            <div><div class="perf-label">Max<br>Drawdown</div><div class="perf-value">8.7%</div></div>
-                            <div><div class="perf-label">Win<br>Rate</div><div class="perf-value">72%</div></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bottom: Recent Trades -->
-            <div class="glass-card recent-trades-panel">
-                <div class="panel-header" style="margin-bottom: 16px;">Recent Trades</div>
-                <table class="data-table">
-                    <thead>
-                        <tr><th>Agent</th><th>Pair</th><th>Type</th><th>Price</th><th>Amount</th><th>P&L</th><th>Status</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Agent A</td><td>AAPL</td><td><span class="trend up">Bullish</span></td><td>$185.74</td><td>10</td><td><span class="trend up">+$3,330</span></td><td><span class="badge badge-green">Bullish</span></td>
-                        </tr>
-                        <tr>
-                            <td>Agent B</td><td>NVDA</td><td><span class="trend down">Bearish</span></td><td>$183.85</td><td>$300</td><td><span class="trend down">-$19.23</span></td><td><span class="badge badge-green">Bullish</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- HIDDEN ELEMENTS to prevent JS errors -->
-            <div style="display:none">
-                <div class="card-grid indices-grid" id="indices-grid"></div>
-                <div class="sentiment-display" id="sentiment-display">
-                    <div id="sentiment-score"></div><div id="sentiment-label"></div>
-                    <div id="sentiment-positive"></div><div id="sentiment-negative"></div>
-                    <div id="pos-pct"></div><div id="neg-pct"></div>
-                </div>
-                <div class="news-feed" id="news-feed"></div>
             </div>
         </section>
 
