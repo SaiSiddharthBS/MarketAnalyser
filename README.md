@@ -1,7 +1,7 @@
 <div align="center">
   <img src=".github/assets/hero_banner.png" alt="Agent Alpha Hero Banner" width="100%">
   
-  <h1><b>AGENT ALPHA v3.0</b></h1>
+  <h1><b>AGENT ALPHA</b></h1>
   <p><b>Institutional-Grade Algorithmic Trading & AI Ensemble Engine</b></p>
   
   [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
