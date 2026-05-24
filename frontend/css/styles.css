@@ -98,18 +98,23 @@ body {
 /* ─── Sidebar ───────────────────────────────────────── */
 .sidebar {
     width: var(--sidebar-w);
-    height: 100vh;
+    height: calc(100vh - 40px);
     position: fixed;
-    left: 0; top: 0;
+    left: 20px; top: 20px;
+    border-radius: 20px;
     background: var(--bg-overlay);
     backdrop-filter: blur(var(--glass-blur)) saturate(150%);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
-    border-right: 1px solid var(--glass-border);
-    box-shadow: 2px 0 20px rgba(0,0,0,0.5);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     display: flex;
     flex-direction: column;
     z-index: 100;
     transition: transform var(--duration-md) var(--ease-out-expo);
+}
+
+.muted-emoji {
+    filter: grayscale(1) opacity(0.7) contrast(1.2);
 }
 
 .avatar-block {
@@ -272,7 +277,7 @@ body {
 
 /* ─── Main Content ──────────────────────────────────── */
 .main-content {
-    margin-left: var(--sidebar-w);
+    margin-left: calc(var(--sidebar-w) + 40px);
     padding: 32px;
     flex: 1;
     min-width: 0;
@@ -396,6 +401,11 @@ body {
     gap: 20px;
     margin-bottom: 20px;
     align-items: stretch;
+}
+.bento-left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 .bento-side-column {
     display: flex;

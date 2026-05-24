@@ -34,59 +34,51 @@
 <body>
     <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="logo">
-                <img src="/static/images/icon-192-v7.png" alt="Agent Alpha" class="logo-icon-img">
-                <span class="logo-text">Agent Alpha</span>
-            </div>
-        </div>
-        <!-- Avatar Block -->
-        <div class="avatar-block">
-            <img src="/static/images/icon-192-v7.png" alt="Avatar" class="avatar-img">
+        <!-- Avatar Block replacing Logo -->
+        <div class="avatar-block" style="border-bottom: 1px solid var(--border-subtle); padding: 30px 24px;">
+            <img src="/static/images/icon-192-v7.png" alt="Agent Alpha" class="avatar-img" style="width: 56px; height: 56px;">
             <div class="avatar-info">
-                <div class="avatar-name">Avatar</div>
+                <div class="avatar-name" style="font-size: 1.1rem; margin-bottom: 2px;">Agent Alpha</div>
                 <div class="avatar-status"><span class="status-dot-small"></span> Status: <span style="color:var(--green)">Active</span></div>
-                <div class="avatar-wallet">Wallet: $2.41M</div>
-                <div class="avatar-portfolio">Portfolio: <span style="color:var(--green)">+18.4%</span></div>
             </div>
         </div>
 
         <ul class="nav-links">
             <li><a href="#" class="nav-link active" data-page="dashboard" id="nav-dashboard">
-                <span class="nav-icon">⊞</span> Dashboard
+                <span class="nav-icon muted-emoji">📊</span> Dashboard
             </a></li>
             <li><a href="#" class="nav-link" data-page="portfolio" id="nav-portfolio">
-                <span class="nav-icon">👤</span> Portfolio
+                <span class="nav-icon muted-emoji">💼</span> Portfolio
             </a></li>
             <li><a href="#" class="nav-link" data-page="paper" id="nav-paper">
-                <span class="nav-icon">🎮</span> Paper Trading
+                <span class="nav-icon muted-emoji">🎮</span> Paper Trading
             </a></li>
             <li><a href="#" class="nav-link" data-page="screener" id="nav-screener">
-                <span class="nav-icon">◱</span> Screener
+                <span class="nav-icon muted-emoji">🔍</span> Screener
             </a></li>
             <li><a href="#" class="nav-link" data-page="signals" id="nav-signals">
-                <span class="nav-icon">⚡</span> Signals
+                <span class="nav-icon muted-emoji">🎯</span> Signals
             </a></li>
             <li><a href="#" class="nav-link" data-page="analysis" id="nav-analysis">
-                <span class="nav-icon">📊</span> Analysis
+                <span class="nav-icon muted-emoji">📈</span> Analysis
             </a></li>
             <li><a href="#" class="nav-link" data-page="rotation" id="nav-rotation">
-                <span class="nav-icon">⎈</span> Sectors
+                <span class="nav-icon muted-emoji">🌡️</span> Sectors
             </a></li>
             <li><a href="#" class="nav-link" data-page="news" id="nav-news">
-                <span class="nav-icon">📰</span> News
+                <span class="nav-icon muted-emoji">📰</span> News
             </a></li>
             <li><a href="#" class="nav-link" data-page="accuracy" id="nav-accuracy">
-                <span class="nav-icon">🎯</span> Accuracy
+                <span class="nav-icon muted-emoji">🎯</span> Accuracy
             </a></li>
             <li><a href="#" class="nav-link" data-page="alerts" id="nav-alerts">
-                <span class="nav-icon">⚙️</span> Alerts
+                <span class="nav-icon muted-emoji">🔔</span> Alerts
             </a></li>
             <li><a href="#" class="nav-link" data-page="watchlist" id="nav-watchlist">
-                <span class="nav-icon">⌘</span> Watchlist
+                <span class="nav-icon muted-emoji">👀</span> Watchlist
             </a></li>
             <li><a href="#" class="nav-link" data-page="arena" id="nav-arena">
-                <span class="nav-icon">⎚</span> Arena
+                <span class="nav-icon muted-emoji">⚔️</span> Arena
             </a></li>
         </ul>
         <div class="sidebar-footer">
@@ -135,17 +127,27 @@
 
             <!-- Bento Dashboard Grid -->
             <div class="bento-main-grid">
-                <!-- Left Column: Graph in the middle -->
-                <div class="glass-card chart-card" style="height: 100%;">
-                    <h3>Nifty 50</h3>
-                    <div id="nifty-chart" class="chart-container" style="height: 400px;"></div>
+                <!-- Left Column: Graph + News -->
+                <div class="bento-left-column">
+                    <div class="glass-card chart-card" style="height: 480px; display: flex; flex-direction: column;">
+                        <h3>Nifty 50</h3>
+                        <div id="nifty-chart" class="chart-container" style="flex: 1;"></div>
+                    </div>
+                    
+                    <!-- News Feed (Underneath Graph) -->
+                    <div class="glass-card">
+                        <h3>Latest Market News</h3>
+                        <div class="news-feed" id="news-feed">
+                            <div class="loading-skeleton">Loading news...</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Right Column: Side panels -->
                 <div class="bento-side-column">
-                    <div class="glass-card sentiment-card">
+                    <div class="glass-card sentiment-card" style="height: 480px; display: flex; flex-direction: column;">
                         <h3>Market Sentiment</h3>
-                        <div class="sentiment-display" id="sentiment-display">
+                        <div class="sentiment-display" id="sentiment-display" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
                             <div class="sentiment-score" id="sentiment-score">--</div>
                             <div class="sentiment-label" id="sentiment-label">Loading...</div>
                             <div class="sentiment-bar-container">
@@ -156,14 +158,6 @@
                                 <span class="legend-positive">Positive: <span id="pos-pct">0</span>%</span>
                                 <span class="legend-negative">Negative: <span id="neg-pct">0</span>%</span>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- News Feed -->
-                    <div class="glass-card" style="flex: 1;">
-                        <h3>Latest Market News</h3>
-                        <div class="news-feed" id="news-feed">
-                            <div class="loading-skeleton">Loading news...</div>
                         </div>
                     </div>
                 </div>
