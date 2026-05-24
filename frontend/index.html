@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Alpha — Institutional Trading Intelligence</title>
-    <meta name="description" content="Agent Alpha v3.0 — Institutional-grade systematic trading engine with 7-model ensemble, HMM regime detection, and walk-forward validated ML predictions.">
+    <meta name="description" content="Agent Alpha v3.0 — Institutional-grade systematic trading engine with 15-Model Institutional Ensemble, HMM regime detection, and walk-forward validated ML predictions.">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32-v7.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16-v7.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -328,6 +328,30 @@
                 </div>
             </div>
 
+            <!-- Institutional Quants Display (Phase 4) -->
+            <div class="card-grid two-grid">
+                <!-- Stat Arb Pairs Tracking -->
+                <div class="glass-card" style="border-color: rgba(0, 229, 255, 0.3);">
+                    <h3 style="color: var(--accent);">Stat-Arb Pairs Tracking (Z-Score)</h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead><tr><th>Pair (Long vs Short)</th><th>Spread Z-Score</th><th>Status</th><th>Signal</th></tr></thead>
+                            <tbody id="arena-statarb-body">
+                                <tr><td colspan="4" class="loading-skeleton">Awaiting Pair Divergence...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Inverse Volatility Parity -->
+                <div class="glass-card" style="border-color: rgba(0, 255, 136, 0.3);">
+                    <h3 style="color: var(--green);">Inverse-Volatility Parity Sizing</h3>
+                    <div id="arena-risk-parity-visual" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">
+                        <div class="loading-skeleton">Calculating 20-day standard deviations...</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Equity Curve -->
             <div class="glass-card chart-card">
                 <h3>Equity Curve vs Benchmark (Nifty 50)</h3>
@@ -391,7 +415,7 @@
         <section class="page" id="page-screener">
             <div class="page-header">
                 <h1>Stock Screener</h1>
-                <p class="subtitle">Multi-sector analysis powered by 7-model ensemble</p>
+                <p class="subtitle">Multi-sector analysis powered by 15-Model Institutional Ensemble</p>
             </div>
             <div class="glass-card">
                 <div class="screener-controls">

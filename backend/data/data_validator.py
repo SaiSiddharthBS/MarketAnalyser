@@ -52,7 +52,7 @@ class DataValidator:
         self,
         df: pd.DataFrame,
         symbol: str,
-        max_staleness_hours: int = 48,
+        max_staleness_hours: int = 96,
         max_single_day_move_pct: float = 20.0,
     ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
         """

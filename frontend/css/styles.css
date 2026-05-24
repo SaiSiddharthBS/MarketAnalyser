@@ -6,14 +6,14 @@
 
 /* ─── Design Tokens ─────────────────────────────────── */
 :root {
-    /* Surface — Deep navy-black with glass layers */
-    --bg-base: #080c14;
-    --bg-surface: rgba(255, 255, 255, 0.04);
-    --bg-elevated: rgba(255, 255, 255, 0.06);
-    --bg-subtle: rgba(255, 255, 255, 0.03);
-    --bg-hover: rgba(255, 255, 255, 0.08);
-    --bg-active: rgba(255, 255, 255, 0.10);
-    --bg-overlay: rgba(8, 12, 20, 0.85);
+    /* Surface — Deep obsidian black with glass layers */
+    --bg-base: #030508;
+    --bg-surface: rgba(255, 255, 255, 0.03);
+    --bg-elevated: rgba(255, 255, 255, 0.05);
+    --bg-subtle: rgba(255, 255, 255, 0.02);
+    --bg-hover: rgba(255, 255, 255, 0.07);
+    --bg-active: rgba(255, 255, 255, 0.09);
+    --bg-overlay: rgba(3, 5, 8, 0.85);
 
     /* Borders — Subtle glass edges */
     --border-default: rgba(255, 255, 255, 0.08);
@@ -26,25 +26,25 @@
     --text-muted: #505a6e;
     --text-inverse: #080c14;
 
-    /* Accent — Emerald-cyan */
-    --accent: #00d4aa;
-    --accent-hover: #00e8bc;
-    --accent-light: rgba(0, 212, 170, 0.10);
-    --accent-subtle: rgba(0, 212, 170, 0.06);
+    /* Accent — Cyber Cyan */
+    --accent: #00e5ff;
+    --accent-hover: #00ffff;
+    --accent-light: rgba(0, 229, 255, 0.10);
+    --accent-subtle: rgba(0, 229, 255, 0.06);
 
     /* Semantic — Neon on dark */
-    --green: #00e68a;
-    --green-bg: rgba(0, 230, 138, 0.10);
-    --green-text: #00e68a;
-    --red: #ff4d6a;
-    --red-bg: rgba(255, 77, 106, 0.10);
-    --red-text: #ff4d6a;
+    --green: #00ff88;
+    --green-bg: rgba(0, 255, 136, 0.10);
+    --green-text: #00ff88;
+    --red: #ff2a55;
+    --red-bg: rgba(255, 42, 85, 0.10);
+    --red-text: #ff2a55;
     --amber: #ffb347;
     --amber-bg: rgba(255, 179, 71, 0.10);
     --amber-text: #ffb347;
-    --blue: #4da6ff;
-    --blue-bg: rgba(77, 166, 255, 0.10);
-    --blue-text: #4da6ff;
+    --blue: #00e5ff;
+    --blue-bg: rgba(0, 229, 255, 0.10);
+    --blue-text: #00e5ff;
 
     /* Layout */
     --sidebar-w: 260px;
@@ -62,8 +62,8 @@
     --shadow-glow: 0 0 0 3px rgba(0, 212, 170, 0.20);
 
     /* Glass */
-    --glass-blur: 20px;
-    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-blur: 40px;
+    --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
     --glass-border: rgba(255, 255, 255, 0.08);
 
     /* Typography */

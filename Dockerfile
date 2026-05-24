@@ -25,4 +25,4 @@ RUN mkdir -p /app/data
 
 # Run the scheduler
 ENV PYTHONPATH=/app
-CMD ["python", "main.py"]
+CMD ["python", "scheduler.py"]

@@ -1,108 +1,108 @@
-# Market Analyser - Agent Alpha v2.0
+<div align="center">
+  <img src=".github/assets/hero_banner.png" alt="Agent Alpha Hero Banner" width="100%">
+  
+  <h1><b>AGENT ALPHA v3.0</b></h1>
+  <p><b>Institutional-Grade Algorithmic Trading & AI Ensemble Engine</b></p>
+  
+  [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org/)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+  [![Status](https://img.shields.io/badge/Status-Production_Live-success?style=for-the-badge)]()
+</div>
 
-An autonomous, multi-timeframe quantitative trading engine designed to systematically trade the NIFTY 50 index. Agent Alpha combines technical ensemble modeling, macroeconomic analysis, live news sentiment, and corporate event tracking into a unified risk parity framework.
+<br/>
 
-## 🚀 Architecture Overview
+## 🦅 Executive Summary
+**Agent Alpha** is a completely autonomous, serverless-ready quantitative trading intelligence. Built from the ground up to rival institutional quant desks, it relies on a sophisticated **15-Model Machine Learning Ensemble** intersecting with **Hidden Markov Models (HMM)** to detect market regimes, dynamically sizing positions while prioritizing capital preservation.
 
-Agent Alpha operates entirely autonomously using two scheduled cron tasks:
-1. **08:30 AM (Overnight Intel):** Scans macro indicators (Fed Watch, VIX, Geopolitics) to set the daily portfolio regime.
-2. **03:00 PM (Daily Arena):** Evaluates all NIFTY 50 stocks for entry using a highly structured funnel.
-
-```mermaid
-graph TD
-    A[Market Data API] --> B[Technical Ensemble Model]
-    A --> C[Macro Overnight Intel]
-    
-    C --> D{Market Regime}
-    B --> E[Signal Generation]
-    
-    E --> F{Veto Engine}
-    D --> F
-    
-    A --> G[Live News Sentiment]
-    A --> H[Corporate Events]
-    G --> F
-    H --> F
-    
-    F -->|Approved| I[Risk Parity Sizing]
-    I -->|Inverse Volatility| J[Bucket Engine]
-    
-    J -->|Intraday 15%| K[(Database)]
-    J -->|Swing 35%| K
-    J -->|Positional 50%| K
-```
-
-## ⚙️ Core Engines
-
-### 1. Market Regime & Macro Intelligence
-Analyzes Global Liquidity, China PMI, Geopolitical Risk, and VIX to classify the market into regimes (e.g., `high_vol_uptrend`, `low_vol_chop`). This dynamically adjusts the aggression and risk parameters of the entire portfolio.
-
-### 2. Multi-Timeframe Bucket Engine
-Capital is split into three strict time horizons:
-- **Intraday (15%)**: 0-1 day holding period.
-- **Swing (35%)**: 2-10 days holding period.
-- **Positional (50%)**: 11-45 days holding period.
-If a bucket fills up, no more trades of that type are permitted.
-
-### 3. Risk Parity Sizing
-Calculates a **Volatility Scalar** based on a stock's annualized variance compared to the NIFTY baseline. Highly volatile stocks (like Adani) are allocated 50% less capital than stable stocks (like HDFC) to ensure equal portfolio impact. Caps sector concentration at **30%** of total capital.
-
-### 4. Veto Engine (The Iron Shield)
-Before execution, a trade must survive four layers of defense:
-- **News Sentiment:** Vetoes trades with `BREAKING_NEGATIVE` NLP sentiment.
-- **Corporate Events:** Vetoes trades 3 days before an earnings report.
-- **Portfolio Correlation:** Vetoes trades highly correlated (>0.65) to existing positions.
-- **Regime Rejection:** Vetoes aggressive trades during choppy/bearish macro regimes.
+Every signal generated is backtested instantly via Walk-Forward Validation and executed dynamically in a live Paper Trading Arena—all piped directly to the CEO’s Telegram for oversight.
 
 ---
 
-## 🛠️ Installation & Deployment
+## 🔥 Key Architectures (Deployed April 30 - May 24, 2026)
 
-Agent Alpha is fully containerized with Docker, meaning it can run 24/7 on any cloud VPS (AWS, DigitalOcean, etc.) or locally on your Mac.
+### 1. The 15-Model Institutional Ensemble
+Rather than relying on singular technical indicators, Agent Alpha aggregates 15 discrete models across 4 unique alpha-generating dimensions:
+*   **Technical Matrix:** Moving Average Ribbons (KAMA, EMA), RSI bounds, ATR Volatility.
+*   **Momentum Matrix:** MACD Histograms, Rate of Change (ROC), On-Balance Volume (OBV).
+*   **Transformer AI Patterns:** Deep learning integration for recognizing double-tops, ascending triangles, and structural exhaustion.
+*   **Macro & Regime Bias:** Broad market tailwinds, VIX-adjusted scaling, and Nifty 50 correlation mapping.
 
-### Prerequisites
-- Docker and Docker Compose installed.
-- (Optional) `TELEGRAM_BOT_TOKEN` for notifications.
+### 2. Capital Preservation & HMM Regime Detection
+The system is built on one simple rule: *Survival over outperformance.*
+*   **HMM Classifier:** Constantly analyzes the Nifty 50 to classify the environment into states like `High Volatility Chop`, `Mean Reversion`, or `Trending Bull`.
+*   **Capital Preservation Veto:** If the market enters a `Chop` regime, the internal `DataValidator` enforces a rigid capital preservation policy. The system will aggressively veto (reject) any trade that does not exhibit at least `1.4x` Relative Volume (RVOL) or strong Multi-Timeframe (MTF) alignment.
 
-### Running with Docker
+### 3. The Paper Trading Arena
+A fully automated execution pipeline running on a virtual **₹1,000,000 (10 Lakh)** portfolio.
+*   **Dynamic Position Sizing:** Automatically calculates position sizes based on a strict `2% Risk Limit` per trade, utilizing the stock's ATR (Average True Range).
+*   **Live Equity Curve:** Tracks Mark-to-Market (MTM) daily equity against the Nifty 50 benchmark.
+*   **Postgres State Management:** Entire portfolio state is persisted securely in a Neon Serverless PostgreSQL database with connection pooling.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/market-analyser.git
-   cd market-analyser
-   ```
+### 4. Data Immune System
+Agent Alpha employs a ruthless `DataValidator` that sanitizes all incoming `yfinance` and macroeconomic data.
+*   **Staleness Checks:** Actively drops any stock data older than **96 hours** to prevent weekend-glitches and split-adjustment anomalies.
+*   **Null Overrides:** Purges incomplete OHLCV candles to ensure the ML ensemble never hallucinates on broken data.
 
-2. **Start the Engine in Detached Mode:**
-   ```bash
-   docker-compose up -d --build
-   ```
+### 5. Multi-Timeframe (MTF) Alignment
+Alpha generation isn't just about the daily candle. The engine maps Daily momentum against Weekly trends. 
+*   **Headwind (Conflict):** If the Daily chart signals Long, but the Weekly trend is Bearish, the stock is downgraded to a `🟡 Watch (Forming)` label.
+*   **Tailwind (Alignment):** If both timeframes align, the stock is upgraded to a `💎 Dip Opportunity` or `🚀 Early Breakout`.
 
-3. **Check the Logs:**
-   Ensure the scheduler has started successfully:
-   ```bash
-   docker logs -f agent_alpha_bot
-   ```
+### 6. Obsidian Glass UI & Visual Analytics
+The frontend is a bespoke **Progressive Web App (PWA)** utilizing a jaw-dropping *Obsidian Glassmorphism* aesthetic.
+*   **Lightweight Charts Integration:** Rendering thousands of data points at 60FPS using TradingView's standalone library.
+*   **Real-time Alerts:** Integrated with Telegram APIs to ping executions, daily summaries, and market anomalies straight to your phone.
 
-### Running Locally (Without Docker)
+---
 
-1. Create a virtual environment and install dependencies:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+## 🏗️ System Architecture
 
-2. Run the main scheduler:
-   ```bash
-   PYTHONPATH=backend python3 backend/main.py
-   ```
+Agent Alpha is fully containerized. A Dockerfile orchestrates the FastApi monolithic core, while a separate background cron job handles market-close scraping.
 
-## 🗄️ Database Management
-The system uses SQLite (stored in `backend/data/agent_alpha.db`). 
-- **Docker Persistence:** The database folder is mapped via Docker volumes, so your portfolio history persists even if the container restarts.
-- **Automated Backups:** Before the 3:00 PM Arena execution, the system automatically creates an `agent_alpha_backup.db` and runs a `VACUUM` cleanup.
+> **For complete, full-scale Mermaid flowcharts, block diagrams, and obsidian mindmaps of our data pipeline, please view the [ARCHITECTURE.md](./ARCHITECTURE.md) document.**
 
-## 🛑 Operations Runbook
-- **Stop the bot:** `docker-compose down`
-- **Manual Override (Sell All):** *Future feature, but currently you can manually execute `DELETE FROM paper_trades` if you wish to reset the environment.*
-- **Changing Tickers:** Edit `NIFTY_50_SYMBOLS` in `backend/config.py`.
+---
+
+## ⚡ Deployment & Local Setup
+
+Agent Alpha is cloud-native and ready for Render/AWS. To run locally:
+
+### 1. Clone & Environment
+```bash
+git clone https://github.com/SaiSiddharthBS/MarketAnalyser.git
+cd MarketAnalyser
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 2. Environment Variables
+Create a `.env` file in the root directory:
+```env
+DATABASE_URL=postgresql://user:pass@ep-host.neon.tech/neondb?sslmode=require
+TELEGRAM_BOT_TOKEN=your_token
+TELEGRAM_CHAT_ID=your_chat_id
+FRED_API_KEY=your_fred_key
+```
+
+### 3. Run the Core Platform
+Start the FastAPI backend (this will also serve the Obsidian Glass UI on the root path):
+```bash
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+Visit `http://localhost:8000` to access the trading terminal.
+
+### 4. Run the Background Scheduler
+In a separate terminal, launch the daemon that handles Overnight Intel and Daily Arena Execution:
+```bash
+python backend/scheduler.py
+```
+
+---
+
+<div align="center">
+  <i>"The future of finance is not predicted. It is computed."</i><br/>
+  <b>— Agent Alpha v3.0</b>
+</div>
