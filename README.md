@@ -13,6 +13,7 @@
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org/)
   [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
   [![XGBoost](https://img.shields.io/badge/XGBoost-FF9800?style=for-the-badge&logo=nvidia&logoColor=white)](https://xgboost.ai/)
+  [![Ollama](https://img.shields.io/badge/Ollama-LLaMA_3.3_70B-000000?style=for-the-badge&logo=meta&logoColor=white)](https://ollama.ai/)
   [![Status](https://img.shields.io/badge/Status-Production_Live-success?style=for-the-badge)]()
 </div>
 
@@ -33,7 +34,7 @@ With **Zero-Trust Capital Preservation Architecture**, every signal must survive
 
 ### 🧠 Autonomous Execution & AI
 *   **Zero-Latency Signal Generation:** Engine processes OHLCV ticks, calculates 15 model vectors, and generates a unified bias in `<400ms`.
-*   **LLM Catalyst Engine:** Natively ingests news headlines and corporate filings, analyzing sentiment using localized Gemini AI models before vetoing trades.
+*   **LLM Catalyst Engine (Ollama + LLaMA 3.3 70B Versatile):** Natively ingests live news headlines and complex corporate SEC/NSE filings. Instead of relying on generic cloud APIs, it routes sentiment analysis and financial parsing through a highly-capable, locally-hosted **LLaMA 3.3 70B Versatile** model via **Ollama**, ensuring zero data leakage, unthrottled inference speed, and institutional-grade natural language reasoning.
 *   **Walk-Forward ML Optimization:** Models never curve-fit. They are trained sequentially on rolling windows to guarantee out-of-sample robustness.
 
 ### 🛡️ Institutional Risk Management
@@ -279,6 +280,25 @@ $$ K_{\text{raw}} = W - \frac{1 - W}{R} $$
 This fraction is scaled dynamically by the regime modifier ($M_{\text{regime}}$) and the global pre-market bias score ($B_{\text{global}}$):
 
 $$ K_{\text{final}} = K_{\text{raw}} \times M_{\text{regime}} \times (1 + B_{\text{global}}) $$
+
+---
+
+## ⚙️ System Requirements & Software Dependencies
+
+Because Agent Alpha utilizes localized LLMs and heavy quantitative matrix multiplications, it requires a robust environment to run optimally.
+
+### Hardware Requirements (Sentinel Node)
+*   **CPU:** 8-Core Processor (Apple Silicon M1/M2/M3, Intel Core i7, or AMD Ryzen 7)
+*   **RAM:** 16GB Minimum (32GB+ Highly Recommended for LLaMA 3.3 70B execution in memory)
+*   **Storage:** 50GB NVMe SSD (Required for historical OHLCV parquet caching and Docker volumes)
+*   **Network:** Uninterrupted high-speed broadband (for zero-latency API streaming)
+
+### Software Dependencies
+*   **Docker & Docker Compose:** Containerization and orchestrating the backend/cron stack.
+*   **Python 3.10+:** The core runtime for the quantitative engine.
+*   **Ollama:** Must be installed locally or accessible via IP to serve the `llama3.3:70b-versatile` model.
+*   **Neon Serverless PostgreSQL:** For stateless ledger storage.
+*   **Core Python Libraries:** `fastapi`, `xgboost`, `lightgbm`, `pandas-ta`, `statsmodels`, `yfinance`.
 
 ---
 
