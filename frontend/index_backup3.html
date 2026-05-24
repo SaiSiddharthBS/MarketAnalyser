@@ -40,38 +40,27 @@
                 <span class="logo-text">Agent Alpha</span>
             </div>
         </div>
-        <!-- Avatar Block -->
-        <div class="avatar-block">
-            <img src="/static/images/icon-192-v7.png" alt="Avatar" class="avatar-img">
-            <div class="avatar-info">
-                <div class="avatar-name">Avatar</div>
-                <div class="avatar-status"><span class="status-dot-small"></span> Status: <span style="color:var(--green)">Active</span></div>
-                <div class="avatar-wallet">Wallet: $2.41M</div>
-                <div class="avatar-portfolio">Portfolio: <span style="color:var(--green)">+18.4%</span></div>
-            </div>
-        </div>
-
         <ul class="nav-links">
             <li><a href="#" class="nav-link active" data-page="dashboard" id="nav-dashboard">
-                <span class="nav-icon">⊞</span> Dashboard
+                <span class="nav-icon">📊</span> Dashboard
             </a></li>
             <li><a href="#" class="nav-link" data-page="portfolio" id="nav-portfolio">
-                <span class="nav-icon">👤</span> Portfolio
+                <span class="nav-icon">💼</span> Portfolio
             </a></li>
             <li><a href="#" class="nav-link" data-page="paper" id="nav-paper">
                 <span class="nav-icon">🎮</span> Paper Trading
             </a></li>
             <li><a href="#" class="nav-link" data-page="screener" id="nav-screener">
-                <span class="nav-icon">◱</span> Screener
+                <span class="nav-icon">🔍</span> Screener
             </a></li>
             <li><a href="#" class="nav-link" data-page="signals" id="nav-signals">
-                <span class="nav-icon">⚡</span> Signals
+                <span class="nav-icon">🎯</span> Signals
             </a></li>
             <li><a href="#" class="nav-link" data-page="analysis" id="nav-analysis">
-                <span class="nav-icon">📊</span> Analysis
+                <span class="nav-icon">📈</span> Analysis
             </a></li>
             <li><a href="#" class="nav-link" data-page="rotation" id="nav-rotation">
-                <span class="nav-icon">⎈</span> Sectors
+                <span class="nav-icon">🌡️</span> Sectors
             </a></li>
             <li><a href="#" class="nav-link" data-page="news" id="nav-news">
                 <span class="nav-icon">📰</span> News
@@ -80,13 +69,13 @@
                 <span class="nav-icon">🎯</span> Accuracy
             </a></li>
             <li><a href="#" class="nav-link" data-page="alerts" id="nav-alerts">
-                <span class="nav-icon">⚙️</span> Alerts
+                <span class="nav-icon">🔔</span> Alerts
             </a></li>
             <li><a href="#" class="nav-link" data-page="watchlist" id="nav-watchlist">
-                <span class="nav-icon">⌘</span> Watchlist
+                <span class="nav-icon">👀</span> Watchlist
             </a></li>
             <li><a href="#" class="nav-link" data-page="arena" id="nav-arena">
-                <span class="nav-icon">⎚</span> Arena
+                <span class="nav-icon">⚔️</span> Arena
             </a></li>
         </ul>
         <div class="sidebar-footer">
@@ -133,39 +122,34 @@
             <!-- Market Indices -->
             <div class="card-grid indices-grid" id="indices-grid"></div>
 
-            <!-- Bento Dashboard Grid -->
-            <div class="bento-main-grid">
-                <!-- Left Column: Graph in the middle -->
-                <div class="glass-card chart-card" style="height: 100%;">
-                    <h3>Nifty 50</h3>
-                    <div id="nifty-chart" class="chart-container" style="height: 400px;"></div>
+            <!-- Sentiment + Chart -->
+            <div class="two-col">
+                <div class="glass-card sentiment-card">
+                    <h3>Market Sentiment</h3>
+                    <div class="sentiment-display" id="sentiment-display">
+                        <div class="sentiment-score" id="sentiment-score">--</div>
+                        <div class="sentiment-label" id="sentiment-label">Loading...</div>
+                        <div class="sentiment-bar-container">
+                            <div class="sentiment-bar positive" id="sentiment-positive" style="width: 0%"></div>
+                            <div class="sentiment-bar negative" id="sentiment-negative" style="width: 0%"></div>
+                        </div>
+                        <div class="sentiment-legend">
+                            <span class="legend-positive">Positive: <span id="pos-pct">0</span>%</span>
+                            <span class="legend-negative">Negative: <span id="neg-pct">0</span>%</span>
+                        </div>
+                    </div>
                 </div>
+                <div class="glass-card chart-card">
+                    <h3>Nifty 50</h3>
+                    <div id="nifty-chart" class="chart-container"></div>
+                </div>
+            </div>
 
-                <!-- Right Column: Side panels -->
-                <div class="bento-side-column">
-                    <div class="glass-card sentiment-card">
-                        <h3>Market Sentiment</h3>
-                        <div class="sentiment-display" id="sentiment-display">
-                            <div class="sentiment-score" id="sentiment-score">--</div>
-                            <div class="sentiment-label" id="sentiment-label">Loading...</div>
-                            <div class="sentiment-bar-container">
-                                <div class="sentiment-bar positive" id="sentiment-positive" style="width: 0%"></div>
-                                <div class="sentiment-bar negative" id="sentiment-negative" style="width: 0%"></div>
-                            </div>
-                            <div class="sentiment-legend">
-                                <span class="legend-positive">Positive: <span id="pos-pct">0</span>%</span>
-                                <span class="legend-negative">Negative: <span id="neg-pct">0</span>%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- News Feed -->
-                    <div class="glass-card" style="flex: 1;">
-                        <h3>Latest Market News</h3>
-                        <div class="news-feed" id="news-feed">
-                            <div class="loading-skeleton">Loading news...</div>
-                        </div>
-                    </div>
+            <!-- News Feed -->
+            <div class="glass-card">
+                <h3>Latest Market News</h3>
+                <div class="news-feed" id="news-feed">
+                    <div class="loading-skeleton">Loading news...</div>
                 </div>
             </div>
         </section>
