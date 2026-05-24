@@ -2024,9 +2024,9 @@ async function loadAccuracy() {
                 <div class="acc-row">
                     <span>${(s.signal || '').replace('_', ' ')}</span>
                     <div class="acc-bar-wrap">
-                        <div class="acc-bar" style="width:${s.win_rate}%;background:${s.win_rate >= 50 ? 'var(--accent-green)' : 'var(--accent-red)'}"></div>
+                        <div class="acc-bar" style="width:${s.win_rate}%;background:${s.win_rate >= 50 ? 'var(--green)' : 'var(--red)'}"></div>
                     </div>
-                    <span>${s.win_rate}% (${s.wins}/${s.total})</span>
+                    <span style="text-align: right; font-family: var(--font-mono);">${s.win_rate}% (${s.wins}/${s.total})</span>
                 </div>
             `).join('');
         } else {
@@ -2046,9 +2046,9 @@ async function loadAccuracy() {
                 <div class="acc-row">
                     <span>${regimeLabels[s.regime] || s.regime}</span>
                     <div class="acc-bar-wrap">
-                        <div class="acc-bar" style="width:${s.win_rate}%;background:${s.win_rate >= 50 ? 'var(--accent-green)' : 'var(--accent-red)'}"></div>
+                        <div class="acc-bar" style="width:${s.win_rate}%;background:${s.win_rate >= 50 ? 'var(--green)' : 'var(--red)'}"></div>
                     </div>
-                    <span>${s.win_rate}% (${s.wins}/${s.total})</span>
+                    <span style="text-align: right; font-family: var(--font-mono);">${s.win_rate}% (${s.wins}/${s.total})</span>
                 </div>
             `).join('');
         } else {

@@ -1628,3 +1628,33 @@ select, option {
 .bd-bar-wrap {
     background: rgba(255,255,255,0.06) !important;
 }
+
+/* ─── Accuracy Progress Bars ────────────────────────── */
+.acc-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 100px;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+.acc-row span:first-child {
+    font-weight: 600;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.acc-bar-wrap {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+}
+.acc-bar {
+    height: 100%;
+    border-radius: 4px;
+    box-shadow: 0 0 10px currentColor;
+    transition: width 1s var(--ease-out-expo);
+}
