@@ -118,43 +118,41 @@ At the heart of Agent Alpha lies a weighted voting ensemble that outputs a conti
 
 ```mermaid
 graph TD
-    subgraph "The 15-Model Ensemble Engine"
-        direction TB
-        
-        subgraph "Technical Matrix"
-            M1["1. KAMA/EMA Divergence"]
-            M2["2. Regime-Adjusted RSI-14"]
-            M3["3. ATR Volatility Expansion"]
-            M4["4. Bollinger Squeeze"]
-        end
-        
-        subgraph "Momentum Matrix"
-            M5["5. MACD Acceleration"]
-            M6["6. ROC-10 Velocity"]
-            M7["7. On-Balance Volume"]
-        end
-        
-        subgraph "Machine Learning Layer"
-            M8["8. XGBoost Classifier"]
-            M9["9. LightGBM Trees"]
-            M10["10. Sequence Neural Net"]
-            M11["11. Short-Term MLP"]
-        end
-        
-        subgraph "Microstructure & Flow"
-            M12["12. Smart Money VPOC"]
-            M13["13. StatArb Pairs Z-Score"]
-            M14["14. FII/DII Net Flow"]
-            M15["15. Options PCR"]
-        end
-        
-        M1 & M2 & M3 & M4 --> Vote{"Dynamic Weighting & Voting Node"}
-        M5 & M6 & M7 --> Vote
-        M8 & M9 & M10 & M11 --> Vote
-        M12 & M13 & M14 & M15 --> Vote
-        
-        Vote --> Output("Final Directional Bias Score (-1.0 to +1.0)")
+    subgraph Technical["Technical Matrix"]
+        M1["1. KAMA/EMA Divergence"]
+        M2["2. Regime-Adjusted RSI-14"]
+        M3["3. ATR Volatility Expansion"]
+        M4["4. Bollinger Squeeze"]
     end
+    
+    subgraph Momentum["Momentum Matrix"]
+        M5["5. MACD Acceleration"]
+        M6["6. ROC-10 Velocity"]
+        M7["7. On-Balance Volume"]
+    end
+    
+    subgraph MachineLearning["Machine Learning Layer"]
+        M8["8. XGBoost Classifier"]
+        M9["9. LightGBM Trees"]
+        M10["10. Sequence Neural Net"]
+        M11["11. Short-Term MLP"]
+    end
+    
+    subgraph Microstructure["Microstructure & Flow"]
+        M12["12. Smart Money VPOC"]
+        M13["13. StatArb Pairs Z-Score"]
+        M14["14. FII/DII Net Flow"]
+        M15["15. Options PCR"]
+    end
+    
+    Vote{"Dynamic Weighting & Voting Node"}
+    
+    Technical --> Vote
+    Momentum --> Vote
+    MachineLearning --> Vote
+    Microstructure --> Vote
+    
+    Vote --> Output["Final Directional Bias Score: -1.0 to +1.0"]
 ```
 
 #### 📐 A. Technical Matrix (4 Models)
