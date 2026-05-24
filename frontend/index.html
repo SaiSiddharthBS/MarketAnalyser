@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="/static/css/styles.css?v=72">
     <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#080c14">
 
@@ -48,40 +50,40 @@
 
         <ul class="nav-links">
             <li><a href="#" class="nav-link active" data-page="dashboard" id="nav-dashboard">
-                <span class="nav-icon muted-emoji">📊</span> Dashboard
+                <i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard
             </a></li>
             <li><a href="#" class="nav-link" data-page="portfolio" id="nav-portfolio">
-                <span class="nav-icon muted-emoji">💼</span> Portfolio
+                <i data-lucide="briefcase" class="nav-icon"></i> Portfolio
             </a></li>
             <li><a href="#" class="nav-link" data-page="paper" id="nav-paper">
-                <span class="nav-icon muted-emoji">🎮</span> Paper Trading
+                <i data-lucide="gamepad-2" class="nav-icon"></i> Paper Trading
             </a></li>
             <li><a href="#" class="nav-link" data-page="screener" id="nav-screener">
-                <span class="nav-icon muted-emoji">🔍</span> Screener
+                <i data-lucide="search" class="nav-icon"></i> Screener
             </a></li>
             <li><a href="#" class="nav-link" data-page="signals" id="nav-signals">
-                <span class="nav-icon muted-emoji">🎯</span> Signals
+                <i data-lucide="crosshair" class="nav-icon"></i> Signals
             </a></li>
             <li><a href="#" class="nav-link" data-page="analysis" id="nav-analysis">
-                <span class="nav-icon muted-emoji">📈</span> Analysis
+                <i data-lucide="line-chart" class="nav-icon"></i> Analysis
             </a></li>
             <li><a href="#" class="nav-link" data-page="rotation" id="nav-rotation">
-                <span class="nav-icon muted-emoji">🌡️</span> Sectors
+                <i data-lucide="thermometer" class="nav-icon"></i> Sectors
             </a></li>
             <li><a href="#" class="nav-link" data-page="news" id="nav-news">
-                <span class="nav-icon muted-emoji">📰</span> News
+                <i data-lucide="newspaper" class="nav-icon"></i> News
             </a></li>
             <li><a href="#" class="nav-link" data-page="accuracy" id="nav-accuracy">
-                <span class="nav-icon muted-emoji">🎯</span> Accuracy
+                <i data-lucide="target" class="nav-icon"></i> Accuracy
             </a></li>
             <li><a href="#" class="nav-link" data-page="alerts" id="nav-alerts">
-                <span class="nav-icon muted-emoji">🔔</span> Alerts
+                <i data-lucide="bell" class="nav-icon"></i> Alerts
             </a></li>
             <li><a href="#" class="nav-link" data-page="watchlist" id="nav-watchlist">
-                <span class="nav-icon muted-emoji">👀</span> Watchlist
+                <i data-lucide="eye" class="nav-icon"></i> Watchlist
             </a></li>
             <li><a href="#" class="nav-link" data-page="arena" id="nav-arena">
-                <span class="nav-icon muted-emoji">⚔️</span> Arena
+                <i data-lucide="swords" class="nav-icon"></i> Arena
             </a></li>
         </ul>
         <div class="sidebar-footer">
@@ -163,6 +165,32 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Mission Control Widget -->
+                    <div class="glass-card mission-control-card" style="margin-top: 20px; display: flex; flex-direction: column;">
+                        <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                            <i data-lucide="cpu" style="width: 18px; color: var(--green);"></i> Mission Control
+                        </h3>
+                        <div class="system-status-list" style="display: flex; flex-direction: column; gap: 16px;">
+                            <div class="status-row" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
+                                <span style="display: flex; align-items: center; gap: 8px;"><span class="status-dot active"></span> Sentinel Engine</span>
+                                <span style="color: var(--green); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 1px;">ONLINE</span>
+                            </div>
+                            <div class="status-row" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
+                                <span style="display: flex; align-items: center; gap: 8px;"><span class="status-dot active"></span> Docker Containers</span>
+                                <span style="color: var(--green); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 1px;">ACTIVE</span>
+                            </div>
+                            <div class="status-row" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
+                                <span style="display: flex; align-items: center; gap: 8px;"><span class="status-dot active"></span> Data Streams</span>
+                                <span style="color: var(--green); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 1px;">SYNCED</span>
+                            </div>
+                            <div class="status-row" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
+                                <span style="display: flex; align-items: center; gap: 8px;"><span class="status-dot active" style="background: var(--accent); box-shadow: 0 0 10px var(--accent);"></span> ML Predictor</span>
+                                <span style="color: var(--accent); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 1px;">LEARNING</span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </section>
@@ -645,5 +673,9 @@
     <script src="/static/js/api.js?v=73"></script>
     <script src="/static/js/charts.js?v=73"></script>
     <script src="/static/js/app.js?v=73"></script>
+    <script>
+        // Initialize SVG Icons
+        lucide.createIcons();
+    </script>
 </body>
 </html>
