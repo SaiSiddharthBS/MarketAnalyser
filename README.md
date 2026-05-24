@@ -1,7 +1,7 @@
 <div align="center">
   <img src="Agent%20Alpha%20Logo%20v2.png" alt="Agent Alpha Logo" width="150" />
   
-  <h1><b style="color: #00FF88;">AGENT ALPHA</b> | <i>The Apex of Algorithmic Trading</i></h1>
+  <h1><b style="color: #00FF88;">AGENT ALPHA</b></h1>
   <p><b>Institutional-Grade Algorithmic Trading Core & Quantitative AI Ensemble Engine</b></p>
 
   <img src=".github/assets/agent_alpha_terminal_ui.png" alt="Agent Alpha Terminal UI" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.2); margin-top: 20px;" />
