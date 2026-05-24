@@ -449,7 +449,8 @@ async function loadDashboard() {
 async function updateMissionControl() {
     const start = performance.now();
     try {
-        const h = await api.request('/api/health');
+        const h = await api.get('/health');
+        if (!h) throw new Error("API Offline");
         const ping = Math.round(performance.now() - start);
         document.getElementById('diag-ping').textContent = `${ping} ms`;
         document.getElementById('diag-version').textContent = `v${h.version || '2.0.0'}`;
@@ -478,7 +479,7 @@ async function updateMissionControl() {
     }
 
     try {
-        const trades = await api.request('/api/paper_trades');
+        const trades = await api.get('/paper_trades');
         const el = document.getElementById('mission-recent-actions');
         if (trades && trades.length > 0) {
             const recent = trades.slice(0, 3);
