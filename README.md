@@ -77,6 +77,8 @@ mindmap
       Sector Correlation Heatmap
       ATR & Kelly Position Sizing
     Data & Infrastructure
+      Ollama Local Daemon
+      LLaMA 3.3 70B Versatile
       yfinance & FRED APIs
       Neon PostgreSQL
       Docker Containerization
@@ -106,12 +108,14 @@ graph TB
         direction TB
         Docker["Docker Engine (Containerized OS)"]
         FastAPI["FastAPI Uvicorn Backend"]
+        Ollama["Ollama Local Daemon<br/>(LLaMA 3.3 70B)"]
         Cron["Background Scheduler Daemon"]
         Quant["15-Model Quant Engine"]
         
         Docker --> FastAPI
         Docker --> Cron
         Cron --> Quant
+        Quant -->|Sentiment Intel| Ollama
     end
 
     subgraph "Cloud Infrastructure"
@@ -128,7 +132,7 @@ graph TB
 ```
 
 **Node 1 (Primary Executive Station - MacBook Pro):** The visualization and development terminal. The CEO interacts with the system here via the stunning Obsidian Glass UI. When the CEO leaves for the office and shuts this MacBook down, the trading system remains completely unaffected.
-**Node 2 (Sentinel Execution Node - Secondary Laptop):** The absolute core of the operation. This secondary laptop sits on a desk plugged in 24/7. It runs the `docker-compose` stack containing the FastAPI backend, the Cron daemons, and the Machine Learning models. Because Node 2 is "Always-On", the 8:00 AM pre-market scans and 3:45 PM execution cron-jobs trigger relentlessly without fail, entirely independent of the MacBook Pro.
+**Node 2 (Sentinel Execution Node - Secondary Laptop):** The absolute core of the operation. This secondary laptop sits on a desk plugged in 24/7. It runs the `docker-compose` stack containing the FastAPI backend, the Cron daemons, the Machine Learning models, and the massive localized **Ollama (LLaMA 3.3 70B)** engine. Because Node 2 is "Always-On", the 8:00 AM pre-market scans and 3:45 PM execution cron-jobs trigger relentlessly without fail, entirely independent of the MacBook Pro.
 
 ---
 
