@@ -28,6 +28,26 @@ With **Zero-Trust Capital Preservation Architecture**, every signal must survive
 
 ---
 
+## 🔥 Enterprise Feature Suite: UI vs. Autonomous Engine
+*While others build dashboards to look at the market, Agent Alpha was built to conquer it.*
+
+### 🧠 Autonomous Execution & AI
+*   **Zero-Latency Signal Generation:** Engine processes OHLCV ticks, calculates 15 model vectors, and generates a unified bias in `<400ms`.
+*   **LLM Catalyst Engine:** Natively ingests news headlines and corporate filings, analyzing sentiment using localized Gemini AI models before vetoing trades.
+*   **Walk-Forward ML Optimization:** Models never curve-fit. They are trained sequentially on rolling windows to guarantee out-of-sample robustness.
+
+### 🛡️ Institutional Risk Management
+*   **Dynamic Kelly Criterion:** Position sizing isn't guessed. It is mathematically derived from the historical win-rate and profit factor of the active HMM regime.
+*   **12-Rule Hard Veto Firewall:** A ruthless zero-trust layer that blocks trades during VIX spikes, impending earnings reports, or heavy FII selling.
+*   **Dynamic Correlation Heatmap:** Actively calculates Pearson correlation across the portfolio to prevent localized sector beta-collapse.
+
+### ⚡ The Obsidian Glass Executive UI
+*   **Terminal Noir Aesthetic:** A gorgeous, hardware-accelerated dark mode PWA featuring Glassmorphism, tailored for the CEO's secondary monitor.
+*   **60FPS WebSockets:** Live execution LED pulses, real-time P&L tickers, and portfolio drawdown metrics streamed directly from the Python backend.
+*   **Live Telegram Sub-System:** Instant push notifications for every Ensemble Vote, Firewall Veto, and executed trade directly to your phone.
+
+---
+
 ## ⏱️ Multi-Horizon Trading Expertise
 
 Agent Alpha is not confined to a single timeframe. The engine dynamically scales its analysis across three distinct temporal horizons, ensuring alpha extraction regardless of market speed.
