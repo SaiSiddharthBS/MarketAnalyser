@@ -75,22 +75,22 @@ Agent Alpha operates on a resilient, distributed physical architecture split acr
 
 ```mermaid
 graph TB
-    subgraph "Node 1: Primary Compute & Dev Station (MacBook Pro)"
+    subgraph "Node 1: Executive Dashboard (Primary MacBook Pro)"
+        UI["Obsidian Glass UI (Local PWA)"]
+        Dev["Codebase & Strategy Architecture"]
+        UI_Browser["Google Chrome / Safari<br/>(60 FPS Chart Rendering)"]
+    end
+
+    subgraph "Node 2: The Sentinel Node (Secondary Always-On Laptop)"
         direction TB
-        Docker["Docker Engine"]
+        Docker["Docker Engine (Containerized OS)"]
         FastAPI["FastAPI Uvicorn Backend"]
         Cron["Background Scheduler Daemon"]
         Quant["15-Model Quant Engine"]
-        Dev["Codebase & Strategy Backtesting"]
         
         Docker --> FastAPI
         Docker --> Cron
         Cron --> Quant
-    end
-
-    subgraph "Node 2: The Sentinel UI Node (Secondary Laptop)"
-        UI["Obsidian Glass UI (Local PWA)"]
-        UI_Browser["Google Chrome / Safari<br/>(60 FPS Chart Rendering)"]
     end
 
     subgraph "Cloud Infrastructure"
@@ -103,10 +103,11 @@ graph TB
     Quant -->|Write P&L / Read Ledger| DB
     Quant -->|Fetch OHLCV / Auto-Heal Cache| Data
     Cron -->|Dispatch Alerts| TG
+    Dev -.->|Git Push Deployment| Docker
 ```
 
-**Node 1 (Primary Station - MacBook Pro):** The computational powerhouse. This machine runs the `docker-compose` stack housing the FastAPI backend, the automated cron daemons, the machine learning models, and the data-fetching architecture. It is fully responsible for all algorithmic heavy-lifting and trade generation.
-**Node 2 (Sentinel Display Node - Secondary Laptop):** A dedicated, always-on executive monitor. It runs the Obsidian Glass UI web app locally, fetching JSON payloads and rendering the 60FPS TradingView charts via WebSockets/REST. It remains untouched by backend latency, serving solely as the CEO's dashboard.
+**Node 1 (Primary Executive Station - MacBook Pro):** The visualization and development terminal. The CEO interacts with the system here via the stunning Obsidian Glass UI. When the CEO leaves for the office and shuts this MacBook down, the trading system remains completely unaffected.
+**Node 2 (Sentinel Execution Node - Secondary Laptop):** The absolute core of the operation. This secondary laptop sits on a desk plugged in 24/7. It runs the `docker-compose` stack containing the FastAPI backend, the Cron daemons, and the Machine Learning models. Because Node 2 is "Always-On", the 8:00 AM pre-market scans and 3:45 PM execution cron-jobs trigger relentlessly without fail, entirely independent of the MacBook Pro.
 
 ---
 
@@ -233,7 +234,7 @@ flowchart LR
 
 ---
 
-## 🧮 Quantitative Mathematics & Formulas
+## 🧮 Mathematical Models & Algorithmic Foundations
 
 Agent Alpha relies on rigorous mathematical foundations for regime classification, volatility scaling, and position sizing.
 
