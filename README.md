@@ -114,16 +114,71 @@ graph TB
 
 ### 1. The 15-Model Quantitative Ensemble Engine
 
-At the heart of Agent Alpha lies a weighted voting ensemble that outputs a continuous directional bias. 
+At the heart of Agent Alpha lies a weighted voting ensemble that outputs a continuous directional bias. Rather than relying on a single point of failure, the engine synthesizes signals from 15 distinct, uncorrelated models across 4 unique matrices.
 
-#### 🚀 Machine Learning Classifiers: XGBoost & LightGBM
-*   **XGBoost Classifier:** Emits probabilities for 3 classes: Up (>2% in 5 days), Down (<-2% in 5 days), and Flat.
-*   **LightGBM Classifier:** Highly optimized, gradient-boosted decision tree layer natively handling complex engineered features (e.g. microstructure shadows, volume profiles).
-*   **Lightweight Sequence Model & Short-Term MLP:** Temporal classifiers mimicking LSTM networks to capture cyclical wave patterns and order imbalances.
+```mermaid
+graph TD
+    subgraph "The 15-Model Ensemble Engine"
+        direction TB
+        
+        subgraph "Technical Matrix"
+            M1["1. KAMA/EMA Divergence"]
+            M2["2. Regime-Adjusted RSI-14"]
+            M3["3. ATR Volatility Expansion"]
+            M4["4. Bollinger Squeeze"]
+        end
+        
+        subgraph "Momentum Matrix"
+            M5["5. MACD Acceleration"]
+            M6["6. ROC-10 Velocity"]
+            M7["7. On-Balance Volume"]
+        end
+        
+        subgraph "Machine Learning Layer"
+            M8["8. XGBoost Classifier"]
+            M9["9. LightGBM Trees"]
+            M10["10. Sequence Neural Net"]
+            M11["11. Short-Term MLP"]
+        end
+        
+        subgraph "Microstructure & Flow"
+            M12["12. Smart Money VPOC"]
+            M13["13. StatArb Pairs Z-Score"]
+            M14["14. FII/DII Net Flow"]
+            M15["15. Options PCR"]
+        end
+        
+        M1 & M2 & M3 & M4 --> Vote{"Dynamic Weighting & Voting Node"}
+        M5 & M6 & M7 --> Vote
+        M8 & M9 & M10 & M11 --> Vote
+        M12 & M13 & M14 & M15 --> Vote
+        
+        Vote --> Output("Final Directional Bias Score (-1.0 to +1.0)")
+    end
+```
 
-#### 📊 Microstructure & Statistical Arbitrage
-*   **StatArb Pairs Trading:** Monitors highly cointegrated sector pairs.
-*   **Smart Money / VPOC:** Scans intraday data for high-density institutional accumulation block trades.
+#### 📐 A. Technical Matrix (4 Models)
+1.  **Kaufmans Adaptive Moving Average (KAMA/EMA):** Measures price divergence against a multi-day EMA baseline, filtering out market "noise" during high volatility.
+2.  **Regime-Adjusted RSI-14:** A momentum oscillator dynamically capped by the active HMM state to prevent buying false breakouts in range-bound regimes.
+3.  **ATR Volatility Expansion:** Triggers when severe price contractions (coiling) resolve into aggressive directional volatility expansions.
+4.  **Bollinger Squeeze Percentile:** Locates statistical standard-deviation squeeze anomalies right before a trend accelerates.
+
+#### 🌊 B. Momentum Matrix (3 Models)
+5.  **MACD Histogram Acceleration:** Measures the second derivative (acceleration/deceleration) of the short-term trend rather than just the direction.
+6.  **Rate of Change (ROC-10):** Measures pure unadulterated percentage price velocity over a rolling 10-day period.
+7.  **On-Balance Volume (OBV):** Ensures price breakouts are mathematically supported by underlying volume flow.
+
+#### 🧠 C. Machine Learning Layer (4 Models)
+8.  **XGBoost Classifier:** Trained on historical OHLCV data using a walk-forward cross-validation window. Emits probabilities for Up (>2% in 5 days), Down (<-2% in 5 days), and Flat.
+9.  **LightGBM Classifier:** Highly optimized, gradient-boosted decision tree layer natively handling complex engineered features like microstructure shadows.
+10. **Lightweight Sequence Model:** A temporal sequence classifier designed to mimic LSTM networks, capturing cyclical sine-wave patterns in price action.
+11. **Short-Term Multilayer Perceptron (MLP):** A deep neural network optimized to detect near-term order imbalances for 1-to-3 day thrusts.
+
+#### 🏦 D. Microstructure & Flow (4 Models)
+12. **Smart Money / VPOC:** Scans intraday tape for high-density institutional accumulation (Demand Blocks) at the Volume Point of Control.
+13. **StatArb Pairs Trading (Z-Score):** Monitors highly cointegrated sector pairs (e.g., TCS vs INFY) and triggers mean-reversion signals when the spread exceeds $\pm2$ standard deviations.
+14. **Institutional Flow (FII/DII):** Tracks net daily capital injection/extraction by Foreign and Domestic Institutional Investors into the Indian cash market.
+15. **Options Put-Call Ratio (PCR):** Analyzes open interest across the derivatives chain to detect contrarian retail sentiment extremes.
 
 ---
 
