@@ -157,4 +157,10 @@ def main():
     run_sentinel()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        logger.info("🛑 Sentinel Shutdown Requested. Closing connections...")
+        # Optional: gracefully close WS server or any other threads
+        import os
+        os._exit(0) # Force hard exit to kill daemon threads instantly

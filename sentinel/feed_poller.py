@@ -23,10 +23,10 @@ def get_latest_headlines():
                         "summary": entry.get("summary", ""),
                         "link": entry.link
                     })
-            else:
-                print(f"Error fetching feed {feed_url}: HTTP {res.status_code}")
-        except Exception as e:
-            print(f"Error fetching feed {feed_url}: {e}")
+            # Silently ignore non-200 status codes to keep console clean
+        except Exception:
+            # Silently ignore connection timeouts/errors
+            pass
             
     # Add NSE/BSE data
     headlines.extend(get_nse_announcements())

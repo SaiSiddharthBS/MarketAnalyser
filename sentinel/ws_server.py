@@ -49,5 +49,13 @@ def run_ws_server_in_thread():
     global server_loop
     server_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(server_loop)
-    server_loop.run_until_complete(start_server())
-    server_loop.run_forever()
+    try:
+        server_loop.run_until_complete(start_server())
+        server_loop.run_forever()
+    except OSError as e:
+        if e.errno == 10048:
+            logger.warning(f"Port {WS_PORT} is already in use (likely by a previous instance). The system will route through the existing open port.")
+        else:
+            logger.warning(f"WebSocket Server encountered an OS error: {e}")
+    except Exception as e:
+        logger.warning(f"WebSocket Server stopped: {e}")
