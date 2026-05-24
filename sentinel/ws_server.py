@@ -11,6 +11,7 @@ logger = logging.getLogger("Sentinel_WS")
 logger.setLevel(logging.INFO)
 
 connected_clients = set()
+server_loop = None
 
 async def handler(websocket, path=None): # Note: websockets 10+ handles path differently but we keep signature generic
     connected_clients.add(websocket)
@@ -35,13 +36,18 @@ async def broadcast_alert(alert_data: dict):
     await asyncio.gather(*tasks, return_exceptions=True)
     logger.info(f"Broadcasted alert to {len(connected_clients)} clients.")
 
+def broadcast_alert_threadsafe(alert_data: dict):
+    if server_loop and server_loop.is_running():
+        asyncio.run_coroutine_threadsafe(broadcast_alert(alert_data), server_loop)
+
 async def start_server():
     server = await websockets.serve(handler, WS_HOST, WS_PORT)
     logger.info(f"WebSocket Server running on ws://{WS_HOST}:{WS_PORT}")
     await server.wait_closed()
 
 def run_ws_server_in_thread():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(start_server())
-    loop.run_forever()
+    global server_loop
+    server_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(server_loop)
+    server_loop.run_until_complete(start_server())
+    server_loop.run_forever()

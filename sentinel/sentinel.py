@@ -19,7 +19,7 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 from feed_poller import get_latest_headlines
-from ws_server import broadcast_alert, run_ws_server_in_thread
+from ws_server import broadcast_alert_threadsafe, run_ws_server_in_thread
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("Sentinel")
@@ -73,7 +73,7 @@ def triage_news(headline: str, summary: str) -> dict:
         logger.error(f"Ollama classification failed: {e}")
     return {}
 
-async def run_sentinel():
+def run_sentinel():
     logger.info("🛡️ Sentinel Daemon Started. Monitoring RSS Feeds...")
     while True:
         try:
@@ -115,7 +115,7 @@ async def run_sentinel():
                                 "symbols": classification.get("t", []),
                                 "reason": classification.get("r", "")
                             }
-                            await broadcast_alert(alert_data)
+                            broadcast_alert_threadsafe(alert_data)
                             
                             # Send Telegram Alert
                             if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
@@ -134,17 +134,15 @@ async def run_sentinel():
             logger.error(f"Sentinel error: {e}")
             
         # Poll every 5 minutes
-        await asyncio.sleep(300)
+        time.sleep(300)
 
-async def main():
-    import websockets
-    from ws_server import handler, WS_HOST, WS_PORT
+def main():
+    logger.info("Starting WS Server in background thread...")
+    ws_thread = threading.Thread(target=run_ws_server_in_thread, daemon=True)
+    ws_thread.start()
     
-    logger.info(f"Starting WS Server on ws://{WS_HOST}:{WS_PORT}")
-    server = await websockets.serve(handler, WS_HOST, WS_PORT)
-    
-    # Run sentinel polling loop concurrently
-    await run_sentinel()
+    # Run sentinel polling loop in main thread
+    run_sentinel()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
