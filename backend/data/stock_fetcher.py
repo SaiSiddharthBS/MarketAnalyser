@@ -19,7 +19,7 @@ HEADERS = {
 # Period to Yahoo API range mapping
 _PERIOD_MAP = {
     "1d": "1d", "5d": "5d", "1mo": "1mo", "3mo": "3mo",
-    "6mo": "6mo", "1y": "1y", "2y": "2y", "5y": "5y", "max": "max",
+    "6mo": "6mo", "1y": "1y", "2y": "2y", "3y": "5y", "5y": "5y", "max": "max",
 }
 
 
@@ -29,17 +29,7 @@ def download_ohlcv(symbol, period="1y", interval="1d"):
     the direct Yahoo Finance v8 chart API to bypass cloud IP blocks.
     Returns a pandas DataFrame or None.
     """
-    # Attempt 1: Standard yfinance
-    try:
-        df = yf.download(symbol, period=period, interval=interval, progress=False)
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-        if not df.empty and len(df) > 1:
-            return df
-    except Exception as e:
-        print(f"yf.download failed for {symbol}: {e}")
-
-    # Attempt 2: Direct Yahoo Finance API (bypasses cloud IP blocks)
+    # Use Direct Yahoo Finance API (bypasses cloud IP blocks and Crumb errors)
     try:
         yahoo_range = _PERIOD_MAP.get(period, "6mo")
         url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?interval={interval}&range={yahoo_range}"

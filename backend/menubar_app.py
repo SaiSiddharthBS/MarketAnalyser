@@ -39,11 +39,14 @@ class AgentAlphaTrayApp(rumps.App):
                 rumps.MenuItem("Show Ticker in Menu Bar", callback=self.toggle_ticker),
                 rumps.MenuItem("Auto-Launch on Login", callback=self.toggle_autolaunch)
             ]),
-            rumps.MenuItem("Turn Server ON", callback=self.turn_server_on),
-            rumps.MenuItem("Turn Server OFF", callback=self.turn_server_off),
+            rumps.MenuItem("Server: Checking...", callback=None),
+            rumps.MenuItem("▶ Turn Server ON", callback=self.turn_server_on),
+            rumps.MenuItem("⏹ Turn Server OFF", callback=self.turn_server_off),
             None,
             rumps.MenuItem("🚨 HALT SYSTEM (Kill Switch)", callback=self.kill_switch)
         ]
+        
+        self.notification_icon = ICON_PATH
         
         # Initialize Settings state
         plist_path = Path.home() / "Library" / "LaunchAgents" / "com.agentalpha.menubar.plist"
@@ -201,13 +204,13 @@ class AgentAlphaTrayApp(rumps.App):
         threading.Thread(target=_run).start()
 
     def send_telegram(self, _):
-        rumps.notification("Agent Alpha", "Telegram Alert", "Compiling daily briefing...")
+        rumps.notification("Agent Alpha", "Telegram Alert", "Compiling daily briefing...", icon=self.notification_icon)
         def _run():
             try:
                 requests.post(f"{API_BASE}/bot/alert", timeout=60)
-                rumps.notification("Agent Alpha", "Telegram Alert", "Briefing dispatched successfully.")
+                rumps.notification("Agent Alpha", "Telegram Alert", "Briefing dispatched successfully.", icon=self.notification_icon)
             except Exception as e:
-                rumps.notification("Agent Alpha", "Telegram Alert Failed", str(e))
+                rumps.notification("Agent Alpha", "Telegram Alert Failed", str(e), icon=self.notification_icon)
         threading.Thread(target=_run).start()
         
     def copy_intel(self, _):
@@ -217,9 +220,9 @@ class AgentAlphaTrayApp(rumps.App):
             res = requests.get(f"{API_BASE}/market/regime", timeout=5)
             intel = json.dumps(res.json(), indent=2)
             subprocess.run("pbcopy", universal_newlines=True, input=intel)
-            rumps.notification("Agent Alpha", "Intel Copied", "Latest market intel copied to clipboard.")
+            rumps.notification("Agent Alpha", "Intel Copied", "Latest market intel copied to clipboard.", icon=self.notification_icon)
         except Exception:
-            rumps.notification("Agent Alpha", "Copy Failed", "Could not reach backend server.")
+            rumps.notification("Agent Alpha", "Copy Failed", "Could not reach backend server.", icon=self.notification_icon)
 
     def toggle_ticker(self, sender):
         sender.state = not sender.state
@@ -262,9 +265,9 @@ class AgentAlphaTrayApp(rumps.App):
                 with open(plist_path, "w") as f:
                     f.write(plist_content)
                 subprocess.run(["launchctl", "load", str(plist_path)], capture_output=True)
-                rumps.notification("Agent Alpha", "Auto-Launch Enabled", "Agent Alpha will now start automatically when you log in.")
+                rumps.notification("Agent Alpha", "Auto-Launch Enabled", "Agent Alpha will now start automatically when you log in.", icon=self.notification_icon)
             except Exception as e:
-                rumps.notification("Agent Alpha", "Auto-Launch Failed", f"Could not enable auto-launch: {e}")
+                rumps.notification("Agent Alpha", "Auto-Launch Failed", f"Could not enable auto-launch: {e}", icon=self.notification_icon)
                 sender.state = False
         else:
             # Disable auto-launch
@@ -272,9 +275,9 @@ class AgentAlphaTrayApp(rumps.App):
                 if plist_path.exists():
                     subprocess.run(["launchctl", "unload", str(plist_path)], capture_output=True)
                     plist_path.unlink()
-                rumps.notification("Agent Alpha", "Auto-Launch Disabled", "Agent Alpha will no longer start automatically.")
+                rumps.notification("Agent Alpha", "Auto-Launch Disabled", "Agent Alpha will no longer start automatically.", icon=self.notification_icon)
             except Exception as e:
-                rumps.notification("Agent Alpha", "Disable Failed", f"Could not disable auto-launch: {e}")
+                rumps.notification("Agent Alpha", "Disable Failed", f"Could not disable auto-launch: {e}", icon=self.notification_icon)
                 sender.state = True
 
     def is_server_running(self):
@@ -288,8 +291,14 @@ class AgentAlphaTrayApp(rumps.App):
 
     def update_server_status(self):
         running = self.is_server_running()
-        self.menu["Turn Server ON"].state = running
-        self.menu["Turn Server OFF"].state = not running
+        if running:
+            self.menu["Server: Checking..."].title = "Server: 🟢 Online"
+            self.menu["▶ Turn Server ON"].set_callback(None)
+            self.menu["⏹ Turn Server OFF"].set_callback(self.turn_server_off)
+        else:
+            self.menu["Server: Checking..."].title = "Server: 🔴 Offline"
+            self.menu["▶ Turn Server ON"].set_callback(self.turn_server_on)
+            self.menu["⏹ Turn Server OFF"].set_callback(None)
 
     def turn_server_off(self, _):
         if self.is_server_running():
@@ -299,19 +308,29 @@ class AgentAlphaTrayApp(rumps.App):
                         proc.kill()
                 except Exception:
                     pass
-            rumps.notification("Agent Alpha", "Server Offline", "Backend services have been shut down.")
+            rumps.notification("Agent Alpha", "Server Offline", "Backend services have been shut down.", icon=self.notification_icon)
         self.update_server_status()
 
     def turn_server_on(self, _):
         if not self.is_server_running():
-            rumps.notification("Agent Alpha", "Server Starting", "Booting up Uvicorn ASGI server...")
-            subprocess.Popen([VENV_PYTHON, "-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"], cwd=str(PROJECT_ROOT / "backend"))
+            rumps.notification("Agent Alpha", "Server Starting", "Booting up Uvicorn ASGI server...", icon=self.notification_icon)
+            
+            # Prevent [Errno 5] Input/output error from yfinance when run without TTY
+            log_path = PROJECT_ROOT / "backend_server.log"
+            log_file = open(str(log_path), "a")
+            
+            subprocess.Popen(
+                [VENV_PYTHON, "-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+                cwd=str(PROJECT_ROOT / "backend"),
+                stdout=log_file,
+                stderr=subprocess.STDOUT
+            )
             time.sleep(3)
         self.update_server_status()
 
     def kill_switch(self, _):
         # Emergency halt!
-        rumps.notification("🚨 EMERGENCY HALT", "Agent Alpha", "Killing all active processes and stopping server.")
+        rumps.notification("🚨 EMERGENCY HALT", "Agent Alpha", "Killing all active processes and stopping server.", icon=self.notification_icon)
         for proc in psutil.process_iter(['name', 'cmdline']):
             try:
                 cmd = ' '.join(proc.info.get('cmdline', []))

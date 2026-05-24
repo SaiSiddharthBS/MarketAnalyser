@@ -43,11 +43,13 @@ def _get_nse_session() -> requests.Session:
     return session
 
 
+_CHAIN_CACHE = {}
+
 def fetch_options_chain(
     symbol: str = "NIFTY",
 ) -> Optional[Dict[str, Any]]:
     """
-    Fetch options chain data from NSE.
+    Fetch options chain data from NSE with 60-second caching to prevent rate limits.
 
     Args:
         symbol: Index or stock symbol (default: NIFTY)
@@ -55,6 +57,14 @@ def fetch_options_chain(
     Returns:
         Dict with: records (list of strike data), underlying_value, expiry_dates
     """
+    global _CHAIN_CACHE
+    now = time.time()
+    
+    if symbol in _CHAIN_CACHE:
+        cached_data, timestamp = _CHAIN_CACHE[symbol]
+        if now - timestamp < 60:
+            return cached_data
+
     try:
         session = _get_nse_session()
         
@@ -72,13 +82,15 @@ def fetch_options_chain(
             expiry_dates = records.get("expiryDates", [])
             option_data = records.get("data", [])
 
-            return {
+            result = {
                 "symbol": symbol,
                 "underlying_value": underlying,
                 "expiry_dates": expiry_dates,
                 "data": option_data,
                 "fetched_at": datetime.now().isoformat(),
             }
+            _CHAIN_CACHE[symbol] = (result, now)
+            return result
     except Exception as e:
         print(f"⚠️ Options chain fetch failed for {symbol}: {e}")
 

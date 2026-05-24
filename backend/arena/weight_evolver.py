@@ -9,14 +9,19 @@ import database as db
 logger = logging.getLogger(__name__)
 
 DEFAULT_WEIGHTS = {
-    "technical": 15,
-    "transformer": 25,
-    "options_flow": 15,
-    "ml_engine": 15,
+    "technical": 8,
+    "transformer": 15,
+    "short_term_nn": 10,
+    "options_flow": 10,
+    "fno_bias": 10,
+    "ml_engine": 10,
     "sentiment": 10,
     "insider": 5,
     "macro": 5,
-    "momentum": 10
+    "momentum": 8,
+    "value": 1,
+    "quality": 6,
+    "earnings": 2
 }
 
 def evolve_regime_weights():
@@ -26,7 +31,7 @@ def evolve_regime_weights():
     regimes = db.db_execute("SELECT DISTINCT regime FROM prediction_log WHERE outcome IS NOT NULL")
     if not regimes: return
     
-    models = ["technical", "transformer", "options_flow", "ml_engine", "sentiment", "insider", "macro", "momentum"]
+    models = ["technical", "transformer", "short_term_nn", "options_flow", "ml_engine", "sentiment", "insider", "macro", "momentum", "value", "quality", "earnings"]
     
     for r in regimes:
         regime = r["regime"]
@@ -106,6 +111,7 @@ def get_regime_weights(regime: str) -> dict:
         if total_weight > 0:
             weights = {k: (v / total_weight) * 100 for k, v in weights.items()}
     except Exception as e:
-        logger.error(f"Failed to apply alpha decay weights: {e}")
+        import traceback
+        logger.error(f"Failed to apply alpha decay weights: {e}\n{traceback.format_exc()}")
             
     return weights

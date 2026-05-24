@@ -135,9 +135,20 @@ def _run_alpha_v2_pipeline() -> str:
     regime_status = regime.get("status", "UNKNOWN")
     print(f"  🎯 Regime: {regime_name.upper()} ({regime.get('confidence_pct', 0)}%)")
 
+    # Detect regime transition
+    regime_change_alert = ""
+    try:
+        last_regime = db.get_last_market_regime()
+        if last_regime and last_regime != regime_name:
+            regime_change_alert = f"🔄 *REGIME TRANSITION DETECTED:* Market transitioned from *{last_regime.upper()}* to *{regime_name.upper()}*! (Confidence: {regime.get('confidence_pct', 0)}%)\n"
+    except Exception as trans_err:
+        print(f"Failed to check regime transition: {trans_err}")
+
     results_lines.append(
         f"🎯 *Regime:* {regime_status} ({regime_name.upper()})"
     )
+    if regime_change_alert:
+        results_lines.append(regime_change_alert)
 
     # Log regime to DB
     try:
@@ -193,14 +204,15 @@ def _run_alpha_v2_pipeline() -> str:
 
     for symbol in NIFTY_50_SYMBOLS[:30]:  # Limit for speed on free tier
         try:
-            df = download_ohlcv(symbol, period="1y")
+            df = download_ohlcv(f"{symbol}.NS", period="1y")
             if df is None or len(df) < 50:
                 continue
 
             # Layer 1: Data Validation
-            val_status, val_msg = DataValidator.validate_ohlcv(df)
-            if not val_status:
-                print(f"  ⚠️ {symbol}: Data validation failed — {val_msg}")
+            from data.data_validator import validator
+            _, report = validator.validate_ohlcv(df, symbol)
+            if not report.get("valid", True):
+                print(f"  ⚠️ {symbol}: Data validation failed — {report.get('warnings')}")
                 continue
 
             returns_data[symbol] = df["Close"].pct_change().dropna()
@@ -231,18 +243,27 @@ def _run_alpha_v2_pipeline() -> str:
                         "kelly_fraction": 0, "stop_loss": 0,
                     }
 
+                is_transition = False
+                try:
+                    prev_sig = db.get_previous_signal(symbol)
+                    if prev_sig == "WATCH":
+                        is_transition = True
+                except Exception as tr_err:
+                    print(f"Failed to check transition for {symbol}: {tr_err}")
+
                 candidates.append({
                     "symbol": symbol,
                     "sector": "UNKNOWN",
-                    "ensemble_score": ensemble.get("ensemble_score", 0),
-                    "confidence": ensemble.get("final_confidence", 0),
+                    "ensemble_score": ensemble.get("score", 0),
+                    "confidence": ensemble.get("score", 0),
                     "signal": ensemble.get("signal", ""),
-                    "conviction": ensemble.get("conviction", ""),
+                    "conviction": ensemble.get("signal_label", ""),
                     "qty": sizing.get("shares", 0),
                     "value": sizing.get("position_value", 0),
                     "stop_loss": ta.get("stop_loss", 0),
                     "target": ta.get("target", 0),
-                    "reasons": [s.get("indicator", "") for s in ta.get("signals", [])[:3]],
+                    "reasons": (ta.get("reasons", []) or [])[:3],
+                    "is_transition": is_transition,
                 })
 
                 # Log to DB
@@ -260,9 +281,9 @@ def _run_alpha_v2_pipeline() -> str:
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
                         symbol, datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d"), 
-                        ensemble.get("signal"), ensemble.get("final_confidence", 0), 
-                        ensemble.get("ensemble_score", 0), json.dumps(ensemble.get("votes", {})), 
-                        regime_data.get("regime", "unknown"), regime_data.get("vix_level", 15), 
+                        ensemble.get("signal"), ensemble.get("score", 0), 
+                        ensemble.get("score", 0), json.dumps(ensemble.get("score_breakdown", {})), 
+                        regime_name, 0, 
                         datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%A")
                     ))
                 except Exception:
@@ -297,8 +318,9 @@ def _run_alpha_v2_pipeline() -> str:
     if optimized:
         results_lines.append(f"\n✅ *{len(optimized)} TRADES APPROVED:*\n")
         for i, p in enumerate(optimized[:5], 1):
+            trans_tag = " 🔥 WATCH→BUY TRANSITION!" if p.get("is_transition") else ""
             results_lines.append(
-                f"*{i}. {p['symbol']}* — {p.get('conviction', '')} {p.get('signal', '')}\n"
+                f"*{i}. {p['symbol']}* — {p.get('conviction', '')} {p.get('signal', '')}{trans_tag}\n"
                 f"   Score: {p.get('ensemble_score', 0)} | "
                 f"Qty: {p.get('qty', 0)} shares\n"
                 f"   Target: ₹{p.get('target', 0):,.1f} | "
@@ -357,7 +379,6 @@ async def send_daily_alert():
         ai_narrative = ""
         try:
             from services.ai_insights import generate_risk_insights
-            import database as db
             
             # Get basic portfolio stats for the AI
             portfolio = db.db_execute("SELECT * FROM paper_portfolio ORDER BY id DESC LIMIT 1")

@@ -73,83 +73,15 @@ FEATURE_COLUMNS = [
 
 def prepare_ml_features(df: pd.DataFrame) -> Optional[pd.DataFrame]:
     """
-    Calculate ALL features for the ML model from OHLCV data.
-
-    This is the feature engineering pipeline that transforms raw
-    OHLCV data into the feature matrix for LightGBM.
-
-    Args:
-        df: OHLCV DataFrame with at least 250 rows
-
-    Returns:
-        DataFrame with all features calculated, or None
+    Phase 3: Upgraded Feature Engineering Pipeline.
+    Delegates to the new feature_engineer.py which generates 50+ features.
     """
-    if df is None or df.empty or len(df) < 250:
+    try:
+        from analysis.feature_engineer import generate_50_features
+        df_features = generate_50_features(df)
+        return df_features
+    except ImportError:
         return None
-
-    result = df.copy()
-
-    # ─── Technical Indicators ────────────────────────────────
-    result["RSI"] = ta.momentum.RSIIndicator(result["Close"], window=14).rsi()
-
-    macd = ta.trend.MACD(result["Close"])
-    result["MACD"] = macd.macd()
-    result["MACD_Hist"] = macd.macd_diff()
-
-    result["ADX"] = ta.trend.ADXIndicator(
-        result["High"], result["Low"], result["Close"], window=14
-    ).adx()
-
-    # EMAs
-    ema20 = ta.trend.EMAIndicator(result["Close"], window=20).ema_indicator()
-    ema50 = ta.trend.EMAIndicator(result["Close"], window=50).ema_indicator()
-    ema200 = ta.trend.EMAIndicator(result["Close"], window=200).ema_indicator()
-
-    result["Dist_EMA20"] = (result["Close"] - ema20) / ema20 * 100
-    result["Dist_EMA50"] = (result["Close"] - ema50) / ema50 * 100
-    result["Dist_EMA200"] = (result["Close"] - ema200) / ema200 * 100
-
-    # Bollinger Bands
-    bb = ta.volatility.BollingerBands(result["Close"], window=20)
-    bb_upper = bb.bollinger_hband()
-    bb_lower = bb.bollinger_lband()
-    result["BB_Width"] = (bb_upper - bb_lower) / result["Close"] * 100
-    bb_range = bb_upper - bb_lower
-    bb_range = bb_range.replace(0, np.nan)
-    result["BB_Pos"] = (result["Close"] - bb_lower) / bb_range
-
-    # ATR as percentage
-    atr = ta.volatility.AverageTrueRange(
-        result["High"], result["Low"], result["Close"]
-    ).average_true_range()
-    result["ATR_Pct"] = atr / result["Close"] * 100
-
-    # Volatility
-    result["Volatility_20d"] = result["Close"].pct_change().rolling(20).std() * 100
-
-    # ─── Price Momentum ──────────────────────────────────────
-    result["Ret_1d"] = result["Close"].pct_change(1) * 100
-    result["Ret_5d"] = result["Close"].pct_change(5) * 100
-    result["Ret_10d"] = result["Close"].pct_change(10) * 100
-    result["Ret_20d"] = result["Close"].pct_change(20) * 100
-
-    # ─── Volume ──────────────────────────────────────────────
-    vol_ma20 = result["Volume"].rolling(20).mean()
-    result["Vol_Ratio"] = result["Volume"] / vol_ma20
-    result["Vol_Change_5d"] = result["Volume"].pct_change(5) * 100
-
-    # ─── Order Flow Imbalance Proxy ──────────────────────────
-    hl_range = result["High"] - result["Low"]
-    hl_range = hl_range.replace(0, np.nan)
-    result["OFI_proxy"] = (result["Close"] - result["Open"]) / hl_range
-    result["OFI_proxy"] = result["OFI_proxy"].fillna(0)
-    result["OFI_cumulative_5d"] = result["OFI_proxy"].rolling(5).sum()
-
-    # ─── Relative Strength vs Nifty ──────────────────────────
-    # Placeholder: set to 0 if Nifty data not available
-    result["RS_vs_Nifty_20d"] = result["Ret_20d"]  # Will be overridden when Nifty data is available
-
-    return result.dropna()
 
 
 def create_target_variable(
@@ -226,7 +158,9 @@ def train_model(
         df_train = df_features[valid_mask]
         y = target[valid_mask]
 
-        X = df_train[FEATURE_COLUMNS]
+        # Extract feature columns automatically since Phase 3 generates 50+ dynamically
+        feat_cols = [c for c in df_train.columns if c not in ['Open', 'High', 'Low', 'Close', 'Volume', 'Adj Close']]
+        X = df_train[feat_cols]
 
         # ─── Walk-Forward Cross-Validation ───────────────────
         tscv = TimeSeriesSplit(n_splits=n_splits, gap=gap)
@@ -237,27 +171,16 @@ def train_model(
             X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
             y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
-            if LGBM_AVAILABLE:
-                model = lgb.LGBMClassifier(
-                    n_estimators=500,
-                    learning_rate=0.02,
-                    max_depth=6,
-                    min_child_samples=50,
-                    subsample=0.8,
-                    colsample_bytree=0.7,
-                    class_weight="balanced",
-                    random_state=42,
-                    verbose=-1,
-                    n_jobs=-1,
+            try:
+                import xgboost as xgb
+                model = xgb.XGBClassifier(
+                    n_estimators=200, learning_rate=0.05, max_depth=5, 
+                    subsample=0.8, random_state=42, use_label_encoder=False, eval_metric='mlogloss'
                 )
-            else:
+            except ImportError:
                 model = GradientBoostingClassifier(
-                    n_estimators=200,
-                    learning_rate=0.05,
-                    max_depth=5,
-                    min_samples_split=50,
-                    subsample=0.8,
-                    random_state=42,
+                    n_estimators=200, learning_rate=0.05, max_depth=5,
+                    min_samples_split=50, subsample=0.8, random_state=42
                 )
 
             model.fit(X_train, y_train)
@@ -266,27 +189,16 @@ def train_model(
             cv_scores.append(acc)
 
         # ─── Train Final Model on All Data ───────────────────
-        if LGBM_AVAILABLE:
-            final_model = lgb.LGBMClassifier(
-                n_estimators=500,
-                learning_rate=0.02,
-                max_depth=6,
-                min_child_samples=50,
-                subsample=0.8,
-                colsample_bytree=0.7,
-                class_weight="balanced",
-                random_state=42,
-                verbose=-1,
-                n_jobs=-1,
+        try:
+            import xgboost as xgb
+            final_model = xgb.XGBClassifier(
+                n_estimators=200, learning_rate=0.05, max_depth=5, 
+                subsample=0.8, random_state=42, use_label_encoder=False, eval_metric='mlogloss'
             )
-        else:
+        except ImportError:
             final_model = GradientBoostingClassifier(
-                n_estimators=200,
-                learning_rate=0.05,
-                max_depth=5,
-                min_samples_split=50,
-                subsample=0.8,
-                random_state=42,
+                n_estimators=200, learning_rate=0.05, max_depth=5,
+                min_samples_split=50, subsample=0.8, random_state=42
             )
 
         final_model.fit(X, y)
@@ -296,11 +208,7 @@ def train_model(
         joblib.dump(final_model, model_path)
 
         # Feature importance
-        if LGBM_AVAILABLE:
-            importances = dict(zip(FEATURE_COLUMNS, final_model.feature_importances_))
-        else:
-            importances = dict(zip(FEATURE_COLUMNS, final_model.feature_importances_))
-
+        importances = dict(zip(feat_cols, final_model.feature_importances_))
         top_features = dict(sorted(importances.items(), key=lambda x: x[1], reverse=True)[:5])
 
         metrics = {
@@ -312,7 +220,7 @@ def train_model(
             "total_samples": len(X),
             "class_distribution": dict(y.value_counts()),
             "top_features": top_features,
-            "model_type": "LightGBM" if LGBM_AVAILABLE else "GradientBoosting",
+            "model_type": "XGBoost (or fallback)",
             "trained_at": datetime.now().isoformat(),
         }
 
@@ -357,7 +265,8 @@ def predict_symbol(
         if df_features is None or df_features.empty:
             return None
 
-        X_latest = df_features[FEATURE_COLUMNS].iloc[[-1]]
+        feat_cols = [c for c in df_features.columns if c not in ['Open', 'High', 'Low', 'Close', 'Volume', 'Adj Close']]
+        X_latest = df_features[feat_cols].iloc[[-1]]
 
         # Predict probabilities
         probs = model.predict_proba(X_latest)[0]

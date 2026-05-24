@@ -68,19 +68,13 @@ def resolve_pending_signals():
                         outcome = "LOSS"
                         
                 if outcome:
-                    cursor.execute("""
-                        UPDATE signal_log 
-                        SET outcome = ?
-                        WHERE id = ?
-                    """, (outcome, sig_id))
+                    update_q = "UPDATE signal_log SET outcome = %s WHERE id = %s" if db.DATABASE_URL else "UPDATE signal_log SET outcome = ? WHERE id = ?"
+                    cursor.execute(update_q, (outcome, sig_id))
                     
                     # Phase 3: Also update prediction_log for Championship
                     try:
-                        cursor.execute("""
-                            UPDATE prediction_log
-                            SET outcome = ?, resolved_date = ?, actual_return_pct = ?
-                            WHERE symbol = ? AND signal_type = ? AND outcome IS NULL
-                        """, (outcome, datetime.now().strftime('%Y-%m-%d'), round(actual_return_pct, 4), symbol, signal_type))
+                        pred_q = "UPDATE prediction_log SET outcome = %s, resolved_date = %s, actual_return_pct = %s WHERE symbol = %s AND signal_type = %s AND outcome IS NULL" if db.DATABASE_URL else "UPDATE prediction_log SET outcome = ?, resolved_date = ?, actual_return_pct = ? WHERE symbol = ? AND signal_type = ? AND outcome IS NULL"
+                        cursor.execute(pred_q, (outcome, datetime.now().strftime('%Y-%m-%d'), round(actual_return_pct, 4), symbol, signal_type))
                         
                         # Trigger Alpha Decay Monitor & Calibrator
                         try:
@@ -91,7 +85,8 @@ def resolve_pending_signals():
                             decay = AlphaDecayMonitor(signal_names=models)
                             
                             # Parse model votes to update decay monitor
-                            cursor.execute("SELECT model_votes_json, confidence FROM prediction_log WHERE symbol = ? AND signal_type = ? AND outcome = ?", (symbol, signal_type, outcome))
+                            votes_q = "SELECT model_votes_json, confidence FROM prediction_log WHERE symbol = %s AND signal_type = %s AND outcome = %s" if db.DATABASE_URL else "SELECT model_votes_json, confidence FROM prediction_log WHERE symbol = ? AND signal_type = ? AND outcome = ?"
+                            cursor.execute(votes_q, (symbol, signal_type, outcome))
                             row = cursor.fetchone()
                             if row:
                                 import json

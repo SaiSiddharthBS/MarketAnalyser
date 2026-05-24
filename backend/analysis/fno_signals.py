@@ -97,7 +97,7 @@ def get_option_chain_signals(symbol: str) -> dict[str, Any]:
         options_data = chain_response.get("data", [])
         
         # 2. Extract PCR
-        pcr_data = calculate_pcr(options_data)
+        pcr_data = calculate_pcr(options_data) or {}
         pcr_oi = _to_float(pcr_data.get("pcr_oi"), 1.0)
         
         # 3. Extract Buildup

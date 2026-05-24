@@ -7,18 +7,19 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime
+from typing import Optional
 from config import DB_PATH
 
 # Optional: PostgreSQL (only needed on cloud — Render/Neon)
 try:
     import psycopg2
     import psycopg2.extras
-    from psycopg2.pool import SimpleConnectionPool
+    from psycopg2.pool import ThreadedConnectionPool
     HAS_POSTGRES = True
 except ImportError:
     HAS_POSTGRES = False
     psycopg2 = None
-    SimpleConnectionPool = None
+    ThreadedConnectionPool = None
 
 # Optional: dotenv (for loading .env files)
 try:
@@ -33,8 +34,8 @@ pool = None
 
 if DATABASE_URL and HAS_POSTGRES:
     try:
-        # Reduced to 5 to stay within Neon.tech free tier limits
-        pool = SimpleConnectionPool(1, 5, DATABASE_URL)
+        # ThreadedConnectionPool handles concurrent access safely (blocks instead of crashing)
+        pool = ThreadedConnectionPool(2, 15, DATABASE_URL)
         print("✅ Postgres Connection Pool initialized")
     except Exception as e:
         print(f"❌ Failed to initialize connection pool: {e}")
@@ -44,7 +45,9 @@ def get_connection():
     """Get a connection (Postgres or SQLite)."""
     if DATABASE_URL and pool:
         try:
-            return pool.getconn()
+            conn = pool.getconn()
+            conn.autocommit = True
+            return conn
         except Exception as e:
             print(f"❌ Pool getconn error: {e}")
             return None
@@ -55,6 +58,31 @@ def get_connection():
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         return conn
+
+def backup_database():
+    """Create a daily backup of the database and vacuum to save space."""
+    if DATABASE_URL and pool:
+        print("Backup skipped (managed by Postgres provider)")
+        return
+        
+    try:
+        import shutil
+        
+        # 1. Vacuum DB to save space
+        conn = get_connection()
+        if conn:
+            conn.execute("VACUUM")
+            conn.close()
+            print("✅ Database vacuumed.")
+            
+        # 2. Copy the DB
+        if DB_PATH.exists():
+            backup_path = DB_PATH.with_name(f"{DB_PATH.stem}_backup{DB_PATH.suffix}")
+            shutil.copy2(DB_PATH, backup_path)
+            print(f"✅ Local database backed up to {backup_path}")
+            
+    except Exception as e:
+        print(f"❌ Failed to backup local database: {e}")
 
 def put_connection(conn):
     """Return a connection to the pool or close it."""
@@ -232,6 +260,8 @@ def init_db():
             model_votes_json TEXT,
             veto_status TEXT,
             autopsy_json TEXT,
+            holding_class TEXT DEFAULT 'SWING',
+            expected_days INTEGER DEFAULT 10,
             created_at TEXT DEFAULT ({now_func})
         )
     """)
@@ -524,6 +554,23 @@ def init_db():
         "ALTER TABLE signal_log ADD COLUMN outcome_type TEXT",
         "ALTER TABLE signal_log ADD COLUMN actual_pnl_pct REAL",
         "ALTER TABLE signal_log ADD COLUMN date_generated TEXT",
+        # ── Arena Engine: paper_trades schema upgrades ──
+        "ALTER TABLE paper_trades ADD COLUMN trade_type TEXT DEFAULT 'BUY'",
+        "ALTER TABLE paper_trades ADD COLUMN quantity INTEGER",
+        "ALTER TABLE paper_trades ADD COLUMN position_value REAL",
+        "ALTER TABLE paper_trades ADD COLUMN signal_date TEXT",
+        "ALTER TABLE paper_trades ADD COLUMN target_price REAL",
+        "ALTER TABLE paper_trades ADD COLUMN stop_loss REAL",
+        "ALTER TABLE paper_trades ADD COLUMN risk_reward_ratio REAL",
+        "ALTER TABLE paper_trades ADD COLUMN fees REAL DEFAULT 0",
+        "ALTER TABLE paper_trades ADD COLUMN regime_at_entry TEXT",
+        "ALTER TABLE paper_trades ADD COLUMN ensemble_score REAL",
+        "ALTER TABLE paper_trades ADD COLUMN conviction TEXT",
+        "ALTER TABLE paper_trades ADD COLUMN model_votes_json TEXT",
+        "ALTER TABLE paper_trades ADD COLUMN exit_reason TEXT",
+        "ALTER TABLE paper_trades ADD COLUMN gross_pnl REAL",
+        "ALTER TABLE paper_trades ADD COLUMN net_pnl REAL",
+        "ALTER TABLE paper_trades ADD COLUMN return_pct REAL",
     ]
     for migration in migrations:
         m_conn = get_connection()
@@ -605,6 +652,41 @@ def log_market_regime(regime_data):
 def save_signal(*args, **kwargs):
     pass # Migrating to save_ensemble_signal
 
+def get_last_market_regime():
+    """Query the last logged market regime from the database (prior to today)."""
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+        query = "SELECT regime_name FROM market_regimes WHERE date < %s ORDER BY date DESC LIMIT 1"
+        if not DATABASE_URL:
+            query = "SELECT regime_name FROM market_regimes WHERE date < ? ORDER BY date DESC LIMIT 1"
+        res = db_execute(query, (today,))
+        if res:
+            # Handle list/dict result
+            if isinstance(res[0], dict):
+                return res[0].get("regime_name")
+            elif isinstance(res[0], tuple) or isinstance(res[0], list):
+                return res[0][0]
+    except Exception as e:
+        print(f"Error querying last regime: {e}")
+    return None
+
+def get_previous_signal(symbol: str) -> Optional[str]:
+    """Query the previous signal type for a symbol from the database (prior to today)."""
+    try:
+        today_start = datetime.now().strftime("%Y-%m-%d 00:00:00")
+        query = "SELECT signal_type FROM signal_log WHERE symbol = %s AND timestamp < %s ORDER BY timestamp DESC LIMIT 1"
+        if not DATABASE_URL:
+            query = "SELECT signal_type FROM signal_log WHERE symbol = ? AND timestamp < ? ORDER BY timestamp DESC LIMIT 1"
+        res = db_execute(query, (symbol, today_start))
+        if res:
+            if isinstance(res[0], dict):
+                return res[0].get("signal_type")
+            elif isinstance(res[0], tuple) or isinstance(res[0], list):
+                return res[0][0]
+    except Exception as e:
+        print(f"Error querying previous signal for {symbol}: {e}")
+    return None
+
 if __name__ == "__main__":
     init_db()
 
@@ -618,7 +700,12 @@ def get_model_performance():
     return db_execute(query)
 
 def log_signal(signal_data: dict):
-    """Upgrade 10: Log every generated signal to the database."""
+    """Upgrade 10: Log every generated signal to the database.
+    
+    Accepts keys from both formats:
+      - Old format (from return dict): entry, target, metrics.rsi, metrics.rvol, risk_reward
+      - New format (direct keys): entry_price, target_price, rsi, rvol, rr_ratio
+    """
     query = """
         INSERT INTO signal_log (
             timestamp, symbol, regime, signal_type, score, confidence,
@@ -627,30 +714,49 @@ def log_signal(signal_data: dict):
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
     
-    # Safely extract rr_ratio from "1:2.5" format
-    rr_str = signal_data.get("risk_reward", "1:0")
-    try:
-        rr_ratio = float(rr_str.split(":")[1])
-    except:
-        rr_ratio = 0.0
+    # Extract rr_ratio: accept direct float OR "1:2.5" string format
+    rr_ratio = signal_data.get("rr_ratio", 0)
+    if rr_ratio == 0:
+        rr_str = signal_data.get("risk_reward", "1:0")
+        try:
+            rr_ratio = float(rr_str.split(":")[1])
+        except:
+            rr_ratio = 0.0
+    
+    # Extract RSI/RVOL: accept direct keys OR nested in metrics
+    rsi = signal_data.get("rsi", 0) or signal_data.get("metrics", {}).get("rsi", 0)
+    rvol = signal_data.get("rvol", 0) or signal_data.get("metrics", {}).get("rvol", 0)
+    
+    # Extract entry/target: accept both key naming conventions
+    entry = signal_data.get("entry_price", 0) or signal_data.get("entry", 0)
+    target = signal_data.get("target_price", 0) or signal_data.get("target", 0)
+    
+    # Extract signal type
+    signal_type = signal_data.get("signal", signal_data.get("signal_label", "UNKNOWN"))
+    
+    # Extract confidence: direct or from allocation_pct
+    confidence = signal_data.get("confidence", 0)
+    if confidence == 0:
+        alloc = signal_data.get("allocation_pct", 0)
+        confidence = alloc * 100 if alloc and alloc < 1 else alloc
         
     now_iso = datetime.now().isoformat()
     params = (
         now_iso,
         signal_data.get("symbol"),
         signal_data.get("regime", "UNKNOWN"),
-        signal_data.get("signal_label", signal_data.get("signal")),
-        signal_data.get("score"),
-        signal_data.get("allocation_pct", 0) * 100, # Approximate mapping
-        signal_data.get("metrics", {}).get("rsi", 0),
-        signal_data.get("metrics", {}).get("rvol", 0),
+        signal_type,
+        signal_data.get("score", 0),
+        confidence,
+        rsi,
+        rvol,
         rr_ratio,
-        signal_data.get("entry", 0),
-        signal_data.get("target", 0),
+        entry,
+        target,
         signal_data.get("conservative_target", 0),
         signal_data.get("stop_loss", 0),
-        0, # qty is calculated frontend side right now
-        signal_data.get("holding_period", ""),
+        signal_data.get("qty", 0),
+        signal_data.get("holding_estimate", signal_data.get("holding_period", "")),
         now_iso  # date_generated
     )
     db_execute(query, params)

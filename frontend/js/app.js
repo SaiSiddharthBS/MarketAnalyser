@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDashboard();
     loadSegments();
     loadMarketRegime();
+    checkFnOExpiry(); // V6 Upgrade 8: F&O Expiry Banner
     setInterval(updateMarketStatus, 60000);
     setInterval(loadMarketRegime, 300000); // Refresh every 5 min
     initLiveClock();
@@ -69,6 +70,76 @@ function showToast(message, type = 'info', duration = 4000) {
     }, duration);
 }
 
+// V6 Upgrade 8: F&O Expiry Detection & Banner
+function checkFnOExpiry() {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0=Sun, 4=Thu
+    
+    // Next weekly expiry (Thursday)
+    let daysToThursday = (4 - dayOfWeek + 7) % 7;
+    if (daysToThursday === 0) daysToThursday = 0; // Today is Thursday
+    const nextWeekly = new Date(today);
+    nextWeekly.setDate(today.getDate() + daysToThursday);
+    
+    // Monthly expiry = last Thursday of current month
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const lastDay = new Date(year, month + 1, 0);
+    let monthlyExpiry = new Date(lastDay);
+    while (monthlyExpiry.getDay() !== 4) {
+        monthlyExpiry.setDate(monthlyExpiry.getDate() - 1);
+    }
+    // If monthly already passed, get next month's
+    if (monthlyExpiry < today) {
+        const nextLastDay = new Date(year, month + 2, 0);
+        monthlyExpiry = new Date(nextLastDay);
+        while (monthlyExpiry.getDay() !== 4) {
+            monthlyExpiry.setDate(monthlyExpiry.getDate() - 1);
+        }
+    }
+    
+    const msPerDay = 86400000;
+    const daysToWeekly = Math.ceil((nextWeekly - today) / msPerDay);
+    const daysToMonthly = Math.ceil((monthlyExpiry - today) / msPerDay);
+    
+    const isExpiryDay = daysToWeekly === 0;
+    const isNearExpiry = daysToWeekly <= 1;
+    const isMonthlyExpiry = daysToMonthly <= 2;
+    
+    if (isExpiryDay || isNearExpiry || isMonthlyExpiry) {
+        const bar = document.getElementById('regime-bar');
+        if (!bar) return;
+        
+        let msg = '';
+        let severity = 'info';
+        if (isExpiryDay && daysToMonthly === 0) {
+            msg = '⚠️ MONTHLY F&O EXPIRY TODAY — Expect high volatility, wide spreads, and gamma risk. Reduce position sizes.';
+            severity = 'critical';
+        } else if (isExpiryDay) {
+            msg = '📅 Weekly F&O Expiry Today — Options writers active. Watch for pin risk near round numbers.';
+            severity = 'warning';
+        } else if (isMonthlyExpiry) {
+            const dateStr = monthlyExpiry.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+            msg = `📅 Monthly F&O Expiry on ${dateStr} (${daysToMonthly}d away) — Rollover activity may distort volume signals.`;
+            severity = 'info';
+        } else {
+            msg = `📅 Weekly F&O Expiry Tomorrow — Consider tighter stops for overnight positions.`;
+            severity = 'info';
+        }
+        
+        const colors = { critical: '#ff4d6a', warning: '#fbbf24', info: '#60a5fa' };
+        const banner = document.createElement('div');
+        banner.id = 'fno-expiry-banner';
+        banner.style.cssText = `
+            background: ${colors[severity]}15; border: 1px solid ${colors[severity]}40; 
+            color: ${colors[severity]}; padding: 8px 16px; text-align: center; 
+            font-size: 13px; font-weight: 500; border-radius: 8px; margin: 8px 0;
+        `;
+        banner.textContent = msg;
+        bar.parentNode.insertBefore(banner, bar.nextSibling);
+    }
+}
+
 async function loadMarketRegime() {
     try {
         const res = await fetch('/api/market/regime');
@@ -103,10 +174,22 @@ async function loadMarketRegime() {
                     txt.innerHTML = `🔴 Market Regime: <strong style="color:#ff4d6a">DATA FEED ERROR</strong> 
                         <span style="margin:0 12px;opacity:0.5">|</span> VIX is unavailable. Signal generation paused to prevent blind execution.`;
                 } else {
+                    // V6: FII/DII flow display
+                    const fiiNet = d.fii_net_cr || 0;
+                    const diiNet = d.dii_net_cr || 0;
+                    const fiiColor = fiiNet >= 0 ? '#00e68a' : '#ff4d6a';
+                    const diiColor = diiNet >= 0 ? '#00e68a' : '#ff4d6a';
+                    const fiiArrow = fiiNet >= 0 ? '↑' : '↓';
+                    const diiArrow = diiNet >= 0 ? '↑' : '↓';
+                    const fiiStr = fiiNet !== 0 ? `FII: <span style="color:${fiiColor}">${fiiArrow}₹${Math.abs(fiiNet).toLocaleString()} Cr</span>` : '';
+                    const diiStr = diiNet !== 0 ? `DII: <span style="color:${diiColor}">${diiArrow}₹${Math.abs(diiNet).toLocaleString()} Cr</span>` : '';
+                    const flowStr = (fiiStr || diiStr) ? `<span style="margin:0 12px;opacity:0.5">|</span> ${fiiStr} ${diiStr ? '<span style="margin:0 6px;opacity:0.3">•</span>' + diiStr : ''}` : '';
+
                     txt.innerHTML = `${d.emoji} Market Regime: <strong style="color:${d.color}">${d.status}</strong> 
                         <span style="margin:0 12px;opacity:0.5">|</span> VIX: ${d.vix_level} 
                         <span style="margin:0 12px;opacity:0.5">|</span> Nifty vs 200EMA: ${d.nifty_vs_200ema_pct ? d.nifty_vs_200ema_pct.toFixed(2) + '%' : 'N/A'}
                         <span style="margin:0 12px;opacity:0.5">|</span> <span style="font-style:italic">Confidence: ${d.confidence_pct}%</span>
+                        ${flowStr}
                         <span class="regime-thresholds">
                             <span title="Minimum RVOL required for BUY">RVOL≥${t.rvol}</span>
                             <span title="RSI ceiling for BUY signals">RSI≤${t.rsi}</span>
@@ -300,7 +383,28 @@ async function loadDashboard() {
         
         const dateObj = new Date(data.timestamp);
         const timeString = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        const dateString = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric'});
+        
+        // EOD date = last trading day, not today
+        // Before market open, data is from the previous trading session
+        let eodDate = new Date(dateObj);
+        
+        const hour = eodDate.getHours();
+        const minute = eodDate.getMinutes();
+        const timeInMins = hour * 60 + minute;
+        
+        if (data.market_status !== 'OPEN') {
+            // If it is before 9:15 AM on a weekday, the data belongs to the previous day
+            if (eodDate.getDay() >= 1 && eodDate.getDay() <= 5 && timeInMins < (9 * 60 + 15)) {
+                eodDate.setDate(eodDate.getDate() - 1);
+            }
+            
+            // If it falls on a weekend, roll back to Friday
+            while (eodDate.getDay() === 0 || eodDate.getDay() === 6) {
+                eodDate.setDate(eodDate.getDate() - 1);
+            }
+        }
+        
+        const dateString = eodDate.toLocaleDateString([], {month: 'short', day: 'numeric'});
 
         if (data.market_status === 'OPEN') {
             badge.innerHTML = `<span style="color:#00e68a">● Live (15m delay)</span> <span style="opacity:0.5;margin-left:4px">Data as of ${timeString}</span>`;
@@ -629,7 +733,12 @@ async function runScreener() {
     const tbody = document.getElementById('screener-table-body');
     if (!tbody) return;
 
-    tbody.innerHTML = data.stocks.map((s, i) => {
+    let activeHTML = '';
+    let vetoedHTML = '';
+    let activeRank = 1;
+    let vetoedCount = 0;
+
+    data.stocks.forEach((s) => {
         const scoreClass = s.score >= 60 ? 'score-high' : s.score >= 45 ? 'score-mid' : 'score-low';
         const sig = s.signal || 'UNKNOWN';
         const isShort = sig === 'SELL' || sig === 'STRONG_SELL';
@@ -638,18 +747,49 @@ async function runScreener() {
         if (sig === 'BUY' || sig === 'STRONG_BUY') signalClass = 'signal-buy';
         else if (isShort) signalClass = 'signal-sell';
         else if (sig === 'VETOED') signalClass = 'signal-watch';
+        else if (sig === 'WATCH') signalClass = 'signal-watch';
+        else if (sig === 'WEAKENING') signalClass = 'signal-weakening';
 
-        const signalIcon = isShort ? '📉 SHORT' : (sig === 'BUY' || sig === 'STRONG_BUY') ? '🟢 BUY' : sig;
+        const signalIconMap = {
+            'STRONG_BUY': '🚀 STRONG BUY',
+            'BUY': '🟢 BUY',
+            'WATCH': '🟡 WATCH',
+            'WEAKENING': '🟠 WEAK',
+            'NEUTRAL': '⚪ NEUTRAL',
+            'SELL': '📉 SHORT',
+            'STRONG_SELL': '📉 SHORT',
+            'VETOED': '🚫 VETOED'
+        };
+        const signalIcon = signalIconMap[sig] || sig;
         const rowClass = isShort ? 'short-row' : '';
 
         const riskPerShare = isShort ? (s.stop_loss - s.entry) : (s.entry - s.stop_loss);
         const recQty = riskPerShare > 0 ? Math.floor((500000 * 0.01) / riskPerShare) : 0;
         const currentPrice = s.price || s.entry;
         const rsi = (s.metrics && s.metrics.rsi) ? Math.round(s.metrics.rsi) : '-';
-        const rvol = (s.metrics && s.metrics.rvol) ? s.metrics.rvol.toFixed(1) + 'x' : '-';
+        const rvolRaw = (s.metrics && s.metrics.rvol) ? s.metrics.rvol : null;
+        const rvol = rvolRaw ? rvolRaw.toFixed(1) + 'x' : '-';
         const rr = s.risk_reward || '-';
         const rewardPct = s.reward_pct || 0;
         const riskPct = s.risk_pct || 0;
+
+        // RSI color coding: blue (oversold dip) → green (healthy) → amber (warm) → red (overbought)
+        let rsiColor = 'var(--text-primary)';
+        if (rsi !== '-') {
+            if (rsi < 40) rsiColor = '#60a5fa';       // blue — oversold, potential dip entry
+            else if (rsi <= 60) rsiColor = '#00e68a';  // green — healthy
+            else if (rsi <= 70) rsiColor = '#ffb347';  // amber — approaching ceiling
+            else rsiColor = '#ff4d6a';                 // red — overbought
+        }
+
+        // RVOL color coding: red (weak) → amber (borderline) → green (solid) → bright green (exceptional)
+        let rvolColor = 'var(--text-primary)';
+        if (rvolRaw !== null) {
+            if (rvolRaw < 0.8) rvolColor = '#ff4d6a';       // red — below average
+            else if (rvolRaw < 1.2) rvolColor = '#ffb347';   // amber — borderline
+            else if (rvolRaw < 2.5) rvolColor = '#00e68a';   // green — solid
+            else rvolColor = '#00ff88';                       // bright green — exceptional
+        }
 
         // BUG 6 FIX: Target = profit = always green, Stop Loss = loss = always red
         const targetClass = 'positive';
@@ -660,30 +800,61 @@ async function runScreener() {
         // Regime-specific short label badge
         const shortBadge = isShort ? `<div class="short-label-badge">${signalLabel}</div>` : '';
         
-        return `
-            <tr class="${rowClass}" style="cursor:pointer" onclick="openSignalModal('${s.symbol}')">
-                <td>${i + 1}</td>
+        const isVetoed = sig === 'VETOED';
+        const displayRank = isVetoed ? '-' : activeRank++;
+        if (isVetoed) vetoedCount++;
+
+        let vetoReason = '';
+        if (isVetoed) {
+            const reasonText = (s.reasons && s.reasons.length > 0) ? s.reasons[0].replace('⚠️ VETOED: ', '').replace('🚫 VETOED — ', '') : 'Unknown reason';
+            vetoReason = `<div style="font-size:11px; color:var(--text-muted); margin-top:4px;">${reasonText}</div>`;
+        }
+        
+        const consTargetHtml = s.conservative_target ? `<div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Cons: ₹${formatNumber(s.conservative_target)}</div>` : '';
+
+        const rowHtml = `
+            <tr class="${rowClass} ${isVetoed ? 'vetoed-row' : ''}" style="cursor:pointer; ${isVetoed ? 'display:none; opacity:0.8;' : ''}" onclick="openSignalModal('${s.symbol}')">
+                <td>${displayRank}</td>
                 <td><strong>${s.symbol}</strong></td>
                 <td>₹${formatNumber(currentPrice)}</td>
-                <td><span class="score-badge ${scoreClass}">${s.score}</span></td>
+                <td><span class="score-badge ${scoreClass}">${(typeof s.score === 'number') ? s.score.toFixed(1) : s.score}</span></td>
                 <td>
                     <span class="signal-label ${signalClass}">${signalIcon}</span>
                     ${shortBadge}
+                    ${vetoReason}
                 </td>
-                <td>${rsi}</td>
-                <td>${rvol}</td>
+                <td style="color:${rsiColor}; font-weight:600">${rsi}</td>
+                <td style="color:${rvolColor}; font-weight:600">${rvol}</td>
                 <td>
                     <div>${rr}</div>
                     <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">[R: <span class="positive">+${rewardPct}%</span> | L: <span class="negative">-${riskPct}%</span>]</div>
                 </td>
                 <td>₹${formatNumber(s.entry)}</td>
-                <td class="${targetClass}">₹${formatNumber(s.target)}</td>
+                <td class="${targetClass}">
+                    ₹${formatNumber(s.target)}
+                    ${consTargetHtml}
+                </td>
                 <td class="${slClass}">₹${formatNumber(s.stop_loss)}</td>
                 <td>${recQty}</td>
                 <td class="holding-label">${s.holding_period || 'Short Term'}</td>
             </tr>
         `;
-    }).join('');
+        
+        if (isVetoed) {
+            vetoedHTML += rowHtml;
+        } else {
+            activeHTML += rowHtml;
+        }
+    });
+
+    tbody.innerHTML = `
+        <tr class="section-header"><td colspan="13" style="background:var(--bg-subtle);font-weight:bold;padding:12px;text-align:left;">🟢 Active Opportunities (${activeRank - 1})</td></tr>
+        ${activeHTML || '<tr><td colspan="13">No active opportunities found.</td></tr>'}
+        <tr class="section-header" style="cursor:pointer" onclick="document.querySelectorAll('.vetoed-row').forEach(r => r.style.display = r.style.display === 'none' ? '' : 'none')">
+            <td colspan="13" style="background:var(--bg-subtle);font-weight:bold;padding:12px;text-align:left;">🔴 Vetoed Setups (${vetoedCount}) — Click to toggle</td>
+        </tr>
+        ${vetoedHTML}
+    `;
 
     // Task 19: Cache screener data for modal
     window._screenerCache = {};
@@ -696,33 +867,42 @@ function openSignalModal(symbol) {
     if (!s) { analyseFromScreener(symbol); return; }
 
     const isShort = (s.signal === 'SELL' || s.signal === 'STRONG_SELL');
-    const sigColor = isShort ? 'var(--accent-red, #ff4d6a)' : 'var(--accent-green, #00e68a)';
-    const sigIcon = isShort ? '📉 SHORT' : '🟢 BUY';
-
-    // Dimension scores (from ensemble dimensions if available)
-    const dims = s.dimensions || {};
-    const dimLabels = {
-        options_flow: 'Options Flow',
-        transformer: 'Transformer',
-        regime: 'Regime Fit',
-        technicals: 'Technicals',
-        momentum: 'Momentum',
-        mean_reversion: 'Mean Revert',
-        fundamentals: 'Fundamentals',
-        sentiment: 'Sentiment',
+    const sigColorMap = {
+        'STRONG_BUY': 'var(--accent-green, #00e68a)',
+        'BUY': 'var(--accent-green, #00e68a)',
+        'WATCH': 'var(--blue, #4da6ff)',
+        'WEAKENING': '#ff8c32',
+        'NEUTRAL': 'var(--amber, #ffb347)',
+        'SELL': 'var(--accent-red, #ff4d6a)',
+        'STRONG_SELL': 'var(--accent-red, #ff4d6a)',
+        'VETOED': 'var(--text-muted, #666)'
     };
+    const sigIconMap2 = {
+        'STRONG_BUY': '🚀 STRONG BUY',
+        'BUY': '🟢 BUY',
+        'WATCH': '🟡 WATCH',
+        'WEAKENING': '🟠 WEAKENING',
+        'NEUTRAL': '⚪ NEUTRAL',
+        'SELL': '📉 SHORT',
+        'STRONG_SELL': '📉 SHORT',
+        'VETOED': '🚫 VETOED'
+    };
+    const sigColor = sigColorMap[s.signal] || 'var(--text-muted)';
+    const sigIcon = sigIconMap2[s.signal] || s.signal;
 
+    // Dimension scores (from ensemble score_breakdown if available)
+    const dims = s.score_breakdown || s.dimensions || {};
     let dimBarsHtml = '';
-    const dimKeys = Object.keys(dimLabels);
     if (Object.keys(dims).length > 0) {
-        dimBarsHtml = dimKeys.map(k => {
+        dimBarsHtml = Object.keys(dims).map(k => {
             const val = dims[k] || 0;
-            const pct = Math.round(((val + 1) / 2) * 100); // -1..+1 → 0..100
-            const color = pct >= 60 ? '#00e68a' : pct >= 40 ? '#ffb347' : '#ff4d6a';
+            // The score_breakdown from the backend is already on a 0-100 scale
+            const pct = Math.max(0, Math.min(100, val)); 
+            const color = pct >= 60 ? '#00e68a' : pct >= 45 ? '#ffb347' : '#ff4d6a';
             return `<div class="dim-bar-row">
-                <div class="dim-bar-label">${dimLabels[k] || k}</div>
+                <div class="dim-bar-label">${k}</div>
                 <div class="dim-bar-wrap"><div class="dim-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-                <div class="dim-bar-value">${val > 0 ? '+1' : val < 0 ? '-1' : '0'}</div>
+                <div class="dim-bar-value">${pct}%</div>
             </div>`;
         }).join('');
     } else {
@@ -946,25 +1126,28 @@ let arenaLineSeries = null;
 let arenaBenchmarkSeries = null;
 
 async function loadArenaTrading() {
-    const portfolio = await api.getPaperPortfolio();
-    const trades = await api.getPaperTrades();
-    const curve = await api.getPaperEquityCurve();
-    const stats = await api.getPaperStats();
-
-    if (portfolio) renderArenaPortfolio(portfolio);
-    if (trades) renderArenaTrades(trades);
-    if (curve) {
-        renderArenaCurve(curve.history);
-        renderArenaHeatmap(curve.history);
+    const data = await api.getArenaStatus();
+    if (!data) {
+        alert("loadArenaTrading: NO DATA RETURNED FROM API!");
+        return;
     }
-    if (stats) renderArenaStats(stats);
+
+    if (data.portfolio) renderArenaPortfolio(data.portfolio, data.closed_trades || []);
+    renderArenaTrades({ open: data.open_positions || [], closed: data.closed_trades || [] });
+    if (data.equity_curve && data.equity_curve.length > 0) {
+        renderArenaCurve(data.equity_curve);
+        renderArenaHeatmap(data.equity_curve);
+    }
+    if (data.stats) renderArenaStats({ overall: data.stats });
 }
 
-function renderArenaPortfolio(p) {
+function renderArenaPortfolio(p, closedTrades = []) {
     const equityEl = document.getElementById('arena-total-equity');
     const cashEl = document.getElementById('arena-cash');
     const retEl = document.getElementById('arena-return');
     const posEl = document.getElementById('arena-open-positions');
+    const profitEl = document.getElementById('arena-total-profit');
+    const lossEl = document.getElementById('arena-total-loss');
 
     if (equityEl) equityEl.textContent = `₹${formatNumber(p.total_equity || 0)}`;
     if (cashEl) cashEl.textContent = `₹${formatNumber(p.cash || 0)}`;
@@ -974,6 +1157,28 @@ function renderArenaPortfolio(p) {
         retEl.className = 'card-value ' + (ret >= 0 ? 'positive' : 'negative');
     }
     if (posEl) posEl.textContent = `${p.open_positions || 0}/5`;
+
+    let totalProfit = 0;
+    let totalLoss = 0;
+    if (closedTrades && closedTrades.length > 0) {
+        closedTrades.forEach(t => {
+            const pnl = t.net_pnl || 0;
+            if (pnl > 0) totalProfit += pnl;
+            if (pnl < 0) totalLoss += Math.abs(pnl);
+        });
+    }
+
+    // Add unrealized PnL from equity if no closed trades yet? 
+    // Actually, unrealized PnL is total_equity - cash - invested.
+    // Let's just use the absolute difference from 10L capital if closedTrades is empty.
+    const netEquityPnl = (p.total_equity || 1000000) - 1000000;
+    if (totalProfit === 0 && totalLoss === 0 && netEquityPnl !== 0) {
+        if (netEquityPnl > 0) totalProfit = netEquityPnl;
+        if (netEquityPnl < 0) totalLoss = Math.abs(netEquityPnl);
+    }
+
+    if (profitEl) profitEl.textContent = `₹${formatNumber(totalProfit)}`;
+    if (lossEl) lossEl.textContent = `-₹${formatNumber(totalLoss)}`;
 }
 
 function renderArenaTrades(data) {
@@ -1028,11 +1233,20 @@ function renderArenaTrades(data) {
 function renderArenaStats(stats) {
     const tbody = document.getElementById('arena-stats-body');
     if (!tbody || !stats.overall) return;
-    const { overall } = stats;
+    const o = stats.overall;
+    const winRate = o.win_rate != null ? parseFloat(o.win_rate).toFixed(1) : '0.0';
+    const totalPnl = o.total_pnl != null ? parseFloat(o.total_pnl).toFixed(2) : '0.00';
+    const avgRet = o.avg_return_pct != null ? parseFloat(o.avg_return_pct).toFixed(2) : '0.00';
+    const bestRet = o.best_return_pct != null ? parseFloat(o.best_return_pct).toFixed(2) : '0.00';
+    const worstRet = o.worst_return_pct != null ? parseFloat(o.worst_return_pct).toFixed(2) : '0.00';
     tbody.innerHTML = `
-        <tr><td>Total Trades</td><td><strong>${overall.total_trades}</strong></td></tr>
-        <tr><td>Wins</td><td><strong class="positive">${overall.wins}</strong></td></tr>
-        <tr><td>Win Rate</td><td><strong>${overall.win_rate.toFixed(2)}%</strong></td></tr>
+        <tr><td>Total Trades</td><td><strong>${o.total_trades || 0}</strong></td></tr>
+        <tr><td>Wins / Losses</td><td><strong class="positive">${o.wins || 0}</strong> / <strong class="negative">${o.losses || 0}</strong></td></tr>
+        <tr><td>Win Rate</td><td><strong>${winRate}%</strong></td></tr>
+        <tr><td>Total P&L</td><td><strong class="${parseFloat(totalPnl) >= 0 ? 'positive' : 'negative'}">₹${formatNumber(totalPnl)}</strong></td></tr>
+        <tr><td>Avg Return</td><td><strong>${avgRet}%</strong></td></tr>
+        <tr><td>Best Trade</td><td><strong class="positive">${bestRet}%</strong></td></tr>
+        <tr><td>Worst Trade</td><td><strong class="negative">${worstRet}%</strong></td></tr>
     `;
 }
 
@@ -1171,18 +1385,29 @@ async function triggerArena() {
     const btn = document.getElementById('btn-arena-execute');
     if(btn) {
         btn.disabled = true;
-        btn.textContent = '⏳ Executing...';
+        btn.textContent = '⏳ Scanning Nifty 50... This may take 2-3 minutes';
     }
     
-    await api.executePaperTrade();
+    try {
+        const result = await api.executeArena();
+        if (result && result.status === 'ok') {
+            if(btn) btn.textContent = '✅ Execution Complete! Reloading...';
+        } else {
+            if(btn) btn.textContent = '⚠️ ' + (result ? result.message : 'Execution failed');
+        }
+    } catch(e) {
+        if(btn) btn.textContent = '❌ Error: ' + e.message;
+    }
+    
+    // Reload Arena data after execution
+    await loadArenaTrading();
     
     setTimeout(() => {
         if(btn) {
             btn.disabled = false;
             btn.textContent = '🚀 Trigger Arena Execution';
         }
-        loadPaperTrading();
-    }, 3000);
+    }, 2000);
 }
 
 /* ─── Stock Analysis ─────────────────────────────────── */
@@ -1201,15 +1426,23 @@ async function analyseStock(symbol) {
     const t = data.technical;
     const info = data.info || {};
     const signalColors = { 
-        BUY: '#00e68a',      // Neon Green
-        SELL: '#ff4d6a',     // Neon Red
-        NEUTRAL: '#ffb347',  // Neon Amber
-        VETOED: '#505a6e'    // Muted
+        STRONG_BUY: '#00e68a',
+        BUY: '#00e68a',
+        WATCH: '#4da6ff',
+        WEAKENING: '#ff8c32',
+        NEUTRAL: '#ffb347',
+        SELL: '#ff4d6a',
+        STRONG_SELL: '#ff4d6a',
+        VETOED: '#505a6e'
     };
     const signalEmojis = { 
+        STRONG_BUY: '🚀',
         BUY: '✅', 
+        WATCH: '🟡',
+        WEAKENING: '🟠',
+        NEUTRAL: '⚪', 
         SELL: '🔴', 
-        NEUTRAL: '🟡', 
+        STRONG_SELL: '🔴',
         VETOED: '⛔'
     };
     const sigColor = signalColors[t.signal] || '#505a6e';
@@ -1344,42 +1577,48 @@ async function analyseStock(symbol) {
             <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px">
                 <h4 style="margin-bottom:12px;color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:1px">Yesterday's Prediction vs Today's Reality</h4>
                 ${data.recent_verification && data.recent_verification.actual_high ? `
-                <table class="data-table" style="font-size:13px;width:100%;text-align:left">
-                    <thead>
-                        <tr>
-                            <th>Metric</th>
-                            <th>Predicted</th>
-                            <th>Actual</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="padding:8px">Peak (High)</td>
-                            <td style="padding:8px">₹${formatNumber(data.recent_verification.pred_high)}</td>
-                            <td style="padding:8px">₹${formatNumber(data.recent_verification.actual_high)}</td>
-                            <td style="padding:8px">${data.recent_verification.actual_high <= data.recent_verification.pred_high ? '✅ Held' : '📈 Breached Up'}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:8px">Floor (Low)</td>
-                            <td style="padding:8px">₹${formatNumber(data.recent_verification.pred_low)}</td>
-                            <td style="padding:8px">₹${formatNumber(data.recent_verification.actual_low)}</td>
-                            <td style="padding:8px">${data.recent_verification.actual_low >= data.recent_verification.pred_low ? '✅ Held' : '📉 Breached Down'}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:8px">Volatility Range</td>
-                            <td style="padding:8px">₹${formatNumber(data.recent_verification.pred_high - data.recent_verification.pred_low)}</td>
-                            <td style="padding:8px">₹${formatNumber(data.recent_verification.actual_high - data.recent_verification.actual_low)}</td>
-                            <td style="padding:8px">—</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:8px">Daily Direction</td>
-                            <td style="padding:8px">${data.recent_verification.pred_direction}</td>
-                            <td style="padding:8px">${data.recent_verification.actual_close > data.recent_verification.actual_open ? 'Bullish' : (data.recent_verification.actual_close < data.recent_verification.actual_open ? 'Bearish' : 'Neutral')}</td>
-                            <td style="padding:8px">${data.recent_verification.status.includes('Direction Hit') ? '✅ Accurate' : '❌ Missed'}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="signal-metrics" style="margin-bottom:12px">
+                    <div class="signal-metric">
+                        <div class="label">Predicted High</div>
+                        <div class="value">₹${formatNumber(data.recent_verification.pred_high)}</div>
+                    </div>
+                    <div class="signal-metric">
+                        <div class="label">Actual High</div>
+                        <div class="value positive">₹${formatNumber(data.recent_verification.actual_high)}</div>
+                    </div>
+                    <div class="signal-metric">
+                        <div class="label">High Status</div>
+                        <div class="value" style="font-size:0.9rem">${data.recent_verification.actual_high <= data.recent_verification.pred_high ? '✅ Held' : '📈 Breached'}</div>
+                    </div>
+                </div>
+                <div class="signal-metrics" style="margin-bottom:12px">
+                    <div class="signal-metric">
+                        <div class="label">Predicted Low</div>
+                        <div class="value">₹${formatNumber(data.recent_verification.pred_low)}</div>
+                    </div>
+                    <div class="signal-metric">
+                        <div class="label">Actual Low</div>
+                        <div class="value negative">₹${formatNumber(data.recent_verification.actual_low)}</div>
+                    </div>
+                    <div class="signal-metric">
+                        <div class="label">Low Status</div>
+                        <div class="value" style="font-size:0.9rem">${data.recent_verification.actual_low >= data.recent_verification.pred_low ? '✅ Held' : '📉 Breached'}</div>
+                    </div>
+                </div>
+                <div class="signal-metrics">
+                    <div class="signal-metric">
+                        <div class="label">Predicted Range</div>
+                        <div class="value">₹${formatNumber(data.recent_verification.pred_high - data.recent_verification.pred_low)}</div>
+                    </div>
+                    <div class="signal-metric">
+                        <div class="label">Actual Range</div>
+                        <div class="value">₹${formatNumber(data.recent_verification.actual_high - data.recent_verification.actual_low)}</div>
+                    </div>
+                    <div class="signal-metric">
+                        <div class="label">Direction</div>
+                        <div class="value" style="font-size:0.9rem">${data.recent_verification.status.includes('Direction Hit') ? '✅ Accurate' : '❌ Missed'}</div>
+                    </div>
+                </div>
                 ` : `
                 <div style="background:var(--bg-subtle);padding:16px;border-radius:8px;text-align:center;color:var(--text-muted);font-size:13px">
                     <span style="font-size:24px;display:block;margin-bottom:8px">⏳</span>
@@ -1465,21 +1704,89 @@ async function analyseStock(symbol) {
             // Determine icon and color based on keywords
             let icon = '💡';
             let color = 'var(--text-primary)';
-            if (reason.toLowerCase().includes('bullish') || reason.toLowerCase().includes('strong')) { icon = '✅'; color = '#00e68a'; }
-            else if (reason.toLowerCase().includes('bearish') || reason.toLowerCase().includes('weak')) { icon = '🔴'; color = '#ff4d6a'; }
-            else if (reason.toLowerCase().includes('neutral') || reason.toLowerCase().includes('choppy')) { icon = '🟡'; color = '#ffb347'; }
+            if (reason.toLowerCase().includes('bullish') || reason.toLowerCase().includes('strong') || reason.toLowerCase().includes('accumulation')) { icon = '✅'; color = '#00e68a'; }
+            else if (reason.toLowerCase().includes('bearish') || reason.toLowerCase().includes('weak') || reason.toLowerCase().includes('vetoed') || reason.toLowerCase().includes('distribution')) { icon = '🔴'; color = '#ff4d6a'; }
+            else if (reason.toLowerCase().includes('neutral') || reason.toLowerCase().includes('choppy') || reason.toLowerCase().includes('caution')) { icon = '🟡'; color = '#ffb347'; }
 
             return `<div style="margin-bottom:8px; display:flex; gap:12px; align-items:flex-start">
                 <span style="font-size:16px">${icon}</span>
-                <span style="font-size:14px; line-height:1.5; color:${color}">
+                <span style="font-size:13px; line-height:1.5; color:${color}">
                     ${reason}
                 </span>
             </div>`;
         }).join('');
         
+        // V6: Regime Definitions & Trade Plan Mapping (must match backend regime_atr_params)
+        const regimeMetadata = {
+            'low_vol_uptrend': { name: 'Low-Vol Uptrend', rvol: '1.2x', rsi: '75', cap: '1.5%', desc: 'Aggressive mode — full Kelly sizing, early breakouts.' },
+            'bullish':         { name: 'Bullish', rvol: '1.2x', rsi: '75', cap: '1.5%', desc: 'Aggressive mode — full Kelly sizing, breakout and momentum plays.' },
+            'recovery':        { name: 'Recovery', rvol: '1.3x', rsi: '72', cap: '1.0%', desc: 'Cautious recovery — pullback buys, 0.6× Kelly sizing.' },
+            'high_vol_uptrend':{ name: 'High-Vol Uptrend', rvol: '1.3x', rsi: '72', cap: '1.0%', desc: 'Cautious bull — pullback buys only, 0.6× Kelly.' },
+            'high_vol_chop':   { name: 'High-Vol Chop', rvol: '1.5x', rsi: '65', cap: '0.8%', desc: 'High vol dip buying — deep mean reversion, scaled entry.' },
+            'low_vol_chop':    { name: 'Low-Vol Chop', rvol: '1.4x', rsi: '68', cap: '0.7%', desc: 'Sideways chop — mean reversion plays, tight stops.' },
+            'distribution':    { name: 'Distribution', rvol: '1.5x', rsi: '62', cap: '0.6%', desc: 'Late-cycle distribution — reduced sizing, early exits.' },
+            'bearish':         { name: 'Bearish', rvol: '1.6x', rsi: '58', cap: '0.5%', desc: '⚠️ Bear market — capital preservation, minimal exposure.' },
+            'crisis':          { name: 'Crisis / Bear Market', rvol: '1.8x', rsi: '55', cap: '0.3%', desc: '⚠️ Survival mode — capital preservation, 0× Kelly.' }
+        };
+        const activeRegime = t.regime || 'unknown';
+        const meta = regimeMetadata[activeRegime] || { name: 'Unknown Regime', rvol: '—', rsi: '—', cap: '—', desc: 'No special parameters applied.' };
+
         el.innerHTML = `
-            <div style="background:var(--bg-subtle); padding:16px; border-radius:8px;">
-                ${reasonsHTML}
+            <div class="why-trade-grid" style="display:grid; grid-template-columns: 1.2fr 1fr; gap: 20px;">
+                <!-- Left Column: Reasons & Drivers -->
+                <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.05); padding:16px; border-radius:8px;">
+                    <h4 style="margin-top:0; margin-bottom:12px; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted)">Conviction Drivers</h4>
+                    ${reasonsHTML}
+                </div>
+                
+                <!-- Right Column: Regime & Trade Execution Plan -->
+                <div style="display:flex; flex-direction:column; gap:16px;">
+                    <!-- Regime Context -->
+                    <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.05); padding:14px; border-radius:8px;">
+                        <h4 style="margin-top:0; margin-bottom:6px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted)">Regime Profile: ${meta.name}</h4>
+                        <div style="font-size:12px; margin-bottom:8px; line-height:1.4;">${meta.desc}</div>
+                        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); border-top:1px solid rgba(255,255,255,0.05); padding-top:8px; margin-top:8px;">
+                            <span>Min RVOL: <strong>${meta.rvol}</strong></span>
+                            <span>RSI Ceiling: <strong>${meta.rsi}</strong></span>
+                            <span>Risk Cap: <strong>${meta.cap}</strong></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Trade Plan -->
+                    <div style="background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.05); padding:14px; border-radius:8px;">
+                        <h4 style="margin-top:0; margin-bottom:10px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted)">Execution Plan</h4>
+                        <table style="width:100%; border-collapse:collapse; font-size:12px; line-height:1.8;">
+                            <tbody>
+                                <tr>
+                                    <td style="color:var(--text-muted)">Entry Range</td>
+                                    <td style="text-align:right; font-weight:600; color:var(--text-primary);">₹${formatNumber(t.entry)}</td>
+                                </tr>
+                                <tr>
+                                    <td style="color:var(--text-muted)">Full Target</td>
+                                    <td style="text-align:right; font-weight:600; color:#00e68a;">₹${formatNumber(t.target)} (+${t.reward_pct ? t.reward_pct.toFixed(1) : '—'}%)</td>
+                                </tr>
+                                <tr>
+                                    <td style="color:var(--text-muted)">Cons. Target</td>
+                                    <td style="text-align:right; font-weight:600; color:#ffd740;">₹${formatNumber(t.conservative_target)}</td>
+                                </tr>
+                                <tr>
+                                    <td style="color:var(--text-muted)">Stop Loss</td>
+                                    <td style="text-align:right; font-weight:600; color:#ff4d6a;">₹${formatNumber(t.stop_loss)} (-${t.risk_pct ? t.risk_pct.toFixed(1) : '—'}%)</td>
+                                </tr>
+                                <tr>
+                                    <td style="color:var(--text-muted)">Expected Duration</td>
+                                    <td style="text-align:right; font-weight:600; color:var(--text-primary);">${t.holding_period || '—'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="color:var(--text-muted)">Earnings</td>
+                                    <td style="text-align:right; font-weight:600; color:${t.days_to_earnings != null && t.days_to_earnings <= 3 ? '#ff4d6a' : t.days_to_earnings != null && t.days_to_earnings <= 7 ? '#ffb347' : '#00e68a'}">
+                                        ${t.days_to_earnings != null ? (t.days_to_earnings <= 3 ? '⚠️ ' + t.days_to_earnings + ' days (' + t.earnings_date + ')' : t.days_to_earnings <= 14 ? '📅 ' + t.days_to_earnings + ' days' : '✅ No imminent results') : '✅ No imminent results'}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         `;
     } else if (el) {

@@ -58,25 +58,20 @@ const api = {
     addHolding: (data) => api.post('/portfolio/add', data),
     removeHolding: (id) => api.del(`/portfolio/${id}`),
     
-    // Phase 1: Arena
-    getArenaPortfolio: () => api.get('/arena/portfolio'),
-    getArenaTrades: () => api.get('/arena/trades'),
-    getArenaEquityCurve: () => api.get('/arena/equity-curve'),
-    getArenaStats: () => api.get('/arena/stats'),
+    // Arena Engine
+    getArenaStatus: () => api.get('/arena/status'),
     executeArena: () => api.post('/arena/execute', {}),
-    
-    // Phase 3: Championship
-    getChampionship: () => api.get('/championship'),
+
     // Accuracy & Championship
     getAccuracyStats: () => api.get('/accuracy/stats'),
     getChampionship: () => api.get('/championship'),
     sendTelegramAlert: () => api.post('/bot/alert', {}),
-    
-    // Arena (Paper Trading)
-    getPaperPortfolio: () => api.get('/arena/portfolio'),
-    getPaperTrades: () => api.get('/arena/trades'),
-    getPaperEquityCurve: () => api.get('/arena/equity-curve'),
-    getPaperStats: () => api.get('/arena/stats'),
+
+    // Backward compat aliases
+    getPaperPortfolio: () => api.get('/arena/status'),
+    getPaperTrades: () => api.get('/arena/status'),
+    getPaperEquityCurve: () => api.get('/arena/status'),
+    getPaperStats: () => api.get('/arena/status'),
     executePaperTrade: () => api.post('/arena/execute', {}),
 
     // Market Regime

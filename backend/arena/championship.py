@@ -7,7 +7,7 @@ import database as db
 from analysis.alpha_decay import AlphaDecayMonitor
 
 logger = logging.getLogger(__name__)
-models_list = ["technical", "transformer", "options_flow", "ml_engine", "sentiment", "insider", "macro", "momentum"]
+models_list = ["technical", "transformer", "options_flow", "ml_engine", "sentiment", "insider", "macro", "momentum", "value", "quality", "earnings"]
 decay_monitor = AlphaDecayMonitor(signal_names=models_list)
 
 def get_leaderboard():
@@ -16,7 +16,7 @@ def get_leaderboard():
     # AlphaDecayMonitor tracks 60d rolling accuracy.
     
     # We can calculate this from prediction_log as well
-    models = ["technical", "transformer", "options_flow", "ml_engine", "sentiment", "insider", "macro", "momentum"]
+    models = ["technical", "transformer", "options_flow", "ml_engine", "sentiment", "insider", "macro", "momentum", "value", "quality", "earnings"]
     
     leaderboard = []
     
@@ -50,14 +50,22 @@ def get_leaderboard():
         if accuracy < 35 and total >= 20:
             status = "SUSPENDED"
             
-        from arena.weight_evolver import get_regime_weights, DEFAULT_WEIGHTS
+        from arena.weight_evolver import DEFAULT_WEIGHTS
         try:
             from analysis.regime import detect_market_regime
             cur_regime = detect_market_regime().get("regime", "unknown")
         except:
             cur_regime = "unknown"
             
-        cur_weights = get_regime_weights(cur_regime)
+        # Read from DB directly to avoid infinite recursion with weight_evolver
+        res = db.db_execute("SELECT weights_json FROM regime_weights WHERE regime = ?", (cur_regime,))
+        cur_weights = DEFAULT_WEIGHTS.copy()
+        if res and res[0]["weights_json"]:
+            try:
+                import json
+                cur_weights = json.loads(res[0]["weights_json"])
+            except:
+                pass
         
         leaderboard.append({
             "model": model.replace("_", " ").title(),

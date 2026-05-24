@@ -1275,6 +1275,11 @@ tbody tr:hover {
     color: var(--blue);
     border: 1px solid rgba(77, 166, 255, 0.15);
 }
+.signal-label.signal-weakening {
+    background: rgba(255, 140, 50, 0.10);
+    color: #ff8c32;
+    border: 1px solid rgba(255, 140, 50, 0.20);
+}
 
 /* ─── Buttons — Gradient Accent ─────────────────────── */
 .btn-primary {
