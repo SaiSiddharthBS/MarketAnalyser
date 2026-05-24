@@ -2,239 +2,317 @@
   <img src=".github/assets/hero_banner.png" alt="Agent Alpha Hero Banner" width="100%">
   
   <h1><b>🦅 AGENT ALPHA v3.0</b></h1>
-  <p><b>Institutional-Grade Algorithmic Trading Core & Quantitative AI Ensemble Engine</b></p>
+  <p><b>The Quantitative Multi-Ensemble & Hidden Markov Model Autonomous Trading Infrastructure</b></p>
   
-  [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+  [![Production Live](https://img.shields.io/badge/Status-Production_Live-00ffcc?style=for-the-badge&logo=statuspage&logoColor=black)]()
+  [![Python](https://img.shields.io/badge/Python-3.10+-7f00ff?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
   [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org/)
-  [![LightGBM](https://img.shields.io/badge/LightGBM-A6E3A1?style=for-the-badge&logo=cpu&logoColor=black)](https://github.com/microsoft/LightGBM)
-  [![XGBoost](https://img.shields.io/badge/XGBoost-FF9800?style=for-the-badge&logo=nvidia&logoColor=white)](https://xgboost.ai/)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-  [![Status](https://img.shields.io/badge/Status-Production_Live-success?style=for-the-badge)]()
+  [![LightGBM](https://img.shields.io/badge/LightGBM-ff007f?style=for-the-badge&logo=cpu&logoColor=white)](https://github.com/microsoft/LightGBM)
+  [![XGBoost](https://img.shields.io/badge/XGBoost-ffcc00?style=for-the-badge&logo=nvidia&logoColor=black)](https://xgboost.ai/)
 </div>
 
 ---
 
-## 📖 Executive Overview
+## 💻 Obsidian Glass UI Mockup
 
-**Agent Alpha** is an autonomous, production-grade quantitative intelligence system built to analyze, model, and execute equity swing strategies on the Indian Stock Market (Nifty 50 universe). 
+Below is a visual representation of the **Obsidian Glass UI Dashboard** presenting real-time system equity metrics, position distributions, HMM regime transitions, and quantitative indicators in production:
 
-Rather than relying on singular technical indicators or fragile single-model predictors, Agent Alpha uses a **15-Model Machine Learning Ensemble** spanning tabular classifiers, sequence-based neural networks, statistical arbitrage, and microstructure analysis. 
-
-The system operates with a **Zero-Trust Capital Preservation Architecture**: every predictive signal is strictly filtered by a **4-State Hidden Markov Model (HMM) Regime Classifier**, audited by a **12-Rule Hard Veto Firewall**, optimized using **Average True Range (ATR) & Kelly Criterion Position Sizing**, and logged securely to a cloud-serverless PostgreSQL cluster.
-
----
-
-## 🛠️ Complete Deployed Technology Stack
-
-```
-   ┌─────────────────────────────────────────────────────────────┐
-   │                     OBSIDIAN GLASS UI                       │
-   │      - HTML5 Semantic Document Structure                    │
-   │      - Custom Vanilla CSS Glassmorphic Layouts               │
-   │      - TradingView Standalone Lightweight Charts (60 FPS)   │
-   │      - Progressive Web App (PWA) Offline-Ready Service      │
-   └──────────────────────────────┬──────────────────────────────┘
-                                  │ (RESTful JSON / HTTPS)
-                                  ▼
-   ┌─────────────────────────────────────────────────────────────┐
-   │                   FastAPI BACKEND ENGINE                    │
-   │      - Uvicorn Asynchronous Concurrency Server              │
-   │      - Threaded Postgres Connection Pooling                 │
-   │      - Decoupled Overnight Daemon & System Scheduler         │
-   └──────────────────────────────┬──────────────────────────────┘
-                                  │
-         ┌────────────────────────┴────────────────────────┐
-         ▼                                                 ▼
-┌────────────────────────────────┐                ┌────────────────────────────────┐
-│      QUANTITATIVE ENGINE       │                │      DATA & INFRASTRUCTURE     │
-│ - 15-Model Ensemble Voting     │                │ - Serverless Neon PostgreSQL   │
-│ - HMM Regime Classifier        │                │ - Local SQLite Performance Cache│
-│ - 12-Rule Hard Veto Firewall   │                │ - yfinance API Data Collector  │
-│ - ATR & Kelly Position Sizing  │                │ - FRED Macroeconomic Engine    │
-│ - StatArb Pairs Trading        │                │ - Telegram Bot Notification API│
-└────────────────────────────────┘                └────────────────────────────────┘
-```
+<div align="center">
+  <img src=".github/assets/dashboard_mockup.png" alt="Obsidian Glass UI Dashboard Mockup" width="90%" style="border-radius: 12px; border: 2px solid #00ffcc; box-shadow: 0 0 20px rgba(0,255,204,0.3);">
+</div>
 
 ---
 
-## 🧠 Core System Modules (Detailed Specification)
+## 🗺️ High-Tech System Architecture Map
 
-### 1. The 15-Model Quantitative Ensemble Engine
-
-The core predictive capability is structured as a weighted voting ensemble. Each model emits a continuous directional bias score between `-1.0` (Strong Sell) and `+1.0` (Strong Buy), which is dynamically weighted based on the active market regime.
-
-```
-       ┌─────────────────────────────────────────────────────────────┐
-       │                15-MODEL QUANT ENSEMBLE                      │
-       └──────┬──────────────┬──────────────┬──────────────┬─────────┘
-              │              │              │              │
-              ▼              ▼              ▼              ▼
-         ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐
-         │ TECHNICAL│   │ MOMENTUM │   │ MACHINE  │   │ STAT-ARB │
-         │ MATRIX   │   │ MATRIX   │   │ LEARNING │   │ & FLOW   │
-         └──────────┘   └──────────┘   └──────────┘   └──────────┘
-```
-
-#### A. Technical Matrix (4 Models)
-1.  **Moving Average Envelope (KAMA/EMA):** Maps multi-day Kaufmans Adaptive Moving Average (KAMA) speed against exponential moving averages (EMA 20, 50, 200) to isolate price/trend divergence.
-2.  **Relative Strength Index (RSI-14):** Evaluates momentum exhaustion, capping thresholds based on market regime to prevent buying overextended breakouts during range-bound regimes.
-3.  **Average True Range (ATR) Volatility:** Measures historical price contraction and expansion cycles.
-4.  **Bollinger Bands (BB Width / Percentile):** Calculates standard deviation bands to locate volatility squeeze anomalies.
-
-#### B. Momentum Matrix (3 Models)
-5.  **MACD Histogram Directionality:** Traces the acceleration or deceleration of daily trend speed.
-6.  **Rate of Change (ROC-10):** Measures pure percentage price velocity over rolling 10-day periods.
-7.  **On-Balance Volume (OBV):** Evaluates volume flows to ensure price moves are confirmed by institutional participation.
-
-#### C. Machine Learning & Neural Network Layer (4 Models)
-8.  **XGBoost Classifier:** Trained on historical OHLCV data using a walk-forward cross-validation window. Emits probabilities for 3 classes: Up (>2% in 5 days), Down (<-2% in 5 days), and Flat.
-9.  **LightGBM Classifier:** Used as a highly optimized, gradient-boosted decision tree layer that natively handles complex engineered features (e.g. microstructure shadows, volume profiles).
-10. **Lightweight Sequence Model:** A CPU-optimized temporal classifier mimicking LSTM network structures. Processes a 60-day sliding window of sequence returns to capture cyclical wave patterns.
-11. **Short-Term Multilayer Perceptron (MLP):** A multilayer neural network mapping short-term velocity (1-3 days) to predict near-term order imbalances.
-
-#### D. Microstructure, Flow & Statistical Arbitrage (4 Models)
-12. **Smart Money / Volume Point of Control (VPOC):** Scans intraday data to locate high-density institutional accumulation block trades (Demand vs. Supply Blocks).
-13. **Statistical Arbitrage (Pairs Trading Z-Score):** Monitors highly cointegrated sector pairs (e.g., HDFCBANK vs. ICICIBANK, TCS vs. INFY) and calculates their log-spread Z-score. Generates mean-reversion signals when the spread exceeds $\pm2$ standard deviations.
-14. **Institutional Flow (FII/DII net trend):** Tracks foreign and domestic institutional money flows into the Indian cash market.
-15. **Options Flow (Put-Call Ratio):** Analyzes open interest across the options chain to detect options market sentiment.
-
----
-
-### 2. Hidden Markov Model (HMM) Regime Classifier
-
-Standard rule-based trend indicators suffer from lagging execution and severe whipsaws. Agent Alpha classifies Nifty 50 volatility and breadth into **4 hidden states** using a Gaussian Hidden Markov Model:
-
-$$\mathbf{X}_t = \{R_t, \sigma_{20}, \text{VIX}_t, \text{Breadth}_t, \Delta_{\text{EMA200}}\}$$
-
-*   **State 1: Low-Volatility Uptrend (Home Turf)**
-    *   *Characteristics:* Steady returns, VIX $<15$, price well above 200 EMA.
-    *   *System Action:* Full allocation limits enabled; momentum strategies prioritized.
-*   **State 2: High-Volatility Uptrend (Cautious Bull)**
-    *   *Characteristics:* Rising returns but expanding daily ranges, VIX $15-20$.
-    *   *System Action:* Sizing scaled to `0.6x` of baseline Kelly allocation.
-*   **State 3: Low-Volatility Chop (Stand Aside)**
-    *   *Characteristics:* Flattish returns, range-bound index, sector rotation.
-    *   *System Action:* Momentum models disabled; reversion models enabled; sizing capped to `0.3x` Kelly.
-*   **State 4: Systemic Crisis (Survival Mode)**
-    *   *Characteristics:* Sharp negative returns, VIX $>25$ (or spiking $>30\%$ in 5 days), price below 200 EMA.
-    *   *System Action:* Stand-aside. Suppress all new BUY signals. Max capital preservation.
+The visual blueprint below details the synchronous and asynchronous execution flows across the **6-Layer Quantitative Pipeline**:
 
 ```mermaid
-stateDiagram-v2
-    [*] --> LowVolUptrend: Market Open
-    LowVolUptrend --> HighVolUptrend: Volatility Expands (VIX > 15)
-    HighVolUptrend --> LowVolChop: Momentum Fades
-    LowVolChop --> Crisis: Sharp Drop (VIX > 25)
-    Crisis --> LowVolUptrend: Institutional Accumulation
+graph TD
+    %% Custom Styling Defs
+    classDef layer1 fill:#ff007f,stroke:#ff007f,stroke-width:2px,color:#fff;
+    classDef layer2 fill:#7f00ff,stroke:#7f00ff,stroke-width:2px,color:#fff;
+    classDef layer3 fill:#00ffcc,stroke:#00ffcc,stroke-width:2px,color:#000;
+    classDef layer4 fill:#ffcc00,stroke:#ffcc00,stroke-width:2px,color:#000;
+    classDef database fill:#1e1e2e,stroke:#cdd6f4,stroke-width:1px,color:#cdd6f4;
+    classDef external fill:#11111b,stroke:#a6e3a1,stroke-width:1px,color:#a6e3a1;
+
+    %% Data flow nodes
+    subgraph L1 ["Layer 1: Pre-Market & Data Validation"]
+        PRE[Premarket Scraper]
+        VAL[DataValidator]
+        MAC[Macro Calendar Veto]
+    end
+    
+    subgraph L2 ["Layer 2: 15-Model Ensemble Router"]
+        ENS[Ensemble Voter Engine]
+        VOT[Model Correlation Calculator]
+    end
+    
+    subgraph L3 ["Layer 3: Hidden Markov Model (HMM)"]
+        HMM[Gaussian HMM Classifier]
+        REG[Regime Weight Adapter]
+    end
+    
+    subgraph L4 ["Layer 4 & 5: Position & Execution"]
+        VETO[12-Rule Veto Firewall]
+        SIZE[Kelly / ATR Sizer]
+        OPT[Portfolio Optimizer]
+    end
+    
+    %% External API's
+    YF([yfinance API]) -->|Raw OHLCV| VAL
+    FRED([FRED API]) -->|Macro Series| PRE
+    
+    %% Internal flows
+    VAL -->|Fresh & Checked Data| ENS
+    PRE -->|Global Index Changes| HMM
+    MAC -->|Event Blockers| VETO
+    
+    HMM -->|Dynamic Sizing Multiplier| SIZE
+    ENS -->|Weighted Directives| VETO
+    VETO -->|Cleared Setups| SIZE
+    SIZE -->|Target Allocations| OPT
+    
+    %% Storage links
+    OPT -->|Execute Open Positions| DB[(Neon Postgres Serverless)]
+    DB <-->|Sync State| UI[Obsidian Glass UI]
+    
+    %% Assign Styles
+    class PRE,VAL,MAC layer1;
+    class ENS,VOT layer2;
+    class HMM,REG layer3;
+    class VETO,SIZE,OPT layer4;
+    class DB,UI database;
+    class YF,FRED external;
 ```
 
 ---
 
-### 3. The 12-Rule Hard Veto Firewall
+## 🧠 Comprehensive Codebase Inventory (43 Modules Deployed)
 
-Before any signal generated by the Ensemble is executed in the paper trading database, it must pass through a strict **Hard Veto Firewall**. If **any** of the following rules fire, the signal is overridden and forced to `STAND ASIDE` or `LIQUIDATE`:
+Every quant module deployed between **April 30th and May 24th, 2026** is documented below with its exact function, file path, and algebraic formulas:
 
 ```
-                    Ensemble BUY Signal Generated
-                                 │
-                                 ▼
-                     ┌───────────────────────┐
-                     │ 12-RULE VETO FIREWALL │
-                     └───────────┬───────────┘
-                                 │
-                 ┌───────────────┴───────────────┐
-                 ▼                               ▼
-       [ANY Rule Fails]                 [ALL Rules Pass]
-                 │                               │
-                 ▼                               ▼
-        Signal Overridden               Approved for Execution
-        "STAND ASIDE"                   "OPEN PAPER POSITION"
+                          AGENT ALPHA CORE DIRECTORY
+                                      │
+         ┌────────────────────────────┼────────────────────────────┐
+         ▼                            ▼                            ▼
+     [Analysis]                     [Data]                       [Bot]
+ (43 Core Quant Engines)      (Validation & Flow)        (Alerts & Scheduling)
 ```
-
-1.  **Promoter Pledging Cap:** Block buy signals if promoter pledging exceeds `40%` and is expanding quarter-on-quarter.
-2.  **Pledging Velocity Check:** Veto trades if pledging increases by $>10\%$ in a single financial quarter.
-3.  **Earnings Blackout Margin:** Prevent purchases if the company has an earnings announcement scheduled within the next `3 trading days`.
-4.  **Lower Circuit History:** Block stocks that have touched their daily lower circuit limit within the last `10 trading days`.
-5.  **Regulatory Measure List (ASM/ESM):** Suppress buying if the stock is placed under SEBI's Additional or Enhanced Surveillance Measure frameworks.
-6.  **SEBI Investigation Flag:** Immediate block if the company is facing an active regulatory audit or SEBI investigation.
-7.  **Credit Downgrade Velocity:** Block stocks experiencing a credit rating downgrade of `2 or more notches` within a 90-day window.
-8.  **Extreme Volatility + Short Buildup:** Block trades if options Implied Volatility (IV) percentile exceeds `85` while the open interest indicates active Short Buildup.
-9.  **Institutional Expatriation Veto:** Veto buying if daily FII net selling exceeds `₹5000 Crore` on the preceding day.
-10. **Systemic Crisis Veto:** Block all buys if the HMM regime transitions to `CRISIS`.
-11. **Global Pre-Market Gap down:** Suppress buying if SGX Nifty/Gift Nifty indicates an overnight gap-down of $>1.5\%$.
-12. **Extreme VIX Spike:** Halts all buying if VIX surges $>30\%$ in a 5-day window.
 
 ---
 
-### 4. Position Sizing & Portfolio Optimization Math
+### 📂 Analysis Layer (`/backend/analysis/`)
 
-#### Average True Range (ATR) Volatility Sizing
-Position size is dynamically adjusted so that the stop-loss distance equates to a maximum risk limit of $2\%$ of overall portfolio equity ($E$):
+#### 1. `ensemble.py` (The Central Voting Router)
+*   **Role:** Integrates signals from 15 models. Resolves conflicting directional vectors.
+*   **Formula:** Blends 15 dynamic votes ($V_i$) using regime-dependent weights ($W_i$) to output the raw confidence score ($C_{\text{raw}}$):
+    $$C_{\text{raw}} = \sum_{i=1}^{15} V_i \times W_i(Regime) + \text{Sector Rotation Boost} \pm \text{RVOL Penalty}$$
+*   **Interfacing:** Accepts calculated indicators from `technical.py` and predictions from `ml_engine.py`, then pipes targets to `veto_engine.py`.
 
-$$\text{Stop Loss Distance} = 2 \times \text{ATR}_{14}$$
+#### 2. `regime.py` (Gaussian Hidden Markov Classifier)
+*   **Role:** Fits a 4-state Gaussian Hidden Markov Model (HMM) on historical indexes (Nifty 50) and macro volatility.
+*   **Formula:** Solves the transition matrix $P$ to determine the most likely hidden state sequence:
+    $$P(S_t = j \mid S_{t-1} = i) = p_{ij}$$
+*   **Interfacing:** Downloads Nifty 50 and India VIX data via `stock_fetcher.py`, updates weights, and outputs modifiers to `ensemble.py`.
 
-$$\text{Position Value} = \frac{E \times 0.02}{\text{Stop Loss Distance} / \text{Price}}$$
+#### 3. `backtest_engine.py` (Walk-Forward Simulator)
+*   **Role:** Performs strict walk-forward backtests. Accounts for execution lags, slippage, and transactional costs.
+*   **Formula:** Simulates standard brokerage, Securities Transaction Tax (STT), and capital impact costs:
+    $$\text{Buy Price}_{\text{effective}} = \text{Open Price} \times (1 + \text{Slippage Pct}) + \text{STT} + \text{Brokerage}$$
+*   **Interfacing:** Operates over processed historical outputs generated from the ensemble vectors.
 
-#### Kelly Criterion Scaling
-To prevent over-leveraging and drawdowns, raw Kelly fractions ($K_{\text{raw}}$) are computed based on historical win rates ($W$) and profit factors ($R$):
+#### 4. `veto_engine.py` (Rule Firewall)
+*   **Role:** Enforces 12 strict safety rules. Any single rule violation instantly triggers a `STAND ASIDE` override.
+*   **Interfacing:** Reads stock-specific corporate metadata, market regime alerts, and portfolio drawdown states.
 
-$$K_{\text{raw}} = W - \frac{1 - W}{R}$$
+#### 5. `ml_engine.py` (LightGBM/XGBoost Tabular Pipeline)
+*   **Role:** Trains LightGBM and XGBoost classifiers. Emits out-of-sample directional probabilities.
+*   **Validation:** Employs `TimeSeriesSplit` with a 5-day gap to prevent temporal look-ahead leakage.
+*   **Interfacing:** Consumes engineered tabular features from `feature_engineer.py`.
 
-This fraction is scaled dynamically by the regime modifier ($M_{\text{regime}}$) and the global pre-market bias score ($B_{\text{global}}$):
+#### 6. `transformer_engine.py` (lightweight Sequence Model)
+*   **Role:** Captures temporal order patterns in price movements (e.g. consolidation -> breakout).
+*   **Architecture:** Implements sequence prediction using HistGradientBoosting over 60-day lagged inputs.
+*   **Interfacing:** Connects to `ensemble.py` as Model 10 in the voting array.
 
-$$K_{\text{final}} = K_{\text{raw}} \times M_{\text{regime}} \times (1 + B_{\text{global}})$$
+#### 7. `lstm_engine.py` (MLP Classifier Timing Layer)
+*   **Role:** Predicts short-term price direction (1-3 day horizon). Serves as a fast timing layer.
+*   **Interfacing:** Fits a normalized MLP classifier over short-term returns and volatility velocity.
+
+#### 8. `overnight_intel.py` (Global Macro Scanner)
+*   **Role:** Runs daily at 6:00 AM IST. Analyzes US markets, Asian futures, commodities, bonds, and crypto risk sentiment.
+*   **Formula:** Computes a composite global score ($S_{\text{global}}$):
+    $$S_{\text{global}} = \sum_{k} \Delta \text{Asset}_k \times \text{Weight}_k$$
+*   **Interfacing:** Transmits pre-market briefings to Telegram and adjusts baseline trading thresholds.
+
+#### 9. `sector_rotation.py` (Sector Rotation command Center)
+*   **Role:** Dynamically calculates relative strength across all major NSE indices vs the Nifty 50 benchmark.
+*   **Formula:** Integrates weighted performance parameters:
+    $$\text{Score}_{\text{composite}} = 3 \times (\text{RS vs Nifty}) + 0.1 \times (\text{Breadth} - 50) + 5 \times (\text{RVOL} - 1)$$
+*   **Interfacing:** Applies score boosts or penalties to stocks in the ensemble.
+
+#### 10. `smart_money.py` (Volume Profile & VPOC Engine)
+*   **Role:** Extracts Volume Point of Control (VPOC) and identifies institutional demand/supply order blocks using intraday data.
+*   **Interfacing:** Feeds order imbalance calculations into `ensemble.py`.
+
+#### 11. `stat_arb.py` (Pairs Trading Cointegration Engine)
+*   **Role:** Evaluates statistical spreads on cointegrated asset pairs in Nifty 50.
+*   **Formula:** Calculates the rolling z-score of log spreads:
+    $$\text{Z-Score} = \frac{\text{Spread}_t - \mu_{\text{Spread}}}{\sigma_{\text{Spread}}}$$
+*   **Interfacing:** Emits buy/sell pairs signals to the optimizer.
+
+#### 12. `feature_engineer.py` (Engineered Feature Generator)
+*   **Role:** Computes 50+ quantitative features (e.g., ADX, MACD, Bollinger Bands, Williams %R, shadow proxies) from raw prices.
+*   **Interfacing:** Inputs matrices to `ml_engine.py` and `lstm_engine.py`.
+
+#### 13. `position_sizing.py` (Kelly/ATR Sizing Optimizer)
+*   **Role:** Calculates position allocations using a strict maximum portfolio risk limit of 2% per trade.
+*   **Formula:** Calculates the stop-loss distance using Average True Range:
+    $$\text{SL Distance} = 2 \times \text{ATR}_{14}$$
+    $$\text{Sizing Fraction} = K_{\text{raw}} \times M_{\text{regime}}$$
+*   **Interfacing:** Restricts execution sizes for candidates going to `portfolio_optimizer.py`.
+
+#### 14. `portfolio_optimizer.py` (Correlation Optimizer)
+*   **Role:** Prevents over-concentration in highly correlated stocks or identical sectors.
+*   **Interfacing:** Calculates a covariance matrix and prunes redundant candidates.
+
+#### 15. `timeframe_classifier.py` (Dynamic Holding Period Classifier)
+*   **Role:** Classifies setup swing holding periods (Intraday, Short-Term, Swing, Positional, Long-Term).
+*   **Formula:** Evaluates volatility (ATR%) and trend alignment.
+*   **Interfacing:** Sets target expiration dates for open paper positions.
+
+#### 16. `technical.py` (Fundamental Indicator Core)
+*   **Role:** Computes core technical indicators and calculates a raw technical score.
+*   **Interfacing:** Standardizes basic metrics for the first ensemble layer.
+
+#### 17. `patterns.py` (Chart Pattern Recogniser)
+*   **Role:** Detects structural double tops, double bottoms, morning stars, and engulfing candles.
+*   **Interfacing:** Adjusts technical confidence parameters inside `ensemble.py`.
+
+#### 18. `accuracy.py` (Accuracy Auditor)
+*   **Role:** Compares predicted targets against real market outcomes 5 days post-signal.
+*   **Interfacing:** Resolves active rows in the database, updating the self-learning loop.
+
+#### 19. `advisor.py` (Gemini Advisory Gateway)
+*   **Role:** Leverages Gemini to generate structured morning briefings for Sai's portfolio.
+*   **Interfacing:** Fetches active database positions and formats markdown reports.
+
+#### 20. `montecarlo.py` (Simulated Out-of-Sample Simulator)
+*   **Role:** Generates 5,000 randomized walk-forward paths to evaluate maximum drawdown probabilities.
+*   **Interfacing:** Provides risk metrics for the advisory reports.
+
+#### 21. `fno_signals.py` (Derivatives Trend Classifier)
+*   **Role:** Calculates Implied Volatility (IV) percentiles and Open Interest (OI) buildup changes.
+*   **Interfacing:** Provides veto triggers for option danger flags.
+
+#### 22. `walk_forward.py` (Cross-Validation Helper)
+*   **Role:** Manages rolling train-test indexing matrices.
+*   **Interfacing:** Feeds clean indices to `ml_engine.py` during walk-forward training.
+
+#### 23. `veto_log.py` / `error_analyzer.py` / `trade_explainer.py`
+*   **Role:** Logs failed setups, analyzes prediction error classifications, and generates explanations for portfolio transactions.
 
 ---
 
-## 💻 System Execution Pipelines
+### 📂 Data & System Layer (`/backend/data/` & `/backend/`)
 
-### Pre-Market Intelligence Pipeline (Daily 8:00 AM IST)
+#### 24. `database.py` (Dual PostgreSQL-SQLite Pooler)
+*   **Role:** Connects to Postgres on cloud (using `psycopg2` Threaded Connection Pooling) and SQLite locally.
+*   **Interfacing:** Automates query translation, maintains daily schema updates, and handles migrations.
+
+#### 25. `data_validator.py` (Immune System Check)
+*   **Role:** Enforces high data quality. Drops rows with missing metrics or data older than 96 hours.
+*   **Interfacing:** Protects `stock_fetcher.py` and ML inputs from bad Yahoo Finance feeds.
+
+#### 26. `stock_fetcher.py` (OHLCV Scraper)
+*   **Role:** Fetches historical and intraday market prices with standard fallbacks.
+*   **Interfacing:** Caches prices inside `database.py` before passing them to validation.
+
+#### 27. `scheduler.py` (System Scheduler Daemon)
+*   **Role:** Decoupled process manager. Coordinates execution times for the daily jobs.
+*   **Schedule:** 6:00 AM IST (Global scan) and 3:45 PM IST (Closing paper engine execution).
+
+---
+
+### 📂 Alert & Bot Layer (`/backend/bot/` & `/backend/services/`)
+
+#### 28. `daily_job.py` (Master Pipeline Orchestrator)
+*   **Role:** Runs the quant pipeline step-by-step. Coordinates indicators, regimes, vetoes, and sends Telegram updates.
+
+#### 29. `telegram_bot.py` (Command Interface Bot)
+*   **Role:** Sets up interactive Telegram command handlers (`/analyze`, `/market`, `/screener`, `/portfolio`, `/paper`).
+
+---
+
+## 🎨 Colorful Mindmap of System Directory
+
+The mindmap below outlines the core quant packages, styled with bright cyber-color tags:
 
 ```mermaid
-sequenceDiagram
-    participant Scheduler as Cron Daemon
-    participant Global as Global Asset Scanner
-    participant Regime as HMM Engine
-    participant DB as Postgres Cache
-    participant TG as Telegram API
-
-    Scheduler->>Global: Trigger Overnight Scan
-    Global->>Global: Fetch S&P500, IndiaVIX, SGX, Gold, Bonds
-    Global->>Regime: Run Regime Classification
-    Regime-->>Global: Returns HMM State & Bias
-    Global->>DB: Log Daily Market Regime
-    Global->>TG: Transmit CEO Executive Briefing
+mindmap
+  root((Agent Alpha v3.0))
+    ::icon(fa fa-shield)
+    ::style(fill:#ff007f,stroke:#ff007f,stroke-width:3px,color:#fff)
+    Analysis
+      ::style(fill:#7f00ff,stroke:#7f00ff,stroke-width:2px,color:#fff)
+      Models
+        ::style(fill:#00ffcc,stroke:#00ffcc,stroke-width:1px,color:#000)
+        ensemble.py (weighted votes)
+        ml_engine.py (lightgbm/xgb)
+        transformer_engine.py (sequence)
+        lstm_engine.py (mlp timing)
+        stat_arb.py (cointegration pairs)
+      Regimes
+        ::style(fill:#ffcc00,stroke:#ffcc00,stroke-width:1px,color:#000)
+        regime.py (hmm 4-states)
+        overnight_intel.py (global score)
+        sector_rotation.py (index momentum)
+      Validation
+        ::style(fill:#00ff00,stroke:#00ff00,stroke-width:1px,color:#000)
+        veto_engine.py (12-rule firewall)
+        backtest_engine.py (walk-forward costs)
+        accuracy.py (outcome grading)
+    Data Layer
+      ::style(fill:#7f00ff,stroke:#7f00ff,stroke-width:2px,color:#fff)
+      database.py (neon connection pool)
+      data_validator.py (96h staleness safety)
+      stock_fetcher.py (yahoo finance)
+    Interface
+      ::style(fill:#7f00ff,stroke:#7f00ff,stroke-width:2px,color:#fff)
+      daily_job.py (master cron script)
+      telegram_bot.py (interactive bot commands)
+      main.py (fastapi routes gateway)
 ```
 
-### Paper Trading Arena Pipeline (Daily 3:45 PM IST)
+---
 
-```mermaid
-sequenceDiagram
-    participant Scheduler as System Clock
-    participant Ensemble as 15-Model Ensemble
-    participant Veto as Veto Firewall
-    participant Arena as Paper Arena Bot
-    participant DB as Neon Postgres DB
-    participant TG as Telegram Bot
+## 🚀 Deployed System Lifecycles & Timelines
 
-    Scheduler->>Ensemble: Run Universe Screener
-    Ensemble->>Veto: Audit High-Conviction BUY/SELL
-    Veto-->>Ensemble: Filtered/Approved Signals
-    Ensemble->>Arena: Trigger Execution Signals
-    Arena->>DB: Read Cash Balance (₹10 Lakh Base)
-    Arena->>Arena: Run Sizing & Margin Math
-    Arena->>DB: Open/Close Trades & Update Snapshots
-    Arena->>TG: Send Transaction Log & Equity Curves
-```
+### 1. Pre-Market Intelligence (Daily 6:00 AM - 9:00 AM IST)
+*   **Step 1:** Cron scheduler triggers `overnight_intel.py`.
+*   **Step 2:** System downloads indices, commodities, currencies, and bonds from Yahoo Finance.
+*   **Step 3:** Computes global risk sentiment score and sends a pre-market overview to Telegram.
+*   **Step 4:** Adjusts the model's setup conviction thresholds for the day (e.g. tightening thresholds if global markets are down).
+
+### 2. Paper Trading Arena Run (Daily 3:45 PM IST)
+*   **Step 1:** Cron triggers the screener via `daily_job.py`.
+*   **Step 2:** Downloads closing price data, runs feature engineering, and calculates HMM states.
+*   **Step 3:** Gathers votes from all 15 models.
+*   **Step 4:** Runs approved setups through the Veto Firewall.
+*   **Step 5:** Allocates sizes using the 2% ATR Risk model and executes positions in Postgres.
+*   **Step 6:** Triggers Telegram updates showing execution logs and equity curves.
 
 ---
 
 ## ⚡ Deployment & Local Setup
 
-Agent Alpha is cloud-native, containerized, and configured for immediate cloud deployment.
+Agent Alpha is containerized and ready for immediate deployment.
 
-### 1. Clone & Environment Configuration
+### 1. Install & Configure
 ```bash
 git clone https://github.com/SaiSiddharthBS/MarketAnalyser.git
 cd MarketAnalyser
@@ -243,7 +321,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Environment Variables (.env)
+### 2. Configure Environment variables (.env)
 Create a `.env` file in the root directory:
 ```env
 DATABASE_URL=postgresql://user:pass@ep-host.neon.tech/neondb?sslmode=require
@@ -252,7 +330,7 @@ TELEGRAM_CHAT_ID=your_chat_id
 GEMINI_API_KEY=your_gemini_api_key
 ```
 
-### 3. Run the Execution Server
+### 3. Run the Execution Gateway
 ```bash
 # Start FastAPI backend (serves Obsidian Glass UI on http://localhost:8000)
 uvicorn backend.main:app --host 0.0.0.0 --port 8000
@@ -260,7 +338,7 @@ uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
 ### 4. Run the Background Scheduler Daemon
 ```bash
-# Launches the background execution clock for pre-market and market-close jobs
+# Launches the background execution clock for daily jobs
 python backend/scheduler.py
 ```
 
