@@ -380,6 +380,7 @@ async function loadDashboard() {
     renderSentiment(data.sentiment);
     renderNewsItems(data.news, 'news-feed', 5);
     loadNiftyChart();
+    updateMissionControl();
 
     // Data Freshness & Market Status Badge
     const badge = document.getElementById('market-status-badge');
@@ -442,6 +443,65 @@ async function loadDashboard() {
                 loadDashboard();
             }
         }, 300000);
+    }
+}
+
+async function updateMissionControl() {
+    const start = performance.now();
+    try {
+        const h = await api.request('/api/health');
+        const ping = Math.round(performance.now() - start);
+        document.getElementById('diag-ping').textContent = `${ping} ms`;
+        document.getElementById('diag-version').textContent = `v${h.version || '2.0.0'}`;
+        document.getElementById('diag-time').textContent = new Date().toLocaleTimeString();
+        document.getElementById('status-api').textContent = 'ONLINE';
+        document.getElementById('status-api').style.color = 'var(--green)';
+        document.getElementById('dot-api').style.background = 'var(--green)';
+        document.getElementById('dot-api').style.boxShadow = '0 0 10px var(--green)';
+        
+        if (h.db_connected) {
+            document.getElementById('status-db').textContent = 'CONNECTED';
+            document.getElementById('status-db').style.color = 'var(--green)';
+            document.getElementById('dot-db').style.background = 'var(--green)';
+            document.getElementById('dot-db').style.boxShadow = '0 0 10px var(--green)';
+        } else {
+            document.getElementById('status-db').textContent = 'OFFLINE';
+            document.getElementById('status-db').style.color = 'var(--red)';
+            document.getElementById('dot-db').style.background = 'var(--red)';
+            document.getElementById('dot-db').style.boxShadow = '0 0 10px var(--red)';
+        }
+    } catch(e) {
+        document.getElementById('status-api').textContent = 'OFFLINE';
+        document.getElementById('status-api').style.color = 'var(--red)';
+        document.getElementById('dot-api').style.background = 'var(--red)';
+        document.getElementById('dot-api').style.boxShadow = '0 0 10px var(--red)';
+    }
+
+    try {
+        const trades = await api.request('/api/paper_trades');
+        const el = document.getElementById('mission-recent-actions');
+        if (trades && trades.length > 0) {
+            const recent = trades.slice(0, 3);
+            el.innerHTML = recent.map(t => {
+                const color = t.trade_type === 'BUY' ? 'var(--green)' : 'var(--red)';
+                const dateStr = new Date(t.entry_date).toLocaleDateString([], { month: 'short', day: 'numeric' });
+                return `
+                <div style="background: rgba(255,255,255,0.02); border-radius: 4px; padding: 10px; font-size: 0.8rem; border-left: 2px solid ${color};">
+                    <div style="display:flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="font-weight: 600; color: #fff;">${t.trade_type} ${t.symbol}</span>
+                        <span style="opacity: 0.5;">${dateStr}</span>
+                    </div>
+                    <div style="display:flex; justify-content: space-between; font-family: var(--font-mono); opacity: 0.8;">
+                        <span>Qty: ${t.qty}</span>
+                        <span>@ ₹${t.entry_price}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
+            el.innerHTML = '<div style="opacity: 0.5; font-size: 0.85rem;">No recent actions.</div>';
+        }
+    } catch(e) {
+        document.getElementById('mission-recent-actions').innerHTML = '<div style="color:var(--red); font-size: 0.8rem;">Failed to load.</div>';
     }
 }
 
