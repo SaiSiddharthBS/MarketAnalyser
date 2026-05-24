@@ -124,7 +124,9 @@ def calculate_bucketed_position_size(total_capital: float, holding_class: str, e
     # Final quantity is the minimum of risk-based and capital-based
     final_qty = min(risk_based_qty, capital_based_qty)
     
-    # Apply Volatility Scalar (Risk Parity adjustment)
+    # Apply Inverse-Volatility Risk Parity Scalar
+    # The lower the volatility (e.g. ITC), the higher the vol_scalar, leading to larger position size.
+    # The higher the volatility (e.g. ADANIENT), the lower the vol_scalar, mathematically equalizing portfolio risk.
     final_qty = int(final_qty * vol_scalar)
     
     if final_qty <= 0:

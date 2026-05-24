@@ -176,6 +176,37 @@ class EnsembleVoter:
             votes["relative_strength"] = max(-1.0, min(1.0, (rs_data["rs_percentile"] - 50) / 50.0))
         except Exception as e:
             votes["relative_strength"] = 0.0
+        # 14. Smart Money Concepts (Dark Pool / Volume Profile)
+        votes["smart_money"] = 0.0
+        try:
+            from analysis.smart_money import check_smart_money_signal
+            sm_data = check_smart_money_signal(f"{symbol}.NS")
+            if sm_data["signal"] == "STRONG_BUY":
+                votes["smart_money"] = 1.0
+            elif sm_data["signal"] == "BUY":
+                votes["smart_money"] = 0.5
+            elif sm_data["signal"] == "STRONG_SELL":
+                votes["smart_money"] = -1.0
+            elif sm_data["signal"] == "SELL":
+                votes["smart_money"] = -0.5
+        except Exception as e:
+            pass
+            
+        # 15. Statistical Arbitrage (Pairs Trading Valuation)
+        votes["stat_arb"] = 0.0
+        try:
+            from analysis.stat_arb import get_stat_arb_signal
+            sa_data = get_stat_arb_signal(f"{symbol}.NS")
+            if sa_data["signal"] == "STRONG_BUY":
+                votes["stat_arb"] = 1.0
+            elif sa_data["signal"] == "BUY":
+                votes["stat_arb"] = 0.5
+            elif sa_data["signal"] == "STRONG_SELL":
+                votes["stat_arb"] = -1.0
+            elif sa_data["signal"] == "SELL":
+                votes["stat_arb"] = -0.5
+        except Exception as e:
+            pass
         
         return votes, tech_data.get("metrics", {})
         

@@ -7,7 +7,7 @@ import database as db
 from analysis.alpha_decay import AlphaDecayMonitor
 
 logger = logging.getLogger(__name__)
-models_list = ["technical", "transformer", "options_flow", "ml_engine", "sentiment", "insider", "macro", "momentum", "value", "quality", "earnings"]
+models_list = ["technical", "transformer", "short_term_nn", "options_flow", "fno_bias", "ml_engine", "sentiment", "insider", "macro", "momentum", "value", "quality", "earnings", "smart_money", "stat_arb"]
 decay_monitor = AlphaDecayMonitor(signal_names=models_list)
 
 def get_leaderboard():
@@ -16,7 +16,7 @@ def get_leaderboard():
     # AlphaDecayMonitor tracks 60d rolling accuracy.
     
     # We can calculate this from prediction_log as well
-    models = ["technical", "transformer", "options_flow", "ml_engine", "sentiment", "insider", "macro", "momentum", "value", "quality", "earnings"]
+    models = ["technical", "transformer", "short_term_nn", "options_flow", "fno_bias", "ml_engine", "sentiment", "insider", "macro", "momentum", "value", "quality", "earnings", "smart_money", "stat_arb"]
     
     leaderboard = []
     

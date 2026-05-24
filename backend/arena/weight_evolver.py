@@ -15,13 +15,15 @@ DEFAULT_WEIGHTS = {
     "options_flow": 10,
     "fno_bias": 10,
     "ml_engine": 10,
-    "sentiment": 10,
+    "sentiment": 5,
     "insider": 5,
     "macro": 5,
-    "momentum": 8,
+    "momentum": 5,
     "value": 1,
     "quality": 6,
-    "earnings": 2
+    "earnings": 2,
+    "smart_money": 15,
+    "stat_arb": 15
 }
 
 def evolve_regime_weights():
@@ -31,7 +33,7 @@ def evolve_regime_weights():
     regimes = db.db_execute("SELECT DISTINCT regime FROM prediction_log WHERE outcome IS NOT NULL")
     if not regimes: return
     
-    models = ["technical", "transformer", "short_term_nn", "options_flow", "ml_engine", "sentiment", "insider", "macro", "momentum", "value", "quality", "earnings"]
+    models = ["technical", "transformer", "short_term_nn", "options_flow", "fno_bias", "ml_engine", "sentiment", "insider", "macro", "momentum", "value", "quality", "earnings", "smart_money", "stat_arb"]
     
     for r in regimes:
         regime = r["regime"]
