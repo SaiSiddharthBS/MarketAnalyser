@@ -190,7 +190,8 @@ def execute_daily_arena():
             """, ("CLOSED_" + ("WIN" if net_pnl > 0 else "LOSS"), today, exit_price, exit_reason, 
                   gross_pnl, fees, net_pnl, return_pct, pos["id"]))
             
-            cash += trade_value - fees
+            # Correct cash accounting for both LONG and SHORT (return reserved capital + gross PnL - exit fees)
+            cash += (pos["position_value"] + gross_pnl - fees)
             closed_trades.append({
                 "symbol": symbol,
                 "reason": exit_reason,
@@ -388,9 +389,16 @@ def execute_daily_arena():
                 qty = sizing["quantity"]
                 # ------------------------------------
                 
-                # Apply true execution model to get final entry price
+                # Apply true execution model to get final entry price and filled quantity
                 side = "BUY" if trade_type == "LONG" else "SELL"
                 fill = apply_execution_model(qty, today_open, side=side, bar_volume=bar_volume, config=EXEC_CONFIG)
+                
+                # BUGFIX: Arena mathematically must enforce execution models
+                if fill.filled_quantity <= 0:
+                    logger.info(f"Skipping {symbol}: Execution model yielded zero fill (capped by liquidity).")
+                    continue
+                    
+                qty = fill.filled_quantity
                 entry_price = fill.fill_price
                 
                 pos_value = qty * entry_price
@@ -594,7 +602,7 @@ def track_live_positions():
                 """, ("CLOSED_" + ("WIN" if net_pnl > 0 else "LOSS"), today, exit_price, exit_reason, 
                       gross_pnl, fees, net_pnl, return_pct, pos["id"]))
                 
-                cash += pos["position_value"] + net_pnl - pos["fees"] # Return capital + profit
+                cash += (pos["position_value"] + gross_pnl - fees)
                 logger.info(f"🚨 LIVE {trade_type} EXIT {symbol}: {exit_reason} at ₹{exit_price:.2f}. PnL: ₹{net_pnl:.2f}")
                 
                 # Update portfolio cash (rough live update)
