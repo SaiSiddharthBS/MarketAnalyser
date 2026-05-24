@@ -48,9 +48,16 @@ SEEN_URLS = set()
 def triage_news(headline: str, summary: str) -> dict:
     """Uses Llama 3.3 70B via Groq to classify the news."""
     prompt = f"""
-    You are a financial news classifier for Indian stock market (NSE/BSE).
-    CLASSIFY: "{headline}"
-    Reply ONLY with this JSON, nothing else:
+    You are an elite quantitative financial analyst for the Indian stock market (NSE/BSE).
+    CLASSIFY THE FOLLOWING NEWS: "{headline}"
+    
+    SEVERITY RUBRIC (1-10):
+    1-3: Routine daily market chatter, minor updates, standard dividends.
+    4-6: Notable shifts, large earnings beats/misses, important sector news.
+    7-8: Major regulatory crackdowns, massive block deals, CEO resignations, deep market drops.
+    9-10: Market-crashing black swan events, massive fraud, wars. (BE EXTREMELY CONSERVATIVE with 8-10).
+    
+    Reply ONLY with this exact JSON structure:
     {{"m":true/false,"s":1-10,"t":["SYMBOL"],"c":"EARNINGS|REGULATORY|MACRO|INSIDER|SECTOR","r":"10 words max"}}
     """
     try:
