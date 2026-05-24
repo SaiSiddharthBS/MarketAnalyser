@@ -131,7 +131,6 @@ body {
     border: 1px solid rgba(0, 255, 136, 0.3);
     box-shadow: 0 0 15px rgba(0, 255, 136, 0.4), inset 0 0 20px rgba(0, 255, 136, 0.2);
     filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.6));
-    -webkit-box-reflect: below 4px linear-gradient(transparent, transparent 60%, rgba(255,255,255,0.3));
     animation: hologram-pulse 4s infinite alternate ease-in-out;
 }
 @keyframes hologram-pulse {
