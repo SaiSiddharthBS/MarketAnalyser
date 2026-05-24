@@ -249,12 +249,23 @@ function switchPage(page) {
     
     if (pageEl) {
         pageEl.classList.add('active');
-        // GSAP Animation
+        // Premium GSAP Apple-like Fluid Animation
         if (typeof gsap !== 'undefined') {
+            gsap.killTweensOf(pageEl);
             gsap.fromTo(pageEl, 
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }
+                { opacity: 0, filter: "blur(12px)", scale: 0.97 },
+                { opacity: 1, filter: "blur(0px)", scale: 1, duration: 0.7, ease: "expo.out" }
             );
+            
+            // Stagger animate all cards inside the page for a cascading reveal
+            const cards = pageEl.querySelectorAll('.glass-card, .summary-card, .index-card, .regime-bar, .chart-card, .signal-card');
+            if (cards.length > 0) {
+                gsap.killTweensOf(cards);
+                gsap.fromTo(cards,
+                    { opacity: 0, y: 30, scale: 0.95 },
+                    { opacity: 1, y: 0, scale: 1, duration: 0.6, stagger: 0.04, ease: "back.out(1.2)", delay: 0.05 }
+                );
+            }
         }
     }
     
@@ -493,7 +504,7 @@ async function loadNiftyChart() {
         const data = await api.getIndexData('^NSEI', '6mo');
         if (data && data.data && data.data.length > 0) {
             if (container) container.innerHTML = '';
-            Charts.createAreaChart('nifty-chart', data.data, '#00d4aa');
+            Charts.createAreaChart('nifty-chart', data.data, '#00FF88');
         } else {
             if (container) container.innerHTML = '<div class="error-state"><p>Chart data unavailable for today.</p></div>';
         }

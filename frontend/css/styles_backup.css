@@ -7,64 +7,64 @@
 /* ─── Design Tokens ─────────────────────────────────── */
 :root {
     /* Surface — Deep obsidian black with glass layers */
-    --bg-base: #05090f;
-    --bg-surface: rgba(16, 22, 28, 0.65);
-    --bg-elevated: rgba(22, 30, 38, 0.85);
+    --bg-base: #030508;
+    --bg-surface: rgba(255, 255, 255, 0.03);
+    --bg-elevated: rgba(255, 255, 255, 0.05);
     --bg-subtle: rgba(255, 255, 255, 0.02);
-    --bg-hover: rgba(0, 255, 136, 0.1);
-    --bg-active: rgba(0, 255, 136, 0.15);
-    --bg-overlay: rgba(5, 9, 15, 0.9);
+    --bg-hover: rgba(255, 255, 255, 0.07);
+    --bg-active: rgba(255, 255, 255, 0.09);
+    --bg-overlay: rgba(3, 5, 8, 0.85);
 
     /* Borders — Subtle glass edges */
-    --border-default: rgba(0, 255, 136, 0.25);
-    --border-subtle: rgba(0, 255, 136, 0.08);
-    --border-focus: #00FF88;
+    --border-default: rgba(255, 255, 255, 0.08);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-focus: #00d4aa;
 
     /* Text — High-contrast on dark */
-    --text-primary: #ffffff;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --text-inverse: #05090f;
+    --text-primary: #e8ecf4;
+    --text-secondary: #8b95a8;
+    --text-muted: #505a6e;
+    --text-inverse: #080c14;
 
-    /* Accent — Cyber Green */
-    --accent: #00FF88;
-    --accent-hover: #34d399;
-    --accent-light: rgba(0, 255, 136, 0.15);
-    --accent-subtle: rgba(0, 255, 136, 0.08);
+    /* Accent — Cyber Cyan */
+    --accent: #00e5ff;
+    --accent-hover: #00ffff;
+    --accent-light: rgba(0, 229, 255, 0.10);
+    --accent-subtle: rgba(0, 229, 255, 0.06);
 
     /* Semantic — Neon on dark */
-    --green: #00FF88;
-    --green-bg: rgba(0, 255, 136, 0.15);
-    --green-text: #00FF88;
-    --red: #ff3366;
-    --red-bg: rgba(255, 51, 102, 0.15);
-    --red-text: #ff3366;
-    --amber: #f59e0b;
-    --amber-bg: rgba(245, 158, 11, 0.15);
-    --amber-text: #f59e0b;
-    --blue: #38bdf8;
-    --blue-bg: rgba(56, 189, 248, 0.15);
-    --blue-text: #38bdf8;
+    --green: #00ff88;
+    --green-bg: rgba(0, 255, 136, 0.10);
+    --green-text: #00ff88;
+    --red: #ff2a55;
+    --red-bg: rgba(255, 42, 85, 0.10);
+    --red-text: #ff2a55;
+    --amber: #ffb347;
+    --amber-bg: rgba(255, 179, 71, 0.10);
+    --amber-text: #ffb347;
+    --blue: #00e5ff;
+    --blue-bg: rgba(0, 229, 255, 0.10);
+    --blue-text: #00e5ff;
 
     /* Layout */
     --sidebar-w: 260px;
     --header-h: 56px;
-    --radius: 16px;
-    --radius-sm: 12px;
-    --radius-xs: 8px;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
     --radius-full: 9999px;
 
     /* Shadows — Glow-based for dark mode */
-    --shadow-xs: 0 2px 4px rgba(0, 0, 0, 0.5);
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 1px rgba(0, 255, 136, 0.3);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 2px rgba(0, 255, 136, 0.4);
-    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 6px rgba(0, 255, 136, 0.6);
-    --shadow-glow: 0 0 15px rgba(0, 255, 136, 0.5);
+    --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 1px rgba(255,255,255,0.05);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255,255,255,0.05);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255,255,255,0.08);
+    --shadow-glow: 0 0 0 3px rgba(0, 212, 170, 0.20);
 
     /* Glass */
-    --glass-blur: 24px;
-    --glass-bg: linear-gradient(135deg, rgba(22, 30, 38, 0.7) 0%, rgba(16, 22, 28, 0.4) 100%);
-    --glass-border: rgba(0, 255, 136, 0.3);
+    --glass-blur: 40px;
+    --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+    --glass-border: rgba(255, 255, 255, 0.08);
 
     /* Typography */
     --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -85,8 +85,8 @@ html { font-size: 14px; scroll-behavior: smooth; -webkit-font-smoothing: antiali
 body {
     font-family: var(--font);
     background: var(--bg-base);
-    background-image: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(0, 255, 136, 0.08), transparent),
-                      radial-gradient(ellipse 60% 50% at 80% 50%, rgba(56, 189, 248, 0.03), transparent);
+    background-image: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(0, 212, 170, 0.06), transparent),
+                      radial-gradient(ellipse 60% 50% at 80% 50%, rgba(77, 166, 255, 0.03), transparent);
     background-attachment: fixed;
     color: var(--text-primary);
     display: flex;
@@ -101,7 +101,7 @@ body {
     height: 100vh;
     position: fixed;
     left: 0; top: 0;
-    background: rgba(5, 9, 15, 0.75);
+    background: rgba(12, 16, 24, 0.7);
     backdrop-filter: blur(var(--glass-blur)) saturate(150%);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
     border-right: 1px solid var(--glass-border);

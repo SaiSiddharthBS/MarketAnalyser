@@ -5,7 +5,7 @@
 const Charts = {
     instances: {},
 
-    createAreaChart(containerId, data, color = '#00d4aa') {
+    createAreaChart(containerId, data, color = '#00FF88') {
         const container = document.getElementById(containerId);
         if (!container || !data || !data.length) return null;
 
@@ -21,8 +21,8 @@ const Charts = {
                 fontFamily: "'Inter', sans-serif",
             },
             grid: {
-                vertLines: { color: 'rgba(255,255,255,0.04)' },
-                horzLines: { color: 'rgba(255,255,255,0.04)' },
+                vertLines: { color: 'rgba(0, 255, 136, 0.03)' },
+                horzLines: { color: 'rgba(0, 255, 136, 0.03)' },
             },
             crosshair: {
                 mode: LightweightCharts.CrosshairMode.Normal,
@@ -90,8 +90,8 @@ const Charts = {
                 fontFamily: "'Inter', sans-serif",
             },
             grid: {
-                vertLines: { color: 'rgba(255,255,255,0.04)' },
-                horzLines: { color: 'rgba(255,255,255,0.04)' },
+                vertLines: { color: 'rgba(0, 255, 136, 0.03)' },
+                horzLines: { color: 'rgba(0, 255, 136, 0.03)' },
             },
             crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
             rightPriceScale: { borderColor: 'rgba(255,255,255,0.08)' },
@@ -99,12 +99,12 @@ const Charts = {
         });
 
         const series = chart.addCandlestickSeries({
-            upColor: '#00e68a',
-            downColor: '#ff4d6a',
-            borderUpColor: '#00e68a',
-            borderDownColor: '#ff4d6a',
-            wickUpColor: '#00e68a',
-            wickDownColor: '#ff4d6a',
+            upColor: '#00FF88',
+            downColor: '#ff3366',
+            borderUpColor: '#00FF88',
+            borderDownColor: '#ff3366',
+            wickUpColor: '#00FF88',
+            wickDownColor: '#ff3366',
         });
 
         const chartData = data
