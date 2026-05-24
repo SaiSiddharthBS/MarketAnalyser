@@ -1,198 +1,121 @@
 <div align="center">
-  <img src="docs/assets/banner.png" alt="Agent Alpha Banner" width="100%" />
-  
-  <br/>
-  <br/>
+  <img src="assets/main_logo.png" alt="Agent Alpha Logo" width="300"/>
+  <h1>AGENT ALPHA 🧠📈</h1>
+  <p><strong>The Cognitive Neural Engine for High-Frequency Algorithmic Trading</strong></p>
+  <p><em>Where Artificial Intelligence meets Capital Preservation.</em></p>
 
-  <img src="docs/assets/logo.png" alt="Agent Alpha Logo" width="150" />
+  <p>
+    <img src="https://img.shields.io/badge/Status-Active_Development-brightgreen?style=for-the-badge&logo=appveyor" alt="Status" />
+    <img src="https://img.shields.io/badge/Python-3.11+-blue?style=for-the-badge&logo=python" alt="Python" />
+    <img src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi" alt="FastAPI" />
+    <img src="https://img.shields.io/badge/XGBoost-1D9D58?style=for-the-badge&logo=xgboost" alt="XGBoost" />
+    <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
+    <img src="https://img.shields.io/badge/Linear-5E6AD2?style=for-the-badge&logo=linear&logoColor=white" alt="Linear" />
+    <img src="https://img.shields.io/badge/AWWWARDS-000000?style=for-the-badge&logo=awwwards&logoColor=white" alt="Awwwards" />
+  </p>
+</div>
 
-  # 🌌 AGENT ALPHA v4.0: ULTRA PRO MAX
-  
-  ### *Institutional-Grade Autonomous AI Trading Ecosystem*
-  
-  [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge&logo=github)](https://github.com)
-  [![Python](https://img.shields.io/badge/Python-3.12.3-blue?style=for-the-badge&logo=python)](https://python.org)
-  [![PyTorch](https://img.shields.io/badge/PyTorch-Transformer_Engine-ee4c2c?style=for-the-badge&logo=pytorch)](https://pytorch.org)
-  [![UI](https://img.shields.io/badge/UI-GSAP_WebGL-ff0055?style=for-the-badge&logo=awwwards)](https://awwwards.com)
-  [![Database](https://img.shields.io/badge/Database-Neon.tech_PostgreSQL-30a5af?style=for-the-badge&logo=postgresql)](https://neon.tech)
+<br/>
+
+> **"In the era of AI (2026), systems aren't just built to execute; they are built to *think*. Welcome to the future of quantitative finance."**
+
+---
+
+## 🌌 The Big Picture: Obsidian-Level Mind Map
+Agent Alpha isn't just a bot; it's a living ecosystem of neural models, data pipelines, and real-time execution engines.
+
+<div align="center">
+  <img src="assets/obsidian_mindmap.png" alt="Obsidian Mind Map" width="100%"/>
 </div>
 
 ---
 
-## 🚀 EXECUTIVE OVERVIEW
-Agent Alpha is a **next-generation, institutional-grade, fully autonomous quantitative trading intelligence**. Built from the ground up to rival top-tier hedge fund technology, this system orchestrates multi-agent deep learning, real-time market data ingestion, and rigorous risk management into an *Awwwards-worthy* cinematic user interface.
+## 🏗️ 3D Enterprise System Architecture
+Designed with principles inspired by top-tier engineering organizations (Palantir, Apple, Microsoft, Tesla), the Agent Alpha architecture guarantees fault tolerance, ultra-low latency, and mathematical precision.
 
-Influenced by the engineering standards of **Palantir, Apple, Tesla, Google, and Microsoft**, Agent Alpha leverages an advanced technology stack designed for absolute precision, unyielding stability, and peak performance. It incorporates cutting-edge design paradigms drawn from Linear and GSAP to deliver an interface that feels truly out of this universe.
+<div align="center">
+  <img src="assets/system_architecture.png" alt="3D System Architecture" width="100%"/>
+</div>
 
 ---
 
-## 🧠 CORE SYSTEM ARCHITECTURE
-At the heart of Agent Alpha lies a decoupled, hyper-scalable architecture orchestrating AI, data pipelines, and a gorgeous frontend.
+## ⚙️ Core Pipeline Flowchart (Data to Execution)
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0a0a0a', 'primaryTextColor': '#00ffcc', 'primaryBorderColor': '#bc13fe', 'lineColor': '#00ffcc', 'secondaryColor': '#1a1a2e', 'tertiaryColor': '#16213e'}}}%%
 graph TD
-    subgraph Frontend [Linear & Awwwards Inspired UI]
-        UI1(Glassmorphism Dashboard)
-        UI2(GSAP Micro-Animations)
-        UI3(WebGL Cinematic Globe)
-        UI4(Real-Time Trajectory Charts)
-    end
-
-    subgraph Intelligence [Machine Learning Nexus]
-        ML1(PyTorch Time-Series Transformer)
-        ML2(XGBoost Ensemble Classifiers)
-        ML3(Gemini 2.0 Flash AI Advisor)
-    end
-
-    subgraph Data [High-Frequency Data Pipeline]
-        D1(Yahoo Finance v8 API & Fallbacks)
-        D2(Alt-Data: Reddit & Google Trends)
-        D3(Institutional Flows & Insider Data)
-    end
-
-    subgraph Core [The Arena Execution Engine]
-        A1(Regime Detection & Traps)
-        A2(Risk/Reward Contextual Phase)
-        A3(Algorithmic VWAP Paper Execution)
-        A4(Telegram Big Brother Bot)
-    end
+    %% Styling
+    classDef ai_engine fill:#2D1B4E,stroke:#9D4EDD,stroke-width:2px,color:#fff,font-weight:bold
+    classDef data_node fill:#0D3B66,stroke:#4CC9F0,stroke-width:2px,color:#fff
+    classDef alert_node fill:#183153,stroke:#3A86FF,stroke-width:2px,color:#fff
+    classDef validation fill:#3D5A80,stroke:#EE6C4D,stroke-width:2px,color:#fff
     
-    Data --> Intelligence
-    Intelligence --> Core
-    Core <--> Frontend
+    A([Market Data Streams <br> yfinance / APIs]):::data_node --> B{Data Validator <br> & Staleness Monitor}:::validation
+    B --> |Valid (< 96 hrs)| C(Feature Engineering <br> RSI, MACD, BB, VWAP):::data_node
+    B --> |Stale| X([Drop / Alert])
+    
+    C --> D{Machine Learning Models <br> XGBoost & Random Forest}:::ai_engine
+    D --> |Probabilities & Signals| E[Agent Alpha Arena <br> Backtester & Live Evaluator]:::ai_engine
+    
+    E --> |LONG Signal| F([Execute Buy])
+    E --> |SHORT Signal| G([Execute Sell / Short])
+    
+    F --> H([Telegram Bot Alert]):::alert_node
+    G --> H
+    
+    F --> I[FastAPI / Next.js <br> Live Dashboard]
+    G --> I
 ```
 
 ---
 
-## 🔮 OBSIDIAN-LEVEL ECOSYSTEM MINDMAP
-A comprehensive visualization of all interlinked nodes within the Agent Alpha network.
+## 📖 The Chronicle: Project Journey (April 30, 2026 – May 24, 2026)
+*Every single detail of what makes Agent Alpha an industrial-grade system.*
 
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0f0c29', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#ff007f', 'lineColor': '#8a2be2', 'secondaryColor': '#302b63', 'tertiaryColor': '#24243e'}}}%%
-mindmap
-  root((**AGENT ALPHA**))
-    Machine Learning
-      XGBoost Classifiers
-        Sector Rotation Model
-        Hold Period Estimator
-      PyTorch Transformers
-        High-Frequency Tick Simulator
-        Time-Series Prediction
-      Generative AI
-        Gemini 2.0 Flash
-        Big Brother Advisor
-    Data Ingestion
-      Market Data
-        50-day EMA Regime Detection
-        RVOL & RSI Indicators
-      Alt-Data Engine
-        Reddit Sentiment
-        Google Trends
-      Institutional Data
-        Bulk Deals
-        Pledging Data
-    The Arena
-      Regime Defense
-        Crisis Threshold VIX 30
-        High-Vol Chop State
-      Scoring Engine
-        Dynamic 55-65 Minimum
-        Tiered Phase Sorting
-      Execution
-        VWAP Paper Execution
-        Capital Preservation
-    UI / UX
-      Aesthetics
-        Glassmorphism Cards
-        Neon Gradients
-      Interactivity
-        GSAP Scroll & Hover
-        Cache-Busting Service Workers
-    Infrastructure
-      Cloud Deployment
-        Render PaaS
-        Neon.tech PostgreSQL
-      Monitoring
-        Telegram Alert Webhooks
-        cron-job.org Keep-Alive
-```
+### 1. Data Ingestion & Validation (The Foundation)
+- **Market Sourcing:** Integrated `yfinance` to pull ultra-high-resolution historical and live OHLCV data for **NIFTY 50** and **NIFTY BANK**.
+- **The Data Immune System:** Built `data_validator.py` to ensure models never hallucinate on bad data. 
+- **The Weekend Staleness Fix (May 24):** Initially configured to reject data older than 48 hours. This threw false positives during weekends (59 hours between Friday close and Monday open). Upgraded the `max_staleness_hours` to `96 hours` to gracefully handle regular weekends and global market holidays without interrupting the AI screener.
+
+### 2. Feature Engineering & Alpha Factors
+Agent Alpha sees what humans can't. We built a robust mathematics library to compute:
+- **Momentum & Trend:** RSI (Relative Strength Index), MACD (Moving Average Convergence Divergence).
+- **Volatility & Bounds:** Bollinger Bands, ATR (Average True Range).
+- **Volume & Weighted Averages:** VWAP (Volume Weighted Average Price), EMA (Exponential Moving Average), SMA.
+- **Oscillators:** Stochastic Oscillators.
+
+### 3. The Machine Learning Subsystem (The Brain)
+- **XGBoost Classifier:** The absolute workhorse. Trained to identify micro-patterns in the Alpha Factors and output probability scores for market movements.
+- **Random Forest:** Acts as an ensemble validator to ensure the XGBoost model isn't overfitting to noise.
+- **Continuous Learning:** The models are architected to retrain on fresh datasets, dynamically adapting to regime changes in the macroeconomic environment.
+
+### 4. Agent Alpha Arena (The Proving Ground)
+- **Initial Capital Engine:** Configured with a `10,000,000 INR (10 Lakhs)` baseline for realistic backtesting and position sizing.
+- **Long/Short Mathematics:** Completely refactored the mathematical core handling `LONG` and `SHORT` trades. Fixed critical bugs where inverse PnL calculations for Short positions were causing pipeline crashes. The Arena now perfectly simulates slippage, commissions, and absolute returns.
+
+### 5. High-Performance REST APIs (The Nervous System)
+- Built an industrial-grade backend using **FastAPI** (Python).
+- **The Screener Endpoint:** `/api/screener/top?n=10&segment=NIFTY_50&direction=LONG`
+  - Instantly evaluates all 50 stocks in the Nifty index.
+  - Runs them through the XGBoost classifier in parallel.
+  - Ranks and returns the absolute best 10 alpha-generating opportunities.
+
+### 6. Real-Time Telemetry & Alerting
+- **Telegram Bot Integration:** (`telegram_bot.py`) When Agent Alpha detects a high-probability setup, it doesn't wait. It fires real-time, beautifully formatted messages directly to a secure Telegram channel. CEOs and Portfolio Managers never miss a beat.
+
+### 7. Full-Stack Client Architecture (The Command Center)
+- **Next.js & React:** A lightning-fast, SSR-enabled frontend.
+- **Design System:** Built using Tailwind CSS, GSAP, and Framer Motion for buttery-smooth micro-animations. 
+- **Aesthetic Philosophy:** Deep dark modes, glassmorphism, glowing accents. Inspired by *Awwwards* winners and the sleek minimalism of Apple UI.
 
 ---
 
-## ⚡ THE ARENA: EXECUTION FLOWCHART
-The Arena is the ultimate proving ground. Here is the exact flowchart of how a signal transitions from data points to an executed paper trade.
-
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#111827', 'primaryTextColor': '#10b981', 'primaryBorderColor': '#3b82f6', 'lineColor': '#6366f1', 'secondaryColor': '#1f2937', 'tertiaryColor': '#374151'}}}%%
-flowchart LR
-    A[Data Ingestion] --> B{Market Regime Check}
-    B -- "VIX > 30 (Crisis)" --> C[Capital Preservation Mode]
-    B -- "High-Vol Chop" --> D[Dip-Buying State]
-    B -- "Normal/Bull" --> E[Signal Generation]
-    
-    E --> F[XGBoost & Transformer Prediction]
-    F --> G{Confidence Score > 55-65?}
-    
-    G -- No --> H[Discard Signal]
-    G -- Yes --> I[Contextual Phase Check]
-    
-    I --> J{Risk/Reward Ratio Check}
-    J -- Suboptimal --> K[Downgrade / Discard]
-    J -- Optimal --> L[Algorithmic VWAP Execution]
-    
-    L --> M[Store in Neon.tech DB]
-    M --> N[Trigger Telegram Bot Alert]
-```
+## 🔒 Capital Preservation Protocol
+> *"Rule No. 1: Never lose money. Rule No. 2: Never forget rule No. 1."*
+Agent Alpha is hardcoded with strict risk-management parameters. `max_single_day_move_pct` bounds, volatility circuit breakers, and algorithmic stop-losses ensure that the AI prioritizes survival over reckless yield chasing.
 
 ---
 
-## 📅 THE MASTER DEPLOYMENT LOG (April 30th - May 24th, 2026)
-This section meticulously chronicles the evolution of Agent Alpha into its **v4.0 Ultra Pro Max** form. Absolutely **ZERO** details have been omitted.
-
-### 🌟 1. V3.0 Ultra Pro Max: The Genesis of the Transformer
-- **PyTorch Time-Series Transformer**: Integrated deep learning neural networks for sequence modeling.
-- **Alt-Data Engine**: Siphoning and analyzing Reddit sentiment and Google Trends data.
-- **High-Frequency Tick Simulator**: Reconstructing intraday tick data to feed our ML models.
-- **Algorithmic VWAP Paper Execution**: Simulating execution slippage by adhering to the Volume-Weighted Average Price.
-- **Cinematic UI/UX Redesign**: Revamped the entire frontend with **GSAP** animations, glowing neon gradients, glassmorphism frosted glass effects, and a WebGL globe. Linear and Awwwards-inspired design system.
-- **Institutional Data Fetchers**: Integrated Insider trading data, Bulk Deals, Macro events, and Promoter Pledging tracking.
-
-### 🧠 2. The Machine Learning Core
-- **XGBoost & Transformers**: Seamlessly combined XGBoost ensemble models (for robust, structured feature classification) with PyTorch Transformers (for time-series sequence prediction).
-- **Intraday Prediction Verification Engine**: Evaluates ML predictions against live intraday data in real-time.
-- **Contextual Phase Engine**: Differentiates between 'Early Breakouts' and 'Extended Momentum' to adjust dynamic Risk/Reward ratios automatically.
-- **Generative AI Migration**: Upgraded from `gemini-1.5-flash` to the highly capable `gemini-2.0-flash-lite`, and ultimately locked into `gemini-2.0-flash` (1500 RPD) to permanently eliminate quota exhaustion.
-
-### 🛡️ 3. The Arena & Market Regime Defenses
-- **Market Regime Engine**: Now fetches 3 months of history to calculate the exact 50-day EMA for baseline regime detection.
-- **Crisis Threshold Upgrades**: Raised the VIX threshold from 25 to 30 and introduced the intricate `'high_vol_chop'` dip-buying state.
-- **Score Calibrations**: Lowered the minimum acceptance score to 55-65 (Regime-Adjusted) and implemented **Regime-Based Position Sizing**.
-- **Holding Period Estimator**: ML models now calculate precise holding estimates (2-5 days, 1-2 weeks) targeting a 40% Daily ATR capture.
-- **Screener Timeout**: Increased full 50-stock scan timeout from 10 to 15 minutes to guarantee data integrity.
-
-### 📱 4. UI / UX Masterpieces
-- **Sticky Regime Bar**: Implemented a 3-column flex layout with glassmorphism that perfectly sticks on scroll.
-- **Data Freshness Badges**: Added live market hours transparency badges indicating IST timezone and precise data staleness.
-- **Cache-Busting (v1 to v6)**: Forced browsers to bypass Service Workers, ensuring users always see the latest CSS, gradients, accent-bordered cards, and JS logic.
-- **PWA Mobile Support**: Full Progressive Web App capabilities including homescreen icons and cross-account context persistence.
-- **The "Why" Panel**: Detailed, native explainability for every single AI-generated trade signal.
-
-### 🤖 5. Telegram "Big Brother" Bot Integration
-- **Silent Delivery Fixes**: Added plain text fallbacks, stripped trailing newlines/spaces from credentials, and chunked long messages to prevent Telegram API failures.
-- **Bullet-Point Briefings**: Instructed the AI Advisor to keep Telegram messages concise and impactful—no more essays, just pure actionable alpha.
-- **Background Task Routing**: Transitioned the `/api/bot/alert` endpoint to use FastAPI `BackgroundTasks`, preventing Render's 502 Bad Gateway timeouts during cron execution.
-
-### 🏗️ 6. Infrastructure & DevOps Supremacy
-- **Neon.tech Connection Pooling**: Stabilized the PostgreSQL database by migrating to pooled connections and implementing startup fail-safes.
-- **Yahoo Finance Fallbacks**: Rewrote data fetchers with `yfinance` v8 API fallbacks and custom browser sessions to bypass Render cloud IP blocks.
-- **Exponential Backoff**: Implemented 5s, 15s, and 30s retry logic for handling Gemini API 503 Service Unavailable errors gracefully.
-- **Gunicorn Optimization**: Increased dashboard API timeouts to 45s, allowing parallel async fetching without crashing.
-- **Automated Workflows**: Fine-tuned GitHub Actions to ensure `daily-alert` and `arena-execute` fire exclusively on accurate schedules.
-
----
-
-### *"The future of autonomous capital deployment has arrived."*
-<p align="center">
-  <b>Built by Agent Alpha. Powered by Google DeepMind.</b>
-</p>
+<div align="center">
+  <p><strong>Developed by the Agent Alpha Team | May 2026</strong></p>
+  <p><em>Built for the Future.</em></p>
+</div>
