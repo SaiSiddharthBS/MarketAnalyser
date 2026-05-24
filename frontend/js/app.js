@@ -380,7 +380,7 @@ async function loadDashboard() {
     renderSentiment(data.sentiment);
     renderNewsItems(data.news, 'news-feed', 5);
     loadNiftyChart();
-    updateMissionControl();
+    updateMissionControl(data);
 
     // Data Freshness & Market Status Badge
     const badge = document.getElementById('market-status-badge');
@@ -446,63 +446,88 @@ async function loadDashboard() {
     }
 }
 
-async function updateMissionControl() {
-    const start = performance.now();
+async function updateMissionControl(data) {
     try {
         const h = await api.get('/health');
         if (!h) throw new Error("API Offline");
-        const ping = Math.round(performance.now() - start);
-        document.getElementById('diag-ping').textContent = `${ping} ms`;
-        document.getElementById('diag-version').textContent = `v${h.version || '2.0.0'}`;
-        document.getElementById('diag-time').textContent = new Date().toLocaleTimeString();
-        document.getElementById('status-api').textContent = 'ONLINE';
-        document.getElementById('status-api').style.color = 'var(--green)';
-        document.getElementById('dot-api').style.background = 'var(--green)';
-        document.getElementById('dot-api').style.boxShadow = '0 0 10px var(--green)';
         
-        if (h.db_connected) {
-            document.getElementById('status-db').textContent = 'CONNECTED';
-            document.getElementById('status-db').style.color = 'var(--green)';
-            document.getElementById('dot-db').style.background = 'var(--green)';
-            document.getElementById('dot-db').style.boxShadow = '0 0 10px var(--green)';
-        } else {
-            document.getElementById('status-db').textContent = 'OFFLINE';
-            document.getElementById('status-db').style.color = 'var(--red)';
-            document.getElementById('dot-db').style.background = 'var(--red)';
-            document.getElementById('dot-db').style.boxShadow = '0 0 10px var(--red)';
-        }
+        document.getElementById('status-data').textContent = 'SYNCED';
+        document.getElementById('dot-data').style.background = 'var(--green)';
+        document.getElementById('status-signal').textContent = 'ONLINE';
+        document.getElementById('dot-signal').style.background = 'var(--green)';
+        document.getElementById('status-exec').textContent = 'ACTIVE';
+        document.getElementById('dot-exec').style.background = 'var(--green)';
     } catch(e) {
-        document.getElementById('status-api').textContent = 'OFFLINE';
-        document.getElementById('status-api').style.color = 'var(--red)';
-        document.getElementById('dot-api').style.background = 'var(--red)';
-        document.getElementById('dot-api').style.boxShadow = '0 0 10px var(--red)';
+        ['data', 'signal', 'exec'].forEach(id => {
+            const el = document.getElementById(`status-${id}`);
+            const dot = document.getElementById(`dot-${id}`);
+            if(el) { el.textContent = 'OFFLINE'; el.style.color = 'var(--red)'; }
+            if(dot) { dot.style.background = 'var(--red)'; dot.style.boxShadow = '0 0 10px var(--red)'; }
+        });
+    }
+
+    if (data && data.indices && data.indices['INDIA_VIX']) {
+        const vix = data.indices['INDIA_VIX'].value;
+        document.getElementById('vix-val').textContent = vix.toFixed(2);
+        // Map VIX 10-30 to 0-100%
+        const vixPct = Math.min(Math.max((vix - 10) / 20 * 100, 0), 100);
+        document.getElementById('vix-bar').style.width = `${vixPct}%`;
+        if (vixPct > 70) {
+            document.getElementById('vix-bar').style.background = 'var(--red)';
+            document.getElementById('vix-bar').style.boxShadow = '0 0 8px var(--red)';
+        }
+    }
+
+    if (data && data.sentiment) {
+        const sent = data.sentiment.score;
+        document.getElementById('sentiment-val').textContent = `${(sent * 100).toFixed(0)}%`;
+        document.getElementById('sentiment-bar').style.width = `${sent * 100}%`;
     }
 
     try {
+        let terminalLogs = [];
+        terminalLogs.push('[sys] Syncing real-time market data...');
+        terminalLogs.push('[sys] Connecting to Agent Alpha backend...');
+
         const trades = await api.get('/paper_trades');
-        const el = document.getElementById('mission-recent-actions');
-        if (trades && trades.length > 0) {
-            const recent = trades.slice(0, 3);
-            el.innerHTML = recent.map(t => {
-                const color = t.trade_type === 'BUY' ? 'var(--green)' : 'var(--red)';
-                const dateStr = new Date(t.entry_date).toLocaleDateString([], { month: 'short', day: 'numeric' });
-                return `
-                <div style="background: rgba(255,255,255,0.02); border-radius: 4px; padding: 10px; font-size: 0.8rem; border-left: 2px solid ${color};">
-                    <div style="display:flex; justify-content: space-between; margin-bottom: 4px;">
-                        <span style="font-weight: 600; color: #fff;">${t.trade_type} ${t.symbol}</span>
-                        <span style="opacity: 0.5;">${dateStr}</span>
-                    </div>
-                    <div style="display:flex; justify-content: space-between; font-family: var(--font-mono); opacity: 0.8;">
-                        <span>Qty: ${t.qty}</span>
-                        <span>@ ₹${t.entry_price}</span>
-                    </div>
-                </div>`;
-            }).join('');
-        } else {
-            el.innerHTML = '<div style="opacity: 0.5; font-size: 0.85rem;">No recent actions.</div>';
+        if (trades && trades.length) {
+            trades.slice(0, 3).forEach(t => {
+                terminalLogs.push(`[exec] Auto-traded ${t.trade_type} ${t.symbol} @ ₹${t.entry_price}`);
+            });
         }
+
+        const signals = await api.get('/signals');
+        if (signals && signals.signals && signals.signals.length) {
+            signals.signals.slice(0, 3).forEach(s => {
+                terminalLogs.push(`[ml] Model identified ${s.signal_type} pattern for ${s.symbol}`);
+            });
+        }
+        
+        terminalLogs.push('[ai] Listening for new setups...');
+
+        const el = document.getElementById('terminal-content');
+        if (!el) return;
+        el.innerHTML = '';
+        
+        terminalLogs.forEach((log, i) => {
+            setTimeout(() => {
+                const div = document.createElement('div');
+                div.innerHTML = `<span style="color:#666;">></span> <span style="color:#fff;">${log.substring(0,6)}</span><span style="color:var(--green)">${log.substring(6)}</span>`;
+                el.appendChild(div);
+                el.scrollTop = el.scrollHeight;
+            }, i * 400);
+        });
+
+        setTimeout(() => {
+            const div = document.createElement('div');
+            div.innerHTML = `<span style="color:#666;">></span> <span style="animation: blink 1s step-end infinite; background: var(--green); color: black; padding: 0 4px;">_</span>`;
+            el.appendChild(div);
+            el.scrollTop = el.scrollHeight;
+        }, terminalLogs.length * 400);
+
     } catch(e) {
-        document.getElementById('mission-recent-actions').innerHTML = '<div style="color:var(--red); font-size: 0.8rem;">Failed to load.</div>';
+        const el = document.getElementById('terminal-content');
+        if (el) el.innerHTML = '<div style="color:var(--red);">[sys] Error fetching terminal stream.</div>';
     }
 }
 
