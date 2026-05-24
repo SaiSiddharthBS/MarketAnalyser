@@ -1974,9 +1974,9 @@ async function loadRotation() {
                     <span class="sector-class" style="color:${s.color}">${s.classification}</span>
                 </div>
                 <div class="sector-tile-stats">
-                    <div><span class="stat-label">5D</span> <span class="${s.returns['5d'] >= 0 ? 'positive' : 'negative'}">${s.returns['5d']}%</span></div>
-                    <div><span class="stat-label">10D</span> <span class="${s.returns['10d'] >= 0 ? 'positive' : 'negative'}">${s.returns['10d']}%</span></div>
-                    <div><span class="stat-label">20D</span> <span class="${s.returns['20d'] >= 0 ? 'positive' : 'negative'}">${s.returns['20d']}%</span></div>
+                    <div><span class="stat-label">1W</span> <span class="${s.returns['1w'] >= 0 ? 'positive' : 'negative'}">${s.returns['1w']}%</span></div>
+                    <div><span class="stat-label">1M</span> <span class="${s.returns['1m'] >= 0 ? 'positive' : 'negative'}">${s.returns['1m']}%</span></div>
+                    <div><span class="stat-label">3M</span> <span class="${s.returns['3m'] >= 0 ? 'positive' : 'negative'}">${s.returns['3m']}%</span></div>
                     <div><span class="stat-label">RS</span> <span>${s.relative_strength}</span></div>
                     <div><span class="stat-label">Breadth</span> <span>${s.breadth}%</span></div>
                     <div><span class="stat-label">RVOL</span> <span>${s.rvol}x</span></div>

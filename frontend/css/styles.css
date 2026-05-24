@@ -1504,9 +1504,24 @@ tbody tr:nth-child(10) { animation-delay: 0.30s; }
 
 /* ─── Nav Link Active Glow ──────────────────────────── */
 .nav-link.active {
-    background: rgba(0, 212, 170, 0.08) !important;
-    color: var(--accent) !important;
-    box-shadow: inset 3px 0 0 var(--accent);
+    background: linear-gradient(90deg, rgba(0, 255, 136, 0.15) 0%, transparent 100%) !important;
+    color: var(--green) !important;
+    box-shadow: none !important;
+    position: relative;
+    overflow: hidden;
+}
+.nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 60%;
+    width: 4px;
+    background: var(--green);
+    border-radius: 4px;
+    box-shadow: 0 0 12px 3px rgba(0, 255, 136, 0.9), 0 0 24px 6px rgba(0, 255, 136, 0.4);
+    z-index: 10;
 }
 
 /* ─── Chart Container — Dark Background ─────────────── */
