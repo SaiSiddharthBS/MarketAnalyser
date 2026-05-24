@@ -9,11 +9,11 @@ WS_PORT = 9090
 
 # Alert Thresholds (Severity out of 10)
 THRESHOLDS = {
-    "MACRO": 5,
-    "REGULATORY": 6,
-    "EARNINGS": 7,
-    "INSIDER": 7,
-    "SECTOR": 8
+    "MACRO": 0,
+    "REGULATORY": 0,
+    "EARNINGS": 0,
+    "INSIDER": 0,
+    "SECTOR": 0
 }
 
 RSS_FEEDS = [

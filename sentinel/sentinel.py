@@ -18,6 +18,7 @@ from config import OLLAMA_URL, OLLAMA_MODEL, THRESHOLDS
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 from feed_poller import get_latest_headlines
 from ws_server import broadcast_alert_threadsafe, run_ws_server_in_thread
 
@@ -45,7 +46,7 @@ init_db()
 SEEN_URLS = set()
 
 def triage_news(headline: str, summary: str) -> dict:
-    """Uses Llama 3.1 8B to classify the news."""
+    """Uses Llama 3.3 70B via Groq to classify the news."""
     prompt = f"""
     You are a financial news classifier for Indian stock market (NSE/BSE).
     CLASSIFY: "{headline}"
@@ -53,24 +54,28 @@ def triage_news(headline: str, summary: str) -> dict:
     {{"m":true/false,"s":1-10,"t":["SYMBOL"],"c":"EARNINGS|REGULATORY|MACRO|INSIDER|SECTOR","r":"10 words max"}}
     """
     try:
-        res = requests.post(OLLAMA_URL, json={
-            "model": OLLAMA_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.0
-            }
-        }, timeout=15)
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        res = requests.post("https://api.groq.com/openai/v1/chat/completions", json={
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system", "content": "You are a JSON-only financial API. Always output valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.0,
+            "response_format": {"type": "json_object"}
+        }, headers=headers, timeout=10)
         
         if res.status_code == 200:
-            text = res.json().get("response", "").strip()
-            # Find JSON block if model returns extra text
-            start = text.find('{')
-            end = text.rfind('}')
-            if start != -1 and end != -1:
-                return json.loads(text[start:end+1])
+            text = res.json()["choices"][0]["message"]["content"].strip()
+            # Groq returns clean JSON due to response_format
+            return json.loads(text)
+        else:
+            logger.error(f"Groq API Error: {res.text}")
     except Exception as e:
-        logger.error(f"Ollama classification failed: {e}")
+        logger.error(f"Groq classification failed: {e}")
     return {}
 
 def run_sentinel():
