@@ -33,8 +33,8 @@ def analyze_pairs(z_score_threshold: float = 2.0) -> List[Dict]:
     
     for asset1, asset2 in KNOWN_PAIRS:
         try:
-            df1 = download_ohlcv(asset1, start="2024-01-01")
-            df2 = download_ohlcv(asset2, start="2024-01-01")
+            df1 = download_ohlcv(asset1, period="2y")
+            df2 = download_ohlcv(asset2, period="2y")
             
             if df1 is None or df2 is None or df1.empty or df2.empty:
                 continue
