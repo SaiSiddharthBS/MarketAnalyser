@@ -8,3 +8,4 @@ python scheduler.py &
 # Start the FastAPI web server
 echo "Starting FastAPI on port 8000..."
 uvicorn main:app --host 0.0.0.0 --port 8000
+# (Fixing line endings)
