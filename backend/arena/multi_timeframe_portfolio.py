@@ -35,6 +35,14 @@ BUCKETS = {
         "base_target_pct": 0.15,     # 15%
         "exit_type": "TRAIL",        # Trail with wide stops
         "kelly_multiplier": 0.2      # Ultra conservative for long hold
+    },
+    "ARBITRAGE": {
+        "capital_allocation_pct": 0.25, # Draws from unused cash
+        "max_positions": 4,          # 4 Pairs
+        "base_stop_pct": 0.10,       # High dummy stop (Z-score handles exit)
+        "base_target_pct": 0.10,     # High dummy target
+        "exit_type": "MEAN_REVERT",  # Exit on Z-score crossover
+        "kelly_multiplier": 0.5
     }
 }
 
@@ -44,7 +52,8 @@ CLASS_MAPPING = {
     "SHORT_TERM": "SWING",
     "SWING": "SWING",
     "POSITIONAL": "POSITIONAL",
-    "LONG_TERM": "POSITIONAL"
+    "LONG_TERM": "POSITIONAL",
+    "ARBITRAGE": "ARBITRAGE"
 }
 
 def get_bucket_config(holding_class: str) -> dict:

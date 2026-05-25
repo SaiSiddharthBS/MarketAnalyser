@@ -10,6 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
     checkFnOExpiry(); // V6 Upgrade 8: F&O Expiry Banner
     setInterval(updateMarketStatus, 60000);
     setInterval(loadMarketRegime, 300000); // Refresh every 5 min
+    setInterval(() => {
+        const arenaView = document.getElementById('arena-view');
+        if (arenaView && arenaView.classList.contains('active')) {
+            loadArenaTrading();
+        }
+    }, 10000); // Poll Arena data every 10 seconds for Live Engine
     initLiveClock();
 
     // Task 20: Toast container
@@ -1573,10 +1579,10 @@ async function triggerArena() {
     
     try {
         const result = await api.executeArena();
-        if (result && result.status === 'ok') {
+        if (result && (result.status === 'ok' || result.status === 'Execution triggered')) {
             if(btn) btn.textContent = '✅ Execution Complete! Reloading...';
         } else {
-            if(btn) btn.textContent = '⚠️ ' + (result ? result.message : 'Execution failed');
+            if(btn) btn.textContent = '⚠️ ' + (result && result.message ? result.message : 'Execution failed');
         }
     } catch(e) {
         if(btn) btn.textContent = '❌ Error: ' + e.message;

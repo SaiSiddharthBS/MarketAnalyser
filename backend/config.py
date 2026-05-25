@@ -11,6 +11,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 # Server
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")  # 'development' or 'production'
+ROLE = os.getenv("ROLE", "development")                # 'master_executor' or 'development'
+
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 8000))
 

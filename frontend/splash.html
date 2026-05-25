@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Agent Alpha Starting</title>
+    <style>
+        body, html { 
+            margin: 0; padding: 0; width: 100vw; height: 100vh; 
+            background: #051114; /* Deep obsidian teal to match dashboard */
+            overflow: hidden; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; 
+            -webkit-app-region: drag; /* Draggable window */
+        }
+        .aa-logo { width: 140px; height: auto; border-radius: 20px; box-shadow: 0 10px 40px rgba(0, 255, 136, 0.15); opacity: 0; }
+        .aa-welcome { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace; font-size: 1.6rem; font-weight: 500; color: #00FF88; text-transform: uppercase; letter-spacing: 6px; opacity: 0; position: absolute; }
+        .aa-init { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace; font-size: 0.9rem; color: rgba(255, 255, 255, 0.5); opacity: 0; display: flex; align-items: center; gap: 8px; position: absolute; transform: translateY(40px); }
+        .aa-cursor { width: 8px; height: 16px; background-color: #00FF88; animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+    <img src="images/logo.png" class="aa-logo" alt="Agent Alpha">
+    <div class="aa-welcome">Welcome Agent</div>
+    <div class="aa-init">
+        <span>> SYSTEM INITIALIZING...</span>
+        <div class="aa-cursor"></div>
+    </div>
+
+    <!-- GSAP for 120fps hardware accelerated animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        window.onload = () => {
+            const tl = gsap.timeline({
+                onComplete: () => {
+                    // Send message to main.js to smoothly fade out this view
+                    ipcRenderer.send('splash-finished');
+                }
+            });
+
+            // 1. Logo fades in (GTA style entry)
+            tl.fromTo('.aa-logo',
+                { opacity: 0, scale: 1.05, y: 10 },
+                { opacity: 1, scale: 1, y: 0, duration: 1.5, ease: "expo.out" }
+            )
+            // 2. Logo fades out
+            .to('.aa-logo', 
+                { opacity: 0, scale: 0.95, duration: 1, ease: "power2.inOut" },
+                "+=0.8"
+            )
+            // 3. Welcome Agent fades in (Cyber Green)
+            .fromTo('.aa-welcome',
+                { opacity: 0, scale: 0.95, filter: 'blur(4px)' },
+                { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 1.2, ease: "power3.out" },
+                "-=0.2"
+            )
+            // 4. Initializing hacker text appears below it
+            .fromTo('.aa-init',
+                { opacity: 0 },
+                { opacity: 1, duration: 0.2, ease: "none" },
+                "+=0.5"
+            )
+            // Hold briefly
+            .to({}, { duration: 1.5 });
+        };
+    </script>
+</body>
+</html>

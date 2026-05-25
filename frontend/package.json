@@ -1,0 +1,24 @@
+{
+  "name": "agent-alpha",
+  "version": "3.0.0",
+  "description": "Premium Trading Terminal",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.agentalpha.desktop",
+    "productName": "Agent Alpha",
+    "mac": {
+      "icon": "images/logo.png",
+      "target": ["dir"]
+    }
+  },
+  "author": "Sai",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1"
+  }
+}

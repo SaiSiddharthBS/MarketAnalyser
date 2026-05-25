@@ -65,13 +65,17 @@ def analyze_pairs(z_score_threshold: float = 2.0) -> List[Dict]:
                     "symbol": asset1.replace(".NS", ""),
                     "signal": "STRONG_SELL",
                     "confidence": min(100, 50 + (current_z - 2) * 20),
-                    "reason": f"StatArb: Overvalued vs {asset2.replace('.NS', '')} (Z: {current_z:.2f})"
+                    "reason": f"StatArb: Overvalued vs {asset2.replace('.NS', '')} (Z: {current_z:.2f})",
+                    "paired_with": asset2.replace(".NS", ""),
+                    "pair_z_score": current_z
                 })
                 signals.append({
                     "symbol": asset2.replace(".NS", ""),
                     "signal": "STRONG_BUY",
                     "confidence": min(100, 50 + (current_z - 2) * 20),
-                    "reason": f"StatArb: Undervalued vs {asset1.replace('.NS', '')} (Z: {current_z:.2f})"
+                    "reason": f"StatArb: Undervalued vs {asset1.replace('.NS', '')} (Z: {current_z:.2f})",
+                    "paired_with": asset1.replace(".NS", ""),
+                    "pair_z_score": current_z
                 })
             elif current_z < -z_score_threshold:
                 # Spread is too low -> asset1 is undervalued relative to asset2
@@ -80,13 +84,17 @@ def analyze_pairs(z_score_threshold: float = 2.0) -> List[Dict]:
                     "symbol": asset1.replace(".NS", ""),
                     "signal": "STRONG_BUY",
                     "confidence": min(100, 50 + (abs(current_z) - 2) * 20),
-                    "reason": f"StatArb: Undervalued vs {asset2.replace('.NS', '')} (Z: {current_z:.2f})"
+                    "reason": f"StatArb: Undervalued vs {asset2.replace('.NS', '')} (Z: {current_z:.2f})",
+                    "paired_with": asset2.replace(".NS", ""),
+                    "pair_z_score": current_z
                 })
                 signals.append({
                     "symbol": asset2.replace(".NS", ""),
                     "signal": "STRONG_SELL",
                     "confidence": min(100, 50 + (abs(current_z) - 2) * 20),
-                    "reason": f"StatArb: Overvalued vs {asset1.replace('.NS', '')} (Z: {current_z:.2f})"
+                    "reason": f"StatArb: Overvalued vs {asset1.replace('.NS', '')} (Z: {current_z:.2f})",
+                    "paired_with": asset1.replace(".NS", ""),
+                    "pair_z_score": current_z
                 })
                 
         except Exception as e:

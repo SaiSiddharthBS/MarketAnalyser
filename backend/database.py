@@ -28,8 +28,14 @@ try:
 except ImportError:
     pass  # Environment variables are set directly on cloud
 
+from config import DB_PATH, ENVIRONMENT
+
 # Load DATABASE_URL from env if available (for cloud)
-DATABASE_URL = os.getenv("DATABASE_URL")
+if ENVIRONMENT == "production":
+    DATABASE_URL = os.getenv("DATABASE_URL_PROD", os.getenv("DATABASE_URL"))
+else:
+    DATABASE_URL = os.getenv("DATABASE_URL_DEV", os.getenv("DATABASE_URL"))
+
 pool = None
 
 if DATABASE_URL and HAS_POSTGRES:

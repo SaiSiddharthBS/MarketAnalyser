@@ -65,6 +65,7 @@ def execute_daily_arena():
     
     # 2. Check open positions for SL/Target hits
     open_positions = db.db_execute("SELECT * FROM paper_trades WHERE status = 'OPEN'")
+    open_symbols = [p["symbol"] for p in open_positions]
     
     closed_trades = []
     
@@ -95,58 +96,109 @@ def execute_daily_arena():
         exit_price = None
         trade_type = pos.get("trade_type", "LONG")
         
-        # --- MODULE 5: DYNAMIC TRAILING STOP-LOSS ENGINE ---
-        rr = pos.get("risk_reward_ratio") or 2.0
-        initial_risk = abs(target - pos["entry_price"]) / rr
-        if initial_risk <= 0: initial_risk = pos["entry_price"] * 0.01
-        
-        current_profit = today_high - pos["entry_price"] if trade_type == "LONG" else pos["entry_price"] - today_low
-        profit_r = current_profit / initial_risk
-        
-        # Phase 2: +1.5R -> Move to Breakeven
-        if profit_r >= 1.5:
-            new_sl = pos["entry_price"] * 1.001 if trade_type == "LONG" else pos["entry_price"] * 0.999
-            if trade_type == "LONG" and new_sl > sl: sl = new_sl
-            elif trade_type == "SHORT" and new_sl < sl: sl = new_sl
+        # --- PHASE 4.2 STAT-ARB EXIT LOGIC ---
+        if trade_type.startswith("PAIR_"):
+            try:
+                import json
+                import numpy as np
+                import pandas as pd
+                from analysis.stat_arb import KNOWN_PAIRS
+                
+                votes = json.loads(pos.get("model_votes_json") or "{}")
+                paired_with = votes.get("paired_with")
+                
+                if paired_with:
+                    # Find the original pair ordering to calculate the exact same Z-score
+                    asset1, asset2 = None, None
+                    for k1, k2 in KNOWN_PAIRS:
+                        s1, s2 = k1.replace(".NS", ""), k2.replace(".NS", "")
+                        if (symbol == s1 and paired_with == s2) or (symbol == s2 and paired_with == s1):
+                            asset1, asset2 = s1, s2
+                            break
+                            
+                    if asset1 and asset2:
+                        df1 = df['Close'].dropna() if symbol == asset1 else download_ohlcv(f"{asset1}.NS", period="6mo", interval="1d")['Close'].dropna()
+                        df2 = df['Close'].dropna() if symbol == asset2 else download_ohlcv(f"{asset2}.NS", period="6mo", interval="1d")['Close'].dropna()
+                        
+                        data = pd.concat([df1, df2], axis=1, join='inner')
+                        data.columns = ["A", "B"]
+                        
+                        data['spread'] = np.log(data["A"]) - np.log(data["B"])
+                        data['mean_spread'] = data['spread'].rolling(window=60).mean()
+                        data['std_spread'] = data['spread'].rolling(window=60).std()
+                        data['z_score'] = (data['spread'] - data['mean_spread']) / data['std_spread']
+                        
+                        current_z = float(data['z_score'].iloc[-1])
+                        
+                        # Mean reversion achieved if Z-score crosses back towards 0 (let's say between -0.5 and +0.5)
+                        if abs(current_z) < 0.5:
+                            exit_reason = "MEAN_REVERTED_Z_CROSSOVER"
+                            side = "SELL" if trade_type == "PAIR_LONG" else "BUY"
+                            fill = apply_execution_model(qty, today_close, side=side, bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
+                            exit_price = fill.fill_price
+                        # Stop Loss on extreme divergence
+                        elif abs(current_z) > 4.0:
+                            exit_reason = "STAT_ARB_SL_Z_EXCEEDED"
+                            side = "SELL" if trade_type == "PAIR_LONG" else "BUY"
+                            fill = apply_execution_model(qty, today_close, side=side, bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
+                            exit_price = fill.fill_price
+            except Exception as e:
+                logger.error(f"Stat Arb Pair Exit Check Error for {symbol}: {e}")
+                
+        # --- MODULE 5: DYNAMIC TRAILING STOP-LOSS ENGINE (DIRECTIONAL ONLY) ---
+        elif trade_type in ("LONG", "SHORT"):
+            rr = pos.get("risk_reward_ratio") or 2.0
+            initial_risk = abs(target - pos["entry_price"]) / rr
+            if initial_risk <= 0: initial_risk = pos["entry_price"] * 0.01
             
-        # Phase 3: +2.5R -> Lock in +1.0R
-        if profit_r >= 2.5:
-            new_sl = pos["entry_price"] + initial_risk if trade_type == "LONG" else pos["entry_price"] - initial_risk
-            if trade_type == "LONG" and new_sl > sl: sl = new_sl
-            elif trade_type == "SHORT" and new_sl < sl: sl = new_sl
+            current_profit = today_high - pos["entry_price"] if trade_type == "LONG" else pos["entry_price"] - today_low
+            profit_r = current_profit / initial_risk
             
-        # Phase 4: +4.0R -> Lock in +2.5R
-        if profit_r >= 4.0:
-            new_sl = pos["entry_price"] + (initial_risk * 2.5) if trade_type == "LONG" else pos["entry_price"] - (initial_risk * 2.5)
-            if trade_type == "LONG" and new_sl > sl: sl = new_sl
-            elif trade_type == "SHORT" and new_sl < sl: sl = new_sl
+            # Phase 2: +1.5R -> Move to Breakeven
+            if profit_r >= 1.5:
+                new_sl = pos["entry_price"] * 1.001 if trade_type == "LONG" else pos["entry_price"] * 0.999
+                if trade_type == "LONG" and new_sl > sl: sl = new_sl
+                elif trade_type == "SHORT" and new_sl < sl: sl = new_sl
+                
+            # Phase 3: +2.5R -> Lock in +1.0R
+            if profit_r >= 2.5:
+                new_sl = pos["entry_price"] + initial_risk if trade_type == "LONG" else pos["entry_price"] - initial_risk
+                if trade_type == "LONG" and new_sl > sl: sl = new_sl
+                elif trade_type == "SHORT" and new_sl < sl: sl = new_sl
+                
+            # Phase 4: +4.0R -> Lock in +2.5R
+            if profit_r >= 4.0:
+                new_sl = pos["entry_price"] + (initial_risk * 2.5) if trade_type == "LONG" else pos["entry_price"] - (initial_risk * 2.5)
+                if trade_type == "LONG" and new_sl > sl: sl = new_sl
+                elif trade_type == "SHORT" and new_sl < sl: sl = new_sl
+                
+            if sl != pos["stop_loss"]:
+                db.db_execute("UPDATE paper_trades SET stop_loss = ? WHERE id = ?", (sl, pos["id"]))
+            # ---------------------------------------------------
             
-        if sl != pos["stop_loss"]:
-            db.db_execute("UPDATE paper_trades SET stop_loss = ? WHERE id = ?", (sl, pos["id"]))
-        # ---------------------------------------------------
-        
-        if trade_type == "LONG":
-            # SL Hit
-            if today_low <= sl:
-                exit_reason = "SL_HIT"
-                fill = apply_execution_model(qty, sl, side="SELL", bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
-                exit_price = fill.fill_price
-            # Target Hit
-            elif today_high >= target:
-                exit_reason = "TARGET_HIT"
-                fill = apply_execution_model(qty, target, side="SELL", bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
-                exit_price = fill.fill_price
-        else: # SHORT
-            # SL Hit for Short (Price goes UP to SL)
-            if today_high >= sl:
-                exit_reason = "SL_HIT"
-                fill = apply_execution_model(qty, sl, side="BUY", bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
-                exit_price = fill.fill_price
-            # Target Hit for Short (Price goes DOWN to target)
-            elif today_low <= target:
-                exit_reason = "TARGET_HIT"
-                fill = apply_execution_model(qty, target, side="BUY", bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
-                exit_price = fill.fill_price
+        if not exit_reason:
+            if trade_type in ("LONG", "PAIR_LONG"):
+                # SL Hit
+                if today_low <= sl:
+                    exit_reason = "SL_HIT"
+                    fill = apply_execution_model(qty, sl, side="SELL", bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
+                    exit_price = fill.fill_price
+                # Target Hit
+                elif today_high >= target:
+                    exit_reason = "TARGET_HIT"
+                    fill = apply_execution_model(qty, target, side="SELL", bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
+                    exit_price = fill.fill_price
+            elif trade_type in ("SHORT", "PAIR_SHORT"):
+                # SL Hit for Short (Price goes UP to SL)
+                if today_high >= sl:
+                    exit_reason = "SL_HIT"
+                    fill = apply_execution_model(qty, sl, side="BUY", bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
+                    exit_price = fill.fill_price
+                # Target Hit for Short (Price goes DOWN to target)
+                elif today_low <= target:
+                    exit_reason = "TARGET_HIT"
+                    fill = apply_execution_model(qty, target, side="BUY", bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
+                    exit_price = fill.fill_price
                 
         # Timeout (Applies to both, uses dynamic Timeframe if available)
         expected_days = pos.get("expected_days")
@@ -173,7 +225,7 @@ def execute_daily_arena():
             fees = trade_value * (BROKERAGE_PCT + STT_PCT)
             
             # Invert PnL for shorts: (Entry - Exit) * Qty
-            if trade_type == "LONG":
+            if trade_type in ("LONG", "PAIR_LONG"):
                 gross_pnl = trade_value - pos["position_value"]
             else:
                 gross_pnl = pos["position_value"] - trade_value
@@ -242,8 +294,119 @@ def execute_daily_arena():
         # Only block ALL buys during true systemic crisis (VIX >= 30)
         if regime == "crisis":
             logger.info("Regime is CRISIS. Not opening new positions.")
+        elif regime in ("high_vol_chop", "low_vol_chop"):
+            # --- PHASE 4.2: STAT ARB / NON-DIRECTIONAL MODE ---
+            logger.info(f"Regime is {regime.upper()}. Bypassing directional trades. Activating Stat-Arb Engine.")
+            from analysis.stat_arb import analyze_pairs
+            
+            pair_signals = analyze_pairs(z_score_threshold=2.0)
+            
+            # Group signals by pair
+            pairs_to_execute = {}
+            for sig in pair_signals:
+                paired_with = sig.get("paired_with")
+                if not paired_with: continue
+                # Unique pair key (alphabetical to group them safely)
+                key = tuple(sorted([sig["symbol"], paired_with]))
+                if key not in pairs_to_execute:
+                    pairs_to_execute[key] = {}
+                pairs_to_execute[key][sig["symbol"]] = sig
+                
+            for pair_key, legs in pairs_to_execute.items():
+                if len(legs) != 2: continue
+                
+                sym1, sym2 = pair_key
+                if sym1 in open_symbols or sym2 in open_symbols: continue
+                
+                leg1 = legs[sym1]
+                leg2 = legs[sym2]
+                
+                # Sizing based on ARBITRAGE bucket
+                df1 = download_ohlcv(f"{sym1}.NS", period="5d", interval="1d")
+                df2 = download_ohlcv(f"{sym2}.NS", period="5d", interval="1d")
+                if df1 is None or df1.empty or df2 is None or df2.empty: continue
+                
+                p1_open = float(df1.iloc[-1]["Open"])
+                p2_open = float(df2.iloc[-1]["Open"])
+                
+                # Check Arbitrage bucket capacity (fake entry price = 1000 to just check capital)
+                sizing = calculate_bucketed_position_size(INITIAL_CAPITAL, "ARBITRAGE", 1000.0)
+                if not sizing["approved"]:
+                    logger.info(f"Skipping Pair {sym1}-{sym2}: {sizing['reason']}")
+                    continue
+                    
+                # We allocate ₹50,000 to each leg to keep it market-neutral (₹100k total)
+                alloc_per_leg = 50000.0
+                
+                # We need sufficient total cash
+                if cash < (alloc_per_leg * 2 * 1.01): # including fees buffer
+                    continue
+                    
+                qty1 = int(alloc_per_leg / p1_open)
+                qty2 = int(alloc_per_leg / p2_open)
+                
+                if qty1 == 0 or qty2 == 0: continue
+                
+                # Execute Leg 1
+                trade_type1 = "PAIR_LONG" if leg1["signal"] in ("BUY", "STRONG_BUY") else "PAIR_SHORT"
+                side1 = "BUY" if trade_type1 == "PAIR_LONG" else "SELL"
+                fill1 = apply_execution_model(qty1, p1_open, side=side1, bar_volume=float(df1.iloc[-1].get("Volume", 100000)), config=EXEC_CONFIG)
+                
+                # Execute Leg 2
+                trade_type2 = "PAIR_LONG" if leg2["signal"] in ("BUY", "STRONG_BUY") else "PAIR_SHORT"
+                side2 = "BUY" if trade_type2 == "PAIR_LONG" else "SELL"
+                fill2 = apply_execution_model(qty2, p2_open, side=side2, bar_volume=float(df2.iloc[-1].get("Volume", 100000)), config=EXEC_CONFIG)
+                
+                qty1 = fill1.filled_quantity
+                entry_price1 = fill1.fill_price
+                pos_value1 = qty1 * entry_price1
+                fees1 = pos_value1 * (BROKERAGE_PCT + STT_PCT)
+                
+                qty2 = fill2.filled_quantity
+                entry_price2 = fill2.fill_price
+                pos_value2 = qty2 * entry_price2
+                fees2 = pos_value2 * (BROKERAGE_PCT + STT_PCT)
+                
+                if qty1 == 0 or qty2 == 0: continue
+                
+                import json
+                
+                # Insert Leg 1
+                db.db_execute("""
+                    INSERT INTO paper_trades (
+                        symbol, trade_type, signal_date, entry_date, entry_price, quantity,
+                        position_value, stop_loss, target_price, risk_reward_ratio, fees,
+                        regime_at_entry, ensemble_score, conviction, model_votes_json,
+                        holding_class, expected_days
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    sym1, trade_type1, get_current_date_ist(), today, float(entry_price1), float(qty1),
+                    float(pos_value1), float(entry_price1 * (0.9 if trade_type1=="PAIR_LONG" else 1.1)), float(entry_price1 * (1.1 if trade_type1=="PAIR_LONG" else 0.9)), 1.0, float(fees1), regime, float(leg1["confidence"]),
+                    "ULTRA", json.dumps({"paired_with": sym2, "pair_z_score": float(leg1["pair_z_score"])}), "ARBITRAGE", 5
+                ))
+                
+                # Insert Leg 2
+                db.db_execute("""
+                    INSERT INTO paper_trades (
+                        symbol, trade_type, signal_date, entry_date, entry_price, quantity,
+                        position_value, stop_loss, target_price, risk_reward_ratio, fees,
+                        regime_at_entry, ensemble_score, conviction, model_votes_json,
+                        holding_class, expected_days
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    sym2, trade_type2, get_current_date_ist(), today, float(entry_price2), float(qty2),
+                    float(pos_value2), float(entry_price2 * (0.9 if trade_type2=="PAIR_LONG" else 1.1)), float(entry_price2 * (1.1 if trade_type2=="PAIR_LONG" else 0.9)), 1.0, float(fees2), regime, float(leg2["confidence"]),
+                    "ULTRA", json.dumps({"paired_with": sym1, "pair_z_score": float(leg2["pair_z_score"])}), "ARBITRAGE", 5
+                ))
+                
+                cash -= float(pos_value1 + fees1 + pos_value2 + fees2)
+                new_trades.append(f"{sym1}-{sym2} Pair")
+                
+                msg = f"🏟️ *ARENA STAT-ARB OPENED: {sym1} & {sym2}*\nLeg 1: {trade_type1} {qty1} @ ₹{entry_price1:.2f}\nLeg 2: {trade_type2} {qty2} @ ₹{entry_price2:.2f}\nZ-Score: {leg1['pair_z_score']:.2f}"
+                send_telegram_sync(msg)
+                
         else:
-            # Regime-based position sizing adjustment
+            # Regime-based position sizing adjustment for Directional Trades
             regime_size_factor = {
                 "low_vol_uptrend": 1.0,      # Full size — home turf
                 "high_vol_uptrend": 0.75,     # Slightly cautious
@@ -260,7 +423,9 @@ def execute_daily_arena():
             }.get(regime, 28)
             
             scored_stocks = []
+            
             for symbol in NIFTY_50_SYMBOLS:
+                if symbol in open_symbols: continue
                 ticker = f"{symbol}.NS"
                 df = download_ohlcv(ticker, period="6mo", interval="1d")
                 if df is None or len(df) < 50: continue
@@ -468,7 +633,7 @@ def execute_daily_arena():
     nifty_return = 0.0
     nifty_df = download_ohlcv("^NSEI", period="1mo", interval="1d")
     if nifty_df is not None and not nifty_df.empty and len(nifty_df) >= 2:
-        nifty_return = ((nifty_df["Close"].iloc[-1] / nifty_df["Close"].iloc[-2]) - 1) * 100
+        nifty_return = float(((nifty_df["Close"].iloc[-1] / nifty_df["Close"].iloc[-2]) - 1) * 100)
 
     # Insert or update today's snapshot
     if existing:
@@ -476,7 +641,7 @@ def execute_daily_arena():
             UPDATE paper_portfolio 
             SET cash=?, holdings_value=?, total_equity=?, open_positions=?, daily_return_pct=?, cumulative_return_pct=?, drawdown_from_peak_pct=?, benchmark_nifty_return_pct=?
             WHERE date=?
-        """, (cash, holdings_value, total_equity, len(open_positions), daily_return, cum_return_pct, drawdown, nifty_return, today))
+        """, (float(cash), float(holdings_value), float(total_equity), len(open_positions), float(daily_return), float(cum_return_pct), float(drawdown), float(nifty_return), today))
     else:
         db.db_execute("""
             INSERT INTO paper_portfolio (
@@ -484,7 +649,7 @@ def execute_daily_arena():
                 daily_return_pct, cumulative_return_pct, drawdown_from_peak_pct, 
                 benchmark_nifty_return_pct
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (today, cash, holdings_value, total_equity, len(open_positions), daily_return, cum_return_pct, drawdown, nifty_return))
+        """, (today, float(cash), float(holdings_value), float(total_equity), len(open_positions), float(daily_return), float(cum_return_pct), float(drawdown), float(nifty_return)))
     
     logger.info(f"Arena daily execution complete. Equity: ₹{total_equity:.2f} ({cum_return_pct:.2f}%)")
     
@@ -563,22 +728,23 @@ def track_live_positions():
                 db.db_execute("UPDATE paper_trades SET stop_loss = ? WHERE id = ?", (sl, pos["id"]))
             # ---------------------------------------------------
             
-            if trade_type == "LONG":
-                # SL Hit (Real-time)
-                if current_price <= sl:
-                    exit_reason = "SL_HIT_LIVE"
-                    exit_price = sl  # Slippage modeled in execution
-                # Target Hit (Real-time)
-                elif current_price >= target:
-                    exit_reason = "TARGET_HIT_LIVE"
-                    exit_price = target
-            else: # SHORT
-                if current_price >= sl:
-                    exit_reason = "SL_HIT_LIVE"
-                    exit_price = sl
-                elif current_price <= target:
-                    exit_reason = "TARGET_HIT_LIVE"
-                    exit_price = target
+            if not exit_reason:
+                if trade_type in ("LONG", "PAIR_LONG"):
+                    # SL Hit (Real-time)
+                    if current_price <= sl:
+                        exit_reason = "SL_HIT_LIVE"
+                        exit_price = sl  # Slippage modeled in execution
+                    # Target Hit (Real-time)
+                    elif current_price >= target:
+                        exit_reason = "TARGET_HIT_LIVE"
+                        exit_price = target
+                elif trade_type in ("SHORT", "PAIR_SHORT"):
+                    if current_price >= sl:
+                        exit_reason = "SL_HIT_LIVE"
+                        exit_price = sl
+                    elif current_price <= target:
+                        exit_reason = "TARGET_HIT_LIVE"
+                        exit_price = target
                 
             if exit_reason:
                 # Same execution and exit logic
@@ -586,7 +752,7 @@ def track_live_positions():
                 fees = trade_value * (0.001) # 0.1% approx
                 
                 # Invert PnL for shorts: (Entry - Exit) * Qty
-                if trade_type == "LONG":
+                if trade_type in ("LONG", "PAIR_LONG"):
                     gross_pnl = trade_value - pos["position_value"]
                 else:
                     gross_pnl = pos["position_value"] - trade_value

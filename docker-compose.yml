@@ -6,9 +6,11 @@ services:
     container_name: agent_alpha_bot
     restart: unless-stopped
     volumes:
-      - ./backend/data:/app/data
+      - ./backend:/app
     environment:
       - TZ=Asia/Kolkata
+      - ENVIRONMENT=production
+      - ROLE=master_executor
       # Add API keys here if needed
       # - FRED_API_KEY=your_key
       # - TELEGRAM_BOT_TOKEN=your_token

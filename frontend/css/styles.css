@@ -111,6 +111,7 @@ body {
     flex-direction: column;
     z-index: 100;
     transition: transform var(--duration-md) var(--ease-out-expo);
+    -webkit-app-region: drag; /* Electron Dragging */
 }
 
 .muted-emoji {
@@ -123,6 +124,7 @@ body {
     align-items: center;
     gap: 12px;
     border-bottom: 1px solid var(--border-subtle);
+    -webkit-app-region: no-drag; /* Let them click the avatar if needed */
 }
 .avatar-stage {
     position: relative;
@@ -208,6 +210,7 @@ body {
     padding: 12px;
     flex: 1;
     overflow-y: auto;
+    -webkit-app-region: no-drag;
 }
 
 .nav-link {
