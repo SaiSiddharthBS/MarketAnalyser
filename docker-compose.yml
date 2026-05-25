@@ -5,6 +5,10 @@ services:
     build: .
     container_name: agent_alpha_bot
     restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
     volumes:
       - ./backend:/app
     environment:
