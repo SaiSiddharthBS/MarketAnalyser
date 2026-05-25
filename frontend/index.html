@@ -168,50 +168,74 @@
                     
                     <!-- Mission Control Widget -->
                     <div class="glass-card mission-control-card" style="display: flex; flex-direction: column;">
-                        <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-                            <i data-lucide="cpu" style="width: 18px; color: var(--green);"></i> Mission Control
-                        </h3>
-                        <div class="system-status-list" style="display: flex; flex-direction: column; gap: 16px;">
-                            <div class="status-row" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
-                                <span style="display: flex; align-items: center; gap: 8px;"><span class="status-dot active" id="dot-data"></span> Data Pipeline (NSE/YF)</span>
-                                <span id="status-data" style="color: var(--green); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 1px;">SYNCED</span>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="font-family: var(--font-mono); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; color: var(--green); margin: 0; display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="cpu" style="width: 18px; height: 18px; animation: pulse 2s infinite;"></i> 
+                                <span class="cyber-glitch" data-text="NEURAL CORE ACTIVE">NEURAL CORE ACTIVE</span>
+                            </h3>
+                            <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--accent); animation: blink 1s infinite;">SYS.OP.2026</div>
+                        </div>
+
+                        <!-- Sci-Fi HUD Display -->
+                        <div class="hud-display" style="margin-top: 16px; display: flex; gap: 16px; align-items: center; background: rgba(0,230,138,0.03); padding: 12px; border-radius: 4px; border: 1px solid rgba(0,230,138,0.1); position: relative; overflow: hidden;">
+                            <div class="hud-grid-bg" style="position: absolute; top:0; left:0; right:0; bottom:0; background: linear-gradient(rgba(0,230,138,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,230,138,0.1) 1px, transparent 1px); background-size: 10px 10px; opacity: 0.3;"></div>
+                            
+                            <!-- Radar / Arc Reactor -->
+                            <div class="hud-radar" style="position: relative; width: 60px; height: 60px; border-radius: 50%; border: 1px solid rgba(0,230,138,0.4); box-shadow: 0 0 10px rgba(0,230,138,0.2) inset; flex-shrink: 0; display: flex; justify-content: center; align-items: center;">
+                                <div style="width: 4px; height: 4px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green);"></div>
+                                <div class="radar-sweep" style="position: absolute; top: 0; left: 0; width: 50%; height: 50%; border-bottom: 1px solid var(--green); background: linear-gradient(45deg, rgba(0,230,138,0) 0%, rgba(0,230,138,0.5) 100%); transform-origin: 100% 100%; animation: radarSpin 2s linear infinite;"></div>
+                                <div style="position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 1px dashed rgba(0,230,138,0.2); animation: spinReverse 10s linear infinite;"></div>
                             </div>
-                            <div class="status-row" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
-                                <span style="display: flex; align-items: center; gap: 8px;"><span class="status-dot active" id="dot-signal"></span> Signal Engine (TA/ML)</span>
-                                <span id="status-signal" style="color: var(--green); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 1px;">ONLINE</span>
-                            </div>
-                            <div class="status-row" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
-                                <span style="display: flex; align-items: center; gap: 8px;"><span class="status-dot active" id="dot-exec"></span> Execution Engine</span>
-                                <span id="status-exec" style="color: var(--green); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 1px;">ACTIVE</span>
+
+                            <!-- Data Streams -->
+                            <div style="flex: 1; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 6px;">
+                                <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.7rem;">
+                                    <span style="color: rgba(255,255,255,0.6);">NSE DATA PIPELINE</span>
+                                    <span style="color: var(--green);">SYNC_OK</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.7rem;">
+                                    <span style="color: rgba(255,255,255,0.6);">QUANT MODEL</span>
+                                    <span style="color: var(--accent);">LEARNING</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.7rem;">
+                                    <span style="color: rgba(255,255,255,0.6);">NETWORK LATENCY</span>
+                                    <span id="jitter-ping" style="color: var(--green);">42ms</span>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Real Trading Metrics -->
-                        <div class="system-load-metrics" style="margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 14px;">
+                        <!-- Real Trading Metrics (Jittering) -->
+                        <div class="system-load-metrics" style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;">
                             <div class="load-row">
-                                <div class="load-label" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px; font-family: var(--font-mono);">
-                                    <span>MARKET VOLATILITY (VIX)</span><span id="vix-val" style="color: var(--text-primary);">--</span>
+                                <div class="load-label" style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 6px; font-family: var(--font-mono);">
+                                    <span>MARKET VOLATILITY</span><span id="vix-val" style="color: var(--text-primary); text-shadow: 0 0 5px var(--amber);">--</span>
                                 </div>
-                                <div class="load-bar-wrap" style="height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden;">
-                                    <div id="vix-bar" class="load-bar" style="height: 100%; width: 0%; background: var(--amber); box-shadow: 0 0 8px var(--amber); transition: width 1s ease;"></div>
+                                <div class="load-bar-wrap" style="height: 3px; background: rgba(255,255,255,0.05); overflow: hidden;">
+                                    <div id="vix-bar" class="load-bar" style="height: 100%; width: 0%; background: var(--amber); box-shadow: 0 0 8px var(--amber); transition: width 0.2s ease;"></div>
                                 </div>
                             </div>
                             <div class="load-row">
-                                <div class="load-label" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px; font-family: var(--font-mono);">
-                                    <span>BULLISH SENTIMENT</span><span id="sentiment-val" style="color: var(--text-primary);">--</span>
+                                <div class="load-label" style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 6px; font-family: var(--font-mono);">
+                                    <span>MODEL CONFIDENCE</span><span id="sentiment-val" style="color: var(--text-primary); text-shadow: 0 0 5px var(--green);">--</span>
                                 </div>
-                                <div class="load-bar-wrap" style="height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden;">
-                                    <div id="sentiment-bar" class="load-bar" style="height: 100%; width: 0%; background: var(--green); box-shadow: 0 0 8px var(--green); transition: width 1s ease;"></div>
+                                <div class="load-bar-wrap" style="height: 3px; background: rgba(255,255,255,0.05); overflow: hidden;">
+                                    <div id="sentiment-bar" class="load-bar" style="height: 100%; width: 0%; background: var(--green); box-shadow: 0 0 8px var(--green); transition: width 0.2s ease;"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Real Live Terminal Feed -->
-                        <div class="live-terminal-feed" style="margin-top: 24px; flex: 1; min-height: 130px; background: rgba(0,0,0,0.3); border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); padding: 12px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--green); position: relative; overflow: hidden;">
-                            <div id="terminal-content" style="display: flex; flex-direction: column; gap: 6px; line-height: 1.4; opacity: 0.8; height: 100%; overflow-y: auto;">
-                                <div class="loading-skeleton">Initializing Agent Alpha...</div>
+                        <!-- Real Live Terminal Feed (Hacker Style) -->
+                        <div class="live-terminal-feed" style="margin-top: 16px; flex: 1; min-height: 140px; background: #050a08; border-radius: 4px; border: 1px solid rgba(0,230,138,0.15); border-left: 2px solid var(--green); padding: 12px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--green); position: relative; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
+                            <div id="terminal-content" style="display: flex; flex-direction: column; gap: 4px; line-height: 1.5; opacity: 0.9; height: 100%; overflow-y: auto; text-shadow: 0 0 4px rgba(0,230,138,0.5);">
+                                <div><span style="color:#666;">[sys]</span> INITIATING NEURAL LINK...</div>
                             </div>
-                            <div class="terminal-scanline" style="position: absolute; top: 0; left: 0; right: 0; height: 100%; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.1) 51%); background-size: 100% 4px; pointer-events: none;"></div>
+                            <!-- Sci-Fi Corner Brackets -->
+                            <div style="position: absolute; top: 0; left: 0; width: 10px; height: 10px; border-top: 2px solid var(--green); border-left: 2px solid var(--green);"></div>
+                            <div style="position: absolute; top: 0; right: 0; width: 10px; height: 10px; border-top: 2px solid var(--green); border-right: 2px solid var(--green);"></div>
+                            <div style="position: absolute; bottom: 0; left: 0; width: 10px; height: 10px; border-bottom: 2px solid var(--green); border-left: 2px solid var(--green);"></div>
+                            <div style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-bottom: 2px solid var(--green); border-right: 2px solid var(--green);"></div>
+                            <!-- Scanline -->
+                            <div class="terminal-scanline" style="position: absolute; top: 0; left: 0; right: 0; height: 100%; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.2) 51%); background-size: 100% 4px; pointer-events: none;"></div>
                         </div>
                     </div>
 

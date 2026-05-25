@@ -484,50 +484,83 @@ async function updateMissionControl(data) {
         document.getElementById('sentiment-bar').style.width = `${sent * 100}%`;
     }
 
+    // Add jitter effect for the "live" feeling
+    if (window._hudJitter) clearInterval(window._hudJitter);
+    window._hudJitter = setInterval(() => {
+        const pingEl = document.getElementById('jitter-ping');
+        if (pingEl) pingEl.textContent = `${Math.floor(Math.random() * 15 + 30)}ms`;
+        
+        // Jitter VIX slightly
+        const vixEl = document.getElementById('vix-bar');
+        if (vixEl && vixEl.style.width) {
+            const currentW = parseFloat(vixEl.style.width);
+            if (!isNaN(currentW)) {
+                vixEl.style.width = `${Math.max(0, Math.min(100, currentW + (Math.random() - 0.5) * 2))}%`;
+            }
+        }
+        // Jitter Sentiment slightly
+        const sentEl = document.getElementById('sentiment-bar');
+        if (sentEl && sentEl.style.width) {
+            const currentW = parseFloat(sentEl.style.width);
+            if (!isNaN(currentW)) {
+                sentEl.style.width = `${Math.max(0, Math.min(100, currentW + (Math.random() - 0.5) * 2))}%`;
+            }
+        }
+    }, 500);
+
     try {
         let terminalLogs = [];
-        terminalLogs.push('[sys] Syncing real-time market data...');
-        terminalLogs.push('[sys] Connecting to Agent Alpha backend...');
+        terminalLogs.push('[sys] INITIATING NEURAL LINK...');
+        terminalLogs.push('[sys] SYNCING MARKET DATA...');
 
         const trades = await api.get('/paper_trades');
         if (trades && trades.length) {
-            trades.slice(0, 3).forEach(t => {
-                terminalLogs.push(`[exec] Auto-traded ${t.trade_type} ${t.symbol} @ ₹${t.entry_price}`);
+            trades.slice(0, 2).forEach(t => {
+                terminalLogs.push(`[exe] AUTO-TRADED ${t.trade_type} ${t.symbol} @ ₹${t.entry_price}`);
             });
         }
 
         const signals = await api.get('/signals');
         if (signals && signals.signals && signals.signals.length) {
             signals.signals.slice(0, 3).forEach(s => {
-                terminalLogs.push(`[ml] Model identified ${s.signal_type} pattern for ${s.symbol}`);
+                terminalLogs.push(`[ml_] MODEL DETECTED ${s.signal_type} PATTERN: ${s.symbol}`);
             });
         }
         
-        terminalLogs.push('[ai] Listening for new setups...');
+        terminalLogs.push('[ai_] DECRYPTING OPTIONS FLOW...');
+        terminalLogs.push('[ai_] SCANNING NIFTY50 MATRIX...');
 
         const el = document.getElementById('terminal-content');
         if (!el) return;
         el.innerHTML = '';
         
-        terminalLogs.forEach((log, i) => {
-            setTimeout(() => {
-                const div = document.createElement('div');
-                div.innerHTML = `<span style="color:#666;">></span> <span style="color:#fff;">${log.substring(0,6)}</span><span style="color:var(--green)">${log.substring(6)}</span>`;
-                el.appendChild(div);
-                el.scrollTop = el.scrollHeight;
-            }, i * 400);
-        });
-
-        setTimeout(() => {
+        async function typeText(text, delay=20) {
             const div = document.createElement('div');
-            div.innerHTML = `<span style="color:#666;">></span> <span style="animation: blink 1s step-end infinite; background: var(--green); color: black; padding: 0 4px;">_</span>`;
             el.appendChild(div);
-            el.scrollTop = el.scrollHeight;
-        }, terminalLogs.length * 400);
+            for(let i=0; i<=text.length; i++) {
+                // First 5 chars are tag [sys]
+                let tag = text.substring(0, 5);
+                let content = text.substring(5, i);
+                div.innerHTML = `<span style="color:#666;">></span> <span style="color:#fff;">${tag}</span><span style="color:var(--green)">${content}</span><span style="background:var(--green);color:black;">_</span>`;
+                el.scrollTop = el.scrollHeight;
+                await new Promise(r => setTimeout(r, delay + Math.random()*delay));
+            }
+            div.innerHTML = `<span style="color:#666;">></span> <span style="color:#fff;">${text.substring(0,5)}</span><span style="color:var(--green)">${text.substring(5)}</span>`;
+        }
+
+        for (let log of terminalLogs) {
+            await typeText(log, 15);
+            await new Promise(r => setTimeout(r, 200));
+        }
+
+        const cursorDiv = document.createElement('div');
+        cursorDiv.innerHTML = `<span style="color:#666;">></span> <span style="animation: blink 1s step-end infinite; background: var(--green); color: black; padding: 0 4px;">_</span>`;
+        el.appendChild(cursorDiv);
+        el.scrollTop = el.scrollHeight;
 
     } catch(e) {
         const el = document.getElementById('terminal-content');
-        if (el) el.innerHTML = '<div style="color:var(--red);">[sys] Error fetching terminal stream.</div>';
+        if (el) el.innerHTML = '<div style="color:var(--red);">[sys] ERROR FETCHING NEURAL STREAM.</div>';
     }
 }
 
