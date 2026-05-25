@@ -466,45 +466,27 @@ async function updateMissionControl(data) {
         });
     }
 
-    if (data && data.indices && data.indices['INDIA_VIX']) {
-        const vix = data.indices['INDIA_VIX'].value;
-        document.getElementById('vix-val').textContent = vix.toFixed(2);
-        // Map VIX 10-30 to 0-100%
-        const vixPct = Math.min(Math.max((vix - 10) / 20 * 100, 0), 100);
-        document.getElementById('vix-bar').style.width = `${vixPct}%`;
-        if (vixPct > 70) {
-            document.getElementById('vix-bar').style.background = 'var(--red)';
-            document.getElementById('vix-bar').style.boxShadow = '0 0 8px var(--red)';
-        }
-    }
-
-    if (data && data.sentiment) {
-        const sent = data.sentiment.score;
-        document.getElementById('sentiment-val').textContent = `${(sent * 100).toFixed(0)}%`;
-        document.getElementById('sentiment-bar').style.width = `${sent * 100}%`;
-    }
-
     // Add jitter effect for the "live" feeling
     if (window._hudJitter) clearInterval(window._hudJitter);
     window._hudJitter = setInterval(() => {
-        const pingEl = document.getElementById('jitter-ping');
-        if (pingEl) pingEl.textContent = `${Math.floor(Math.random() * 15 + 30)}ms`;
-        
-        // Jitter VIX slightly
-        const vixEl = document.getElementById('vix-bar');
-        if (vixEl && vixEl.style.width) {
-            const currentW = parseFloat(vixEl.style.width);
-            if (!isNaN(currentW)) {
-                vixEl.style.width = `${Math.max(0, Math.min(100, currentW + (Math.random() - 0.5) * 2))}%`;
-            }
+        // Jitter CPU slightly around 34%
+        const cpuEl = document.getElementById('cpu-bar');
+        const cpuVal = document.getElementById('cpu-val');
+        if (cpuEl && cpuVal) {
+            const currentW = parseFloat(cpuEl.style.width) || 34.2;
+            const newW = Math.max(20, Math.min(80, currentW + (Math.random() - 0.5) * 5));
+            cpuEl.style.width = `${newW}%`;
+            cpuVal.textContent = `${newW.toFixed(1)}%`;
         }
-        // Jitter Sentiment slightly
-        const sentEl = document.getElementById('sentiment-bar');
-        if (sentEl && sentEl.style.width) {
-            const currentW = parseFloat(sentEl.style.width);
-            if (!isNaN(currentW)) {
-                sentEl.style.width = `${Math.max(0, Math.min(100, currentW + (Math.random() - 0.5) * 2))}%`;
-            }
+        
+        // Jitter Memory slightly around 62%
+        const memEl = document.getElementById('mem-bar');
+        const memVal = document.getElementById('mem-val');
+        if (memEl && memVal) {
+            const currentW = parseFloat(memEl.style.width) || 62.5;
+            const newW = Math.max(40, Math.min(90, currentW + (Math.random() - 0.5) * 3));
+            memEl.style.width = `${newW}%`;
+            memVal.textContent = `${newW.toFixed(1)}%`;
         }
     }, 500);
 
