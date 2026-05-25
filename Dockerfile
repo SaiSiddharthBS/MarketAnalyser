@@ -23,6 +23,9 @@ COPY backend/ .
 # Ensure data directory exists for SQLite
 RUN mkdir -p /app/data
 
-# Run the scheduler
+# Ensure start script is executable
+RUN chmod +x /app/start.sh
+
+# Run the API and scheduler
 ENV PYTHONPATH=/app
-CMD ["python", "scheduler.py"]
+CMD ["/app/start.sh"]
