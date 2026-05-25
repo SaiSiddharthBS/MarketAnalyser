@@ -66,7 +66,7 @@ Agent Alpha is not confined to a single timeframe. The engine dynamically scales
 
 ```mermaid
 mindmap
-  root((Agent Alpha v3.0))
+  root((Agent Alpha))
     Engine Core
       15-Model Ensemble
       XGBoost & LightGBM Classifiers
