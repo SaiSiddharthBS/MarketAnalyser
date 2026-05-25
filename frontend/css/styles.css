@@ -404,11 +404,13 @@ body {
 }
 
 .glass-card h3 {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 2px;
     margin-bottom: 16px;
-    letter-spacing: -0.01em;
 }
 
 /* ─── Card Grid ─────────────────────────────────────── */
