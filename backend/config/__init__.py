@@ -4,19 +4,16 @@ Configuration Module
 """
 import os
 from pathlib import Path
-
-# Optional: dotenv for loading .env files locally
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    load_dotenv = None
+from dotenv import load_dotenv
 
 # Load environment variables
 BASE_DIR = Path(__file__).resolve().parent.parent
-if load_dotenv:
-    load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR / ".env")
 
 # Server
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")  # 'development' or 'production'
+ROLE = os.getenv("ROLE", "development")                # 'master_executor' or 'development'
+
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 8000))
 
