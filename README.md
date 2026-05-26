@@ -86,15 +86,6 @@ Agent Alpha is not confined to a single timeframe. The engine dynamically scales
 
 ## 🚀 The Agent Alpha Ecosystem Mindmap
 
-> 🌐 **[Launch Interactive Architecture Explorer →](https://SaiSiddharthBS.github.io/MarketAnalyser/architecture/interactive/)**
-
-<div align="center">
-  <img src="docs/architecture/rendered/ecosystem.svg" alt="Agent Alpha Ecosystem" width="100%" />
-</div>
-
-<details>
-<summary><b>📊 View Interactive Mermaid Source</b></summary>
-
 ```mermaid
 mindmap
   root((Agent Alpha))
@@ -121,20 +112,11 @@ mindmap
       Obsidian Glass UI
 ```
 
-</details>
-
 ---
 
 ## 🏗️ Hardware Architecture: The Dual-Node Setup
 
 Agent Alpha operates on a resilient, distributed physical architecture split across two synchronized machines. This ensures absolute separation of heavy quantitative compute processes and the executive visualization/monitoring dashboard.
-
-<div align="center">
-  <img src="docs/architecture/rendered/topology.svg" alt="Hardware Topology" width="100%" />
-</div>
-
-<details>
-<summary><b>📊 View Interactive Mermaid Source</b></summary>
 
 ```mermaid
 graph TB
@@ -171,8 +153,6 @@ graph TB
     Dev -.->|Git Push Deployment| Docker
 ```
 
-</details>
-
 **Node 1 (Primary Executive Station - MacBook Pro):** The visualization and development terminal. The CEO interacts with the system here via the stunning Obsidian Glass UI. When the CEO leaves for the office and shuts this MacBook down, the trading system remains completely unaffected.
 **Node 2 (Sentinel Execution Node - Secondary Laptop):** The absolute core of the operation. This secondary laptop sits on a desk plugged in 24/7. It runs the `docker-compose` stack containing the FastAPI backend, the Cron daemons, the Machine Learning models, and the massive localized **Ollama (LLaMA 3.3 70B)** engine. Because Node 2 is "Always-On", the 8:00 AM pre-market scans and 3:45 PM execution cron-jobs trigger relentlessly without fail, entirely independent of the MacBook Pro.
 
@@ -183,13 +163,6 @@ graph TB
 ### 1. The 15-Model Quantitative Ensemble Engine
 
 At the heart of Agent Alpha lies a weighted voting ensemble that outputs a continuous directional bias. Rather than relying on a single point of failure, the engine synthesizes signals from 15 distinct, uncorrelated models across 4 unique matrices.
-
-<div align="center">
-  <img src="docs/architecture/rendered/ensemble.svg" alt="Ensemble Architecture" width="100%" />
-</div>
-
-<details>
-<summary><b>📊 View Interactive Mermaid Source</b></summary>
 
 ```mermaid
 graph TD
@@ -229,8 +202,6 @@ graph TD
     
     Vote --> Output["Final Directional Bias Score: -1.0 to +1.0"]
 ```
-
-</details>
 
 #### 📐 A. Technical Matrix (4 Models)
 <details>
