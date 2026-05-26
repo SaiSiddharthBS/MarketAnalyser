@@ -93,6 +93,8 @@ Agent Alpha is not confined to a single timeframe. The engine dynamically scales
 
 ## 🚀 The Agent Alpha Ecosystem Mindmap
 
+> 🌐 **[Launch Interactive Architecture Explorer →](https://SaiSiddharthBS.github.io/MarketAnalyser/architecture/interactive/)**
+
 ```mermaid
 mindmap
   root((Agent Alpha))
