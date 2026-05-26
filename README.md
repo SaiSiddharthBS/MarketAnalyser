@@ -1,23 +1,32 @@
 <div align="center">
-  <img src="Agent%20Alpha%20Logo%20v2.png" alt="Agent Alpha Logo" width="150" />
-  
-  <h1><b style="color: #00FF88;">AGENT ALPHA</b></h1>
-  <p><b>Institutional-Grade Algorithmic Trading Core & Quantitative AI Ensemble Engine</b></p>
-
-  <img src=".github/assets/agent_alpha_terminal_ui.png" alt="Agent Alpha Terminal UI" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.2); margin-top: 20px;" />
+  <img src=".github/assets/hero_banner.svg" alt="Agent Alpha Hero Banner" width="100%" />
 
   <br><br>
 
+  [![CI](https://github.com/SaiSiddharthBS/MarketAnalyser/actions/workflows/main.yml/badge.svg)](https://github.com/SaiSiddharthBS/MarketAnalyser/actions)
+  ![Last Commit](https://img.shields.io/github/last-commit/SaiSiddharthBS/MarketAnalyser?style=for-the-badge&color=00FF88)
+  ![Repo Size](https://img.shields.io/github/repo-size/SaiSiddharthBS/MarketAnalyser?style=for-the-badge&color=38bdf8)
+  [![Status](https://img.shields.io/badge/Status-Production_Live-success?style=for-the-badge)]()
+  <br>
   [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
   [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org/)
   [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
   [![XGBoost](https://img.shields.io/badge/XGBoost-FF9800?style=for-the-badge&logo=nvidia&logoColor=white)](https://xgboost.ai/)
   [![Ollama](https://img.shields.io/badge/Ollama-LLaMA_3.3_70B-000000?style=for-the-badge&logo=meta&logoColor=white)](https://ollama.ai/)
-  [![Status](https://img.shields.io/badge/Status-Production_Live-success?style=for-the-badge)]()
 </div>
 
 <hr style="border: 1px solid rgba(255,255,255,0.1);">
+
+## 📑 Table of Contents
+- [Executive Overview](#-executive-overview)
+- [Enterprise Feature Suite](#-enterprise-feature-suite-ui-vs-autonomous-engine)
+- [Architecture & Topology](#-hardware-architecture-the-dual-node-setup)
+- [15-Model Ensemble & Deep Dives](#-core-system-modules--deep-dives)
+- [Mathematical Foundations](#-mathematical-models--algorithmic-foundations)
+- [Deployment Topology](#-dockerization--cloud-deployment-topology)
+
+---
 
 ## 📖 Executive Overview
 
@@ -62,7 +71,29 @@ Agent Alpha is not confined to a single timeframe. The engine dynamically scales
 
 ---
 
+## 🆚 Why Agent Alpha?
+
+| Capability | Generic Trading Bot | Agent Alpha |
+|:--|:--|:--|
+| **Signal Generation** | Single indicator (e.g., RSI crossover) | 15-model weighted ensemble |
+| **Regime Awareness** | None (trades blindly in all conditions) | 4-state Hidden Markov Model |
+| **Risk Firewall** | Basic static stop-loss | 12-rule zero-trust veto |
+| **Position Sizing** | Fixed lots / constant capital | ATR + Kelly Criterion scaling |
+| **AI Integration** | Cloud API calls (OpenAI) | Local LLaMA 3.3 70B (zero data leakage) |
+| **Infrastructure** | Single python script | Dual-node Docker + Neon Postgres |
+
+---
+
 ## 🚀 The Agent Alpha Ecosystem Mindmap
+
+> 🌐 **[Launch Interactive Architecture Explorer →](https://SaiSiddharthBS.github.io/MarketAnalyser/architecture/interactive/)**
+
+<div align="center">
+  <img src="docs/architecture/rendered/ecosystem.svg" alt="Agent Alpha Ecosystem" width="100%" />
+</div>
+
+<details>
+<summary><b>📊 View Interactive Mermaid Source</b></summary>
 
 ```mermaid
 mindmap
@@ -90,11 +121,20 @@ mindmap
       Obsidian Glass UI
 ```
 
+</details>
+
 ---
 
 ## 🏗️ Hardware Architecture: The Dual-Node Setup
 
 Agent Alpha operates on a resilient, distributed physical architecture split across two synchronized machines. This ensures absolute separation of heavy quantitative compute processes and the executive visualization/monitoring dashboard.
+
+<div align="center">
+  <img src="docs/architecture/rendered/topology.svg" alt="Hardware Topology" width="100%" />
+</div>
+
+<details>
+<summary><b>📊 View Interactive Mermaid Source</b></summary>
 
 ```mermaid
 graph TB
@@ -131,6 +171,8 @@ graph TB
     Dev -.->|Git Push Deployment| Docker
 ```
 
+</details>
+
 **Node 1 (Primary Executive Station - MacBook Pro):** The visualization and development terminal. The CEO interacts with the system here via the stunning Obsidian Glass UI. When the CEO leaves for the office and shuts this MacBook down, the trading system remains completely unaffected.
 **Node 2 (Sentinel Execution Node - Secondary Laptop):** The absolute core of the operation. This secondary laptop sits on a desk plugged in 24/7. It runs the `docker-compose` stack containing the FastAPI backend, the Cron daemons, the Machine Learning models, and the massive localized **Ollama (LLaMA 3.3 70B)** engine. Because Node 2 is "Always-On", the 8:00 AM pre-market scans and 3:45 PM execution cron-jobs trigger relentlessly without fail, entirely independent of the MacBook Pro.
 
@@ -141,6 +183,13 @@ graph TB
 ### 1. The 15-Model Quantitative Ensemble Engine
 
 At the heart of Agent Alpha lies a weighted voting ensemble that outputs a continuous directional bias. Rather than relying on a single point of failure, the engine synthesizes signals from 15 distinct, uncorrelated models across 4 unique matrices.
+
+<div align="center">
+  <img src="docs/architecture/rendered/ensemble.svg" alt="Ensemble Architecture" width="100%" />
+</div>
+
+<details>
+<summary><b>📊 View Interactive Mermaid Source</b></summary>
 
 ```mermaid
 graph TD
@@ -181,28 +230,42 @@ graph TD
     Vote --> Output["Final Directional Bias Score: -1.0 to +1.0"]
 ```
 
+</details>
+
 #### 📐 A. Technical Matrix (4 Models)
+<details>
+<summary><b>Click to expand Technical Models</b></summary>
 1.  **Kaufmans Adaptive Moving Average (KAMA/EMA):** Measures price divergence against a multi-day EMA baseline, filtering out market "noise" during high volatility.
 2.  **Regime-Adjusted RSI-14:** A momentum oscillator dynamically capped by the active HMM state to prevent buying false breakouts in range-bound regimes.
 3.  **ATR Volatility Expansion:** Triggers when severe price contractions (coiling) resolve into aggressive directional volatility expansions.
 4.  **Bollinger Squeeze Percentile:** Locates statistical standard-deviation squeeze anomalies right before a trend accelerates.
+</details>
 
 #### 🌊 B. Momentum Matrix (3 Models)
+<details>
+<summary><b>Click to expand Momentum Models</b></summary>
 5.  **MACD Histogram Acceleration:** Measures the second derivative (acceleration/deceleration) of the short-term trend rather than just the direction.
 6.  **Rate of Change (ROC-10):** Measures pure unadulterated percentage price velocity over a rolling 10-day period.
 7.  **On-Balance Volume (OBV):** Ensures price breakouts are mathematically supported by underlying volume flow.
+</details>
 
 #### 🧠 C. Machine Learning Layer (4 Models)
+<details>
+<summary><b>Click to expand Machine Learning Models</b></summary>
 8.  **XGBoost Classifier:** Trained on historical OHLCV data using a walk-forward cross-validation window. Emits probabilities for Up (>2% in 5 days), Down (<-2% in 5 days), and Flat.
 9.  **LightGBM Classifier:** Highly optimized, gradient-boosted decision tree layer natively handling complex engineered features like microstructure shadows.
 10. **Lightweight Sequence Model:** A temporal sequence classifier designed to mimic LSTM networks, capturing cyclical sine-wave patterns in price action.
 11. **Short-Term Multilayer Perceptron (MLP):** A deep neural network optimized to detect near-term order imbalances for 1-to-3 day thrusts.
+</details>
 
 #### 🏦 D. Microstructure & Flow (4 Models)
+<details>
+<summary><b>Click to expand Microstructure Models</b></summary>
 12. **Smart Money / VPOC:** Scans intraday tape for high-density institutional accumulation (Demand Blocks) at the Volume Point of Control.
 13. **StatArb Pairs Trading (Z-Score):** Monitors highly cointegrated sector pairs (e.g., TCS vs INFY) and triggers mean-reversion signals when the spread exceeds $\pm2$ standard deviations.
 14. **Institutional Flow (FII/DII):** Tracks net daily capital injection/extraction by Foreign and Domestic Institutional Investors into the Indian cash market.
 15. **Options Put-Call Ratio (PCR):** Analyzes open interest across the derivatives chain to detect contrarian retail sentiment extremes.
+</details>
 
 ---
 

@@ -1,0 +1,66 @@
+direction: right
+
+classes: {
+  matrix_tech: { style: { fill: "#051114"; stroke: "#0ea5e9"; font-color: "#0ea5e9"; border-radius: 8 } }
+  matrix_mom: { style: { fill: "#051114"; stroke: "#f59e0b"; font-color: "#f59e0b"; border-radius: 8 } }
+  matrix_ml: { style: { fill: "#051114"; stroke: "#8b5cf6"; font-color: "#8b5cf6"; border-radius: 8 } }
+  matrix_micro: { style: { fill: "#051114"; stroke: "#ec4899"; font-color: "#ec4899"; border-radius: 8 } }
+  node: { style: { fill: "transparent"; stroke: "transparent"; font-color: "#cbd5e1" } }
+}
+
+"Technical Matrix": {
+  class: matrix_tech
+  "1. KAMA/EMA Divergence": { class: node }
+  "2. Regime-Adjusted RSI-14": { class: node }
+  "3. ATR Volatility Expansion": { class: node }
+  "4. Bollinger Squeeze": { class: node }
+}
+
+"Momentum Matrix": {
+  class: matrix_mom
+  "5. MACD Acceleration": { class: node }
+  "6. ROC-10 Velocity": { class: node }
+  "7. On-Balance Volume": { class: node }
+}
+
+"Machine Learning Layer": {
+  class: matrix_ml
+  "8. XGBoost Classifier": { class: node }
+  "9. LightGBM Trees": { class: node }
+  "10. Sequence Neural Net": { class: node }
+  "11. Short-Term MLP": { class: node }
+}
+
+"Microstructure & Flow": {
+  class: matrix_micro
+  "12. Smart Money VPOC": { class: node }
+  "13. StatArb Pairs Z-Score": { class: node }
+  "14. FII/DII Net Flow": { class: node }
+  "15. Options PCR": { class: node }
+}
+
+"Dynamic Weighting & Voting Node": {
+  shape: diamond
+  style: {
+    fill: "#38bdf8"
+    font-color: "#051114"
+    stroke: transparent
+  }
+}
+
+"Final Directional Bias Score (-1.0 to +1.0)": {
+  shape: hexagon
+  style: {
+    fill: "#00FF88"
+    font-color: "#051114"
+    stroke: transparent
+    shadow: true
+  }
+}
+
+"Technical Matrix" -> "Dynamic Weighting & Voting Node": { style: { stroke: "#0ea5e9" } }
+"Momentum Matrix" -> "Dynamic Weighting & Voting Node": { style: { stroke: "#f59e0b" } }
+"Machine Learning Layer" -> "Dynamic Weighting & Voting Node": { style: { stroke: "#8b5cf6" } }
+"Microstructure & Flow" -> "Dynamic Weighting & Voting Node": { style: { stroke: "#ec4899" } }
+
+"Dynamic Weighting & Voting Node" -> "Final Directional Bias Score (-1.0 to +1.0)": { style: { stroke: "#00FF88"; stroke-width: 3; animated: true } }
