@@ -1,12 +1,16 @@
 <div align="center">
-  <img src=".github/assets/hero_banner.svg" alt="Agent Alpha Hero Banner" width="100%" />
+  <img src="Agent%20Alpha%20Logo%20v2.png" alt="Agent Alpha Logo" width="150" />
+  
+  <h1><b style="color: #00FF88;">AGENT ALPHA</b></h1>
+  <p><b>Institutional-Grade Algorithmic Trading Core & Quantitative AI Ensemble Engine</b></p>
+
+  <img src=".github/assets/agent_alpha_terminal_ui.png" alt="Agent Alpha Terminal UI" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.2); margin-top: 20px;" />
 
   <br><br>
 
   [![CI](https://github.com/SaiSiddharthBS/MarketAnalyser/actions/workflows/main.yml/badge.svg)](https://github.com/SaiSiddharthBS/MarketAnalyser/actions)
   ![Last Commit](https://img.shields.io/github/last-commit/SaiSiddharthBS/MarketAnalyser?style=for-the-badge&color=00FF88)
   ![Repo Size](https://img.shields.io/github/repo-size/SaiSiddharthBS/MarketAnalyser?style=for-the-badge&color=38bdf8)
-  [![Status](https://img.shields.io/badge/Status-Production_Live-success?style=for-the-badge)]()
   <br>
   [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
   [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -14,6 +18,7 @@
   [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
   [![XGBoost](https://img.shields.io/badge/XGBoost-FF9800?style=for-the-badge&logo=nvidia&logoColor=white)](https://xgboost.ai/)
   [![Ollama](https://img.shields.io/badge/Ollama-LLaMA_3.3_70B-000000?style=for-the-badge&logo=meta&logoColor=white)](https://ollama.ai/)
+  [![Status](https://img.shields.io/badge/Status-Production_Live-success?style=for-the-badge)]()
 </div>
 
 <hr style="border: 1px solid rgba(255,255,255,0.1);">
@@ -21,6 +26,8 @@
 ## 📑 Table of Contents
 - [Executive Overview](#-executive-overview)
 - [Enterprise Feature Suite](#-enterprise-feature-suite-ui-vs-autonomous-engine)
+- [Multi-Horizon Trading Expertise](#-multi-horizon-trading-expertise)
+- [Why Agent Alpha?](#-why-agent-alpha)
 - [Architecture & Topology](#-hardware-architecture-the-dual-node-setup)
 - [15-Model Ensemble & Deep Dives](#-core-system-modules--deep-dives)
 - [Mathematical Foundations](#-mathematical-models--algorithmic-foundations)
