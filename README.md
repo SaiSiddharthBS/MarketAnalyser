@@ -108,7 +108,7 @@ Agent Alpha dynamically scales its analysis across three distinct temporal horiz
 > 🌐 **[Launch Interactive Architecture Explorer →](https://SaiSiddharthBS.github.io/MarketAnalyser/react_terminal/index.html)**
 
 <div align="center">
-  <img src=".github/assets/diagrams/mindmap.png" alt="Agent Alpha Ecosystem Mindmap" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.15);" />
+  <img src=".github/assets/diagrams/mindmap_glowing.png" alt="Agent Alpha Ecosystem Mindmap" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.15);" />
 </div>
 
 ---
