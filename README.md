@@ -25,7 +25,6 @@
 
 ## 📑 Table of Contents
 - [Executive Overview](#-executive-overview)
-- [What's New in v4.0 (Spring 2026 Update)](#-whats-new-in-v40-spring-2026-update)
 - [Enterprise Feature Suite](#-enterprise-feature-suite-ui-vs-autonomous-engine)
 - [Multi-Horizon Trading Expertise](#-multi-horizon-trading-expertise)
 - [Why Agent Alpha?](#-why-agent-alpha)
@@ -35,7 +34,7 @@
 - [Mathematical Foundations](#-mathematical-models--algorithmic-foundations)
 - [Testing Suite & Resiliency](#-the-self-healing-data-pipeline--exhaustive-testing-suite)
 - [Deployment Topology](#-dockerization--cloud-deployment-topology)
-- [System Gallery & Dashboards](#-system-gallery--dashboards)
+- [System Gallery](#-system-gallery--dashboards)
 
 ---
 
@@ -46,17 +45,6 @@
 Since day 1 (April 30th, 2026), we threw out the idea of simple rule-based trading. Instead, we architected a **15-Model Machine Learning Ensemble** spanning tabular classifiers (like **XGBoost** and **LightGBM**), sequence-based neural networks, statistical arbitrage, and macro microstructure analysis.
 
 With our **Zero-Trust Capital Preservation Architecture**, every signal must survive a **4-State Hidden Markov Model (HMM) Regime Classifier**, navigate a ruthless **12-Rule Hard Veto Firewall**, and calculate its weight via **ATR & Kelly Criterion Position Sizing**. 
-
----
-
-## 🚀 What's New in v4.0 (Spring 2026 Update)
-*Agent Alpha v4.0 introduces the most significant systemic overhauls since inception. The focus shifted heavily from local scripting to cloud-native resilience, extreme UI refinement, and autonomous mathematical stress-testing.*
-
-*   **The Database Deadlock Wars (Neon PostgreSQL Migration):** We completely ripped out local SQLite DB files (which were prone to severe Docker volume corruption and file locking) and integrated a fully cloud-native **Neon PostgreSQL** serverless instance (`backend/database.py`). To solve severe SQLAlchemy connection exhaustion during high-frequency paper trading, we engineered strict `pool_size=5` and `max_overflow=10` pooling logic, implemented recursion protection, and built explicit fail-safes like `kill_pg_locks.py` and `fix_locks.py` to make the remote ledger utterly bulletproof.
-*   **Obsidian Glass UI & React Terminal:** Upgraded the entire frontend from a standard dark theme to the stunning "Obsidian Terminal" aesthetic. We deployed a fully interactive, React-based web terminal (`frontend/react_terminal`) allowing you to click through the Agent Alpha architecture. Features deep obsidian teal layers (`#051114`), glowing cyber-green borders (`#00FF88`), and fluid micro-animations.
-*   **macOS Native Menubar Application:** Built a dedicated, native macOS utility (`backend/menubar_app.py`) allowing the CEO to start, stop, and monitor the live quantitative engine and P&L directly from the Mac's top status bar, entirely bypassing the browser.
-*   **Programmatic Diagram Rendering Pipeline:** We explicitly abandoned GitHub's buggy markdown Mermaid renderer. Instead, we engineered a local Puppeteer + `mermaid-cli` pipeline that injects custom CSS to programmatically generate true 4K, glassmorphic, glowing PNGs of our architecture diagrams, perfectly preserving typography and layout.
-*   **Sentinel Node Automation (`deploy_to_dell.sh`):** Implemented a flawless CI/CD bash script to instantly push deployments from the MacBook Pro to the Always-On Windows Sentinel node, effectively bypassing inherent Windows pathing and WSL Docker network clashing issues.
 
 ---
 
