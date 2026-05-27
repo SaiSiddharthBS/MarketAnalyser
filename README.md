@@ -342,10 +342,6 @@ docker-compose up --build -d
 *Instant push notifications for every trade execution, signal drift, and system veto.*
 <img src="Screenshots/10.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**Telegram Channel**
-*Instant push notifications for every trade execution, signal drift, and system veto.*
-<img src="Screenshots/11.png.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
-
 <br>
 <div align="center">
   <i>"The future of finance is not predicted. It is computed."</i><br/>
