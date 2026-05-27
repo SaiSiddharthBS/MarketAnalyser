@@ -23,7 +23,7 @@
 
 <hr style="border: 1px solid rgba(255,255,255,0.1);">
 
-## 📑 Table of Contents
+## Table of Contents
 - [Executive Overview](#-executive-overview)
 - [Enterprise Feature Suite](#-enterprise-feature-suite-ui-vs-autonomous-engine)
 - [Multi-Horizon Trading Expertise](#-multi-horizon-trading-expertise)
@@ -38,7 +38,7 @@
 
 ---
 
-## 📖 Executive Overview
+## Executive Overview
 
 **Agent Alpha** is not just an indicator; it is a **fully autonomous, highly scalable, and production-ready quantitative intelligence system** designed to outmaneuver the Indian Stock Market (Nifty 50 universe). Combining the bleeding edge of machine learning, statistical arbitrage, and a deeply optimized paper trading arena, Agent Alpha represents a CEO-level deployment of quantitative logic.
 
@@ -48,24 +48,24 @@ With our **Zero-Trust Capital Preservation Architecture**, every signal must sur
 
 ---
 
-## 🔥 Enterprise Feature Suite: UI vs. Autonomous Engine
+## Enterprise Feature Suite: UI vs. Autonomous Engine
 
-### 🧠 Autonomous Execution & AI
+### Autonomous Execution & AI
 *   **Zero-Latency Signal Generation:** Engine processes OHLCV ticks, calculates 15 model vectors, and generates a unified bias in `<400ms`.
 *   **LLM Catalyst Engine (Ollama + LLaMA 3.3 70B):** Natively ingests live news headlines and complex corporate SEC/NSE filings. Instead of relying on generic cloud APIs, it routes sentiment analysis and financial parsing through a highly-capable, locally-hosted **LLaMA 3.3 70B Versatile** model via **Ollama**, ensuring zero data leakage, unthrottled inference speed, and institutional-grade reasoning.
 *   **Walk-Forward ML Optimization (WFO):** Models never curve-fit. They are trained sequentially on rolling windows to guarantee out-of-sample robustness.
 
-### 🛡️ Institutional Risk Management
+### Institutional Risk Management
 *   **Dynamic Kelly Criterion:** Position sizing isn't guessed. It is mathematically derived from the historical win-rate and profit factor of the active HMM regime.
 *   **Dynamic Correlation Heatmap:** Actively calculates Pearson correlation across the portfolio to prevent localized sector beta-collapse.
 
-### ⚡ The Command & Control Interfaces
+### The Command & Control Interfaces
 *   **The Obsidian Glass Executive PWA:** A gorgeous, hardware-accelerated dashboard featuring 60FPS WebSockets for live execution LED pulses, real-time P&L tickers, and portfolio drawdown metrics streamed directly from the Python backend.
 *   **Interactive Telegram Sub-System:** We moved far beyond basic push notifications. The `bot` directory houses a fully interactive, two-way Telegram command center. You receive live execution alerts, but you can also text `/status`, `/holdings`, and `/stop` to remotely monitor or kill the engine directly from your phone while on the move.
 
 ---
 
-## ⏱️ Multi-Horizon Trading Expertise
+## Multi-Horizon Trading Expertise
 
 Agent Alpha dynamically scales its analysis across three distinct temporal horizons, ensuring alpha extraction regardless of market speed.
 
@@ -78,7 +78,7 @@ Agent Alpha dynamically scales its analysis across three distinct temporal horiz
 
 ---
 
-## 🆚 Why Agent Alpha?
+## Why Agent Alpha?
 
 | Capability | Generic Trading Bot | Agent Alpha |
 |:--|:--|:--|
@@ -93,9 +93,7 @@ Agent Alpha dynamically scales its analysis across three distinct temporal horiz
 
 ---
 
-## 🚀 The Agent Alpha Ecosystem Mindmap
-
-> 🌐 **[Launch Interactive Architecture Explorer →](https://SaiSiddharthBS.github.io/MarketAnalyser/react_terminal/index.html)**
+## The Agent Alpha Ecosystem Mindmap
 
 <div align="center">
   <img src=".github/assets/diagrams/mindmap_glowing.png" alt="Agent Alpha Ecosystem Mindmap" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.15);" />
@@ -103,7 +101,7 @@ Agent Alpha dynamically scales its analysis across three distinct temporal horiz
 
 ---
 
-## 🏗️ Hardware Architecture: The Dual-Node Setup
+## Hardware Architecture: The Dual-Node Setup
 
 Agent Alpha operates on a resilient, distributed physical architecture split across two synchronized machines. This ensures absolute separation of heavy quantitative compute processes and the executive visualization dashboard.
 
@@ -119,7 +117,7 @@ Agent Alpha operates on a resilient, distributed physical architecture split acr
 
 ---
 
-## 🧠 Core System Modules & Deep Dives
+## Core System Modules & Deep Dives
 
 ### 1. The 15-Model Quantitative Ensemble Engine
 
@@ -129,24 +127,24 @@ At the heart of Agent Alpha lies a weighted voting ensemble that outputs a conti
   <img src=".github/assets/diagrams/ensemble.png" alt="15-Model Quantitative Ensemble Engine" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.15);" />
 </div>
 
-#### 📐 A. Technical Matrix (4 Models)
+#### A. Technical Matrix (4 Models)
 1.  **Kaufmans Adaptive Moving Average (KAMA/EMA)**
 2.  **Regime-Adjusted RSI-14**
 3.  **ATR Volatility Expansion**
 4.  **Bollinger Squeeze Percentile**
 
-#### 🌊 B. Momentum Matrix (3 Models)
+#### B. Momentum Matrix (3 Models)
 5.  **MACD Histogram Acceleration**
 6.  **Rate of Change (ROC-10)**
 7.  **On-Balance Volume (OBV)**
 
-#### 🧠 C. Machine Learning Layer (4 Models)
+#### C. Machine Learning Layer (4 Models)
 8.  **XGBoost Classifier:** Trained on historical OHLCV data using a walk-forward cross-validation window. Emits probabilities for Up, Down, and Flat over 5-day windows.
 9.  **LightGBM Classifier:** Highly optimized, gradient-boosted decision tree layer natively handling complex engineered features.
 10. **Lightweight Sequence Model:** A temporal sequence classifier designed to mimic LSTM networks, capturing cyclical sine-wave patterns.
 11. **Short-Term Multilayer Perceptron (MLP)**
 
-#### 🏦 D. Microstructure & Flow (4 Models)
+#### D. Microstructure & Flow (4 Models)
 12. **Smart Money / VPOC (Volume Point of Control)**
 13. **StatArb Pairs Trading (Z-Score):** The `stat_arb.py` engine monitors highly cointegrated sector pairs (e.g., TCS vs INFY). Using verified rolling unit root testing, it triggers mean-reversion signals when the spread ratio deviates by more than $\pm2$ standard deviations.
 14. **Institutional Flow (FII/DII Data)**
@@ -154,7 +152,7 @@ At the heart of Agent Alpha lies a weighted voting ensemble that outputs a conti
 
 ---
 
-## 🧱 The 12-Rule Hard Veto Firewall
+## The 12-Rule Hard Veto Firewall
 
 Before any signal generated by the 15-Model Ensemble is allowed to hit the Paper Trading Arena, it is subjected to a zero-trust gauntlet. If a trade fails *even one* of these 12 rules, it is instantly vetoed and killed.
 
@@ -177,7 +175,7 @@ Before any signal generated by the 15-Model Ensemble is allowed to hit the Paper
 
 ---
 
-## 🚨 Crisis Regime Strategy Execution
+## Crisis Regime Strategy Execution
 
 During major market drawdowns, Agent Alpha dynamically switches into the **Crisis Regime**. This protects capital using a Safe Haven strategy while strategically accumulating the broader market at a discount. Validated completely via `test_crisis.py`.
 
@@ -188,7 +186,7 @@ During major market drawdowns, Agent Alpha dynamically switches into the **Crisi
 ### Execution Logic
 
 ```python
-# 🚨 CRISIS REGIME ACTIVATED
+#  CRISIS REGIME ACTIVATED
 if market_regime == "CRISIS":
     
     # 🟡 Safe Haven: GOLD (5% allocation)
@@ -204,7 +202,7 @@ if market_regime == "CRISIS":
 
 ---
 
-## 🧮 Mathematical Models & Algorithmic Foundations
+## Mathematical Models & Algorithmic Foundations
 
 ### 1. Hidden Markov Model (HMM) Regime Classification
 We model the market environment as a Hidden Markov Process to prevent lagging execution and whipsaws. The market state $\mathbf{X}_t$ is classified into one of 4 hidden states using a Gaussian HMM based on the observation vector:
@@ -230,7 +228,7 @@ $$ K_{\text{final}} = K_{\text{raw}} \times M_{\text{regime}} \times (1 + B_{\te
 
 ---
 
-## 🛠️ The "Self-Healing" Data Pipeline & Exhaustive Testing Suite
+## The "Self-Healing" Data Pipeline & Exhaustive Testing Suite
 
 External APIs (`yfinance`, FRED) and Serverless Databases are inherently unstable. Agent Alpha is built with a resilient pipeline heavily scrutinized by a massive automated testing suite located in the `backend/` directory:
 
@@ -241,7 +239,7 @@ External APIs (`yfinance`, FRED) and Serverless Databases are inherently unstabl
 
 ---
 
-## ⚙️ System Requirements & Deployment Topology
+## System Requirements & Deployment Topology
 
 ### Hardware Requirements (Sentinel Node)
 *   **CPU:** 8-Core Processor (Apple Silicon M1/M2/M3, Intel Core i7, or AMD Ryzen 7)
@@ -268,7 +266,7 @@ docker-compose up --build -d
 
 ---
 
-## 📸 System Gallery
+## System Gallery
 
 **1. Agent Alpha Main Terminal Dashboard**
 *Live streaming market analysis and overall portfolio standing within the Obsidian UI.*
