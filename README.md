@@ -4,14 +4,9 @@
   <h1><b style="color: #00FF88;">AGENT ALPHA</b></h1>
   <p><b>Institutional-Grade Algorithmic Trading Core & Quantitative AI Ensemble Engine</b></p>
 
-  <img src=".github/assets/agent_alpha_terminal_ui.png" alt="Agent Alpha Terminal UI" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.2); margin-top: 20px;" />
+ 
 
-  <br><br>
 
-  [![CI](https://github.com/SaiSiddharthBS/MarketAnalyser/actions/workflows/main.yml/badge.svg)](https://github.com/SaiSiddharthBS/MarketAnalyser/actions)
-  ![Last Commit](https://img.shields.io/github/last-commit/SaiSiddharthBS/MarketAnalyser?style=for-the-badge&color=00FF88)
-  ![Repo Size](https://img.shields.io/github/repo-size/SaiSiddharthBS/MarketAnalyser?style=for-the-badge&color=38bdf8)
-  <br>
   [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
   [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org/)
@@ -268,71 +263,101 @@ docker-compose up --build -d
 
 ## System Gallery
 
-**1. Agent Alpha Main Terminal Dashboard**
-*Live streaming market analysis and overall portfolio standing within the Obsidian UI.*
+**Dashboard** <br>
+
+*The ultimate executive command center, fusing real-time macro indices, live LLaMA 3.3 news sentiment, and raw Neural Core execution logs into a single glassmorphic interface.*
+
 <img src="Screenshots/1.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**2. Execution Ledger & Position Sizing**
-*Real-time breakdown of capital allocation and Kelly Criterion margin utilization.*
 <img src="Screenshots/1.2.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**3. Hidden Markov Model Regime Classifier**
-*Dynamic 4-state probability matrix assessing overarching market risk.*
+---
+
+**Portfolio** <br>
+
+*A live portfolio tracking ledger providing an immediate breakdown of capital allocation, real-time returns and granular holding metrics.*
+
 <img src="Screenshots/2.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**4. 15-Model Ensemble Voting Interface**
-*Granular breakdown of technical, momentum, and machine learning predictions.*
+---
+
+**Paper Trading** <br>
+
+*A sophisticated Paper Trading execution designed to simulate live market slippage, manually trigger overrides and monitor active positions in real-time.*
+
 <img src="Screenshots/3.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**5. Machine Learning Predictors**
-*Out-of-sample directional probabilities and feature importance from XGBoost & LightGBM.*
+---
+
+**Screener** <br>
+
+*A granular Stock Screener leveraging the 15-Model Ensemble to instantly rank sector-specific equities and dynamically calculate optimal entry and stop-loss targets.*
+
 <img src="Screenshots/4.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**6. Statistical Arbitrage Cointegration Heatmap**
-*Z-score deviation tracking for advanced mean-reversion pairs trading.*
+---
+
+**Sector Analysis** <br>
+
+*A macroscopic Sector Analysis heatmap mapping institutional capital flow and relative strength to isolate outperforming sectors from the broader market.*
+
 <img src="Screenshots/5.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**7. Microstructure & Smart Money Flow**
-*Intraday VPOC migration and institutional volume orderblock analysis.*
+---
+
+**Arena Engine (Automated Trading)** <br>
+
+*A live autonomous execution ledger tracking paper capital, real-time statistical arbitrage Z-score deviations, inverse-volatility sizing and benchmark equity curves.*
+
 <img src="Screenshots/6.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**8. Options Open Interest (PCR) Dashboard**
-*Contrarian retail sentiment tracker derived from the live derivatives chain.*
 <img src="Screenshots/6.2.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**9. The 12-Rule Veto Firewall Activity Log**
-*Real-time risk mitigation blocking trades during severe market anomalies.*
+---
+
+**Comprehensive Analysis** <br>
+
+*A hyper-granular deep dive into individual equities, exposing the 15-model score breakdown, algorithmic conviction drivers, dynamic position sizing and predictive accuracy tracking.*
+
 <img src="Screenshots/7.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**10. Correlation Matrix Safeguard**
-*Ensuring strict adherence to sector beta limits to prevent algorithmic overexposure.*
 <img src="Screenshots/7.2.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**11. Crisis Regime Action Protocol**
-*Active Safe Haven (Gold) and Index accumulation defensive parameters.*
 <img src="Screenshots/7.3.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**12. Database & Ledger Verification**
-*Remote Neon PostgreSQL status logs for the Paper Trading execution environment.*
+---
+
+**Signal Accuracy** <br>
+
+*The truth ledger, providing absolute transparency into historical win rates, regime-specific performance and the live ensemble model championship leaderboard.*
+
 <img src="Screenshots/8.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**13. LLM Catalyst & News Sentiment Parser**
-*LLaMA 3.3 70B parsing live financial streams via local Ollama deployment.*
 <img src="Screenshots/8.2.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**14. Sentinel Docker Node Health**
-*Live metrics from the always-on execution server running the cron daemons.*
+---
+
+**Alerts** <br>
+
+*A customizable Alert Builder engineered to actively monitor user-defined price and volume thresholds for instant execution triggers.*
+
 <img src="Screenshots/9.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**15. Telegram Sub-System Alert Channel**
-*Instant push notifications for every trade execution, signal drift, and system veto.*
+---
+
+**Live Global News** <br>
+
+*An institutional grade news stream constantly ingesting global financial headlines and instantly scoring their sentiment via the local LLaMA 3.3 engine.*
+
 <img src="Screenshots/10.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
-**16. Agent Alpha Daily Briefing Bot**
-*Comprehensive pre-market briefings delivering index sentiment, live portfolio updates, and top actionable AI stock targets directly to your phone.*
-<img src="Screenshots/11.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+---
 
-<br>
+**Daily Briefing Bot** <br>
+
+*A fully integrated mobile command center delivering daily macro briefings, real-time portfolio updates and the top 3 actionable AI stock targets directly to your pocket.*
+
+<img src="Screenshots/11.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 <div align="center">
   <i>"The future of finance is not predicted. It is computed."</i><br/>
   <b>— Agent Alpha</b>
