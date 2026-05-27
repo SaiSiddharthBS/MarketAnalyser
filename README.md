@@ -95,32 +95,9 @@ Agent Alpha is not confined to a single timeframe. The engine dynamically scales
 
 > 🌐 **[Launch Interactive Architecture Explorer →](https://SaiSiddharthBS.github.io/MarketAnalyser/architecture/interactive/)**
 
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0b101e', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#00ff88', 'lineColor': '#00e5ff', 'secondaryColor': '#111827', 'tertiaryColor': '#111827'}}}%%
-mindmap
-  root(("&nbsp;&nbsp;&nbsp;Agent Alpha&nbsp;&nbsp;&nbsp;"))
-    ("&nbsp;&nbsp;&nbsp;Engine Core&nbsp;&nbsp;&nbsp;")
-      ["&nbsp;&nbsp;&nbsp;15-Model Ensemble&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;XGBoost & LightGBM<br/>Classifiers&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;Statistical Arbitrage&nbsp;&nbsp;&nbsp;"]
-    ("&nbsp;&nbsp;&nbsp;Risk Management&nbsp;&nbsp;&nbsp;")
-      ["&nbsp;&nbsp;&nbsp;HMM Regime<br/>Classifier&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;12-Rule Veto<br/>Firewall&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;Sector Correlation<br/>Heatmap&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;ATR & Kelly<br/>Position Sizing&nbsp;&nbsp;&nbsp;"]
-    ("&nbsp;&nbsp;&nbsp;Data & Infra&nbsp;&nbsp;&nbsp;")
-      ["&nbsp;&nbsp;&nbsp;Ollama Local Daemon&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;LLaMA 3.3 70B<br/>Versatile&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;yfinance & FRED APIs&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;Neon PostgreSQL&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;Docker<br/>Containerization&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;Decoupled<br/>Cron Daemons&nbsp;&nbsp;&nbsp;"]
-    ("&nbsp;&nbsp;&nbsp;Execution&nbsp;&nbsp;&nbsp;")
-      ["&nbsp;&nbsp;&nbsp;Paper Trading Arena&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;₹10L Starting<br/>Capital&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;Telegram Bot Alerts&nbsp;&nbsp;&nbsp;"]
-      ["&nbsp;&nbsp;&nbsp;Obsidian Glass UI&nbsp;&nbsp;&nbsp;"]
-```
+<div align="center">
+  <img src=".github/assets/diagrams/mindmap.png" alt="Agent Alpha Ecosystem Mindmap" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.15);" />
+</div>
 
 ---
 
@@ -128,47 +105,9 @@ mindmap
 
 Agent Alpha operates on a resilient, distributed physical architecture split across two synchronized machines. This ensures absolute separation of heavy quantitative compute processes and the executive visualization/monitoring dashboard.
 
-```mermaid
-graph TB
-    subgraph "Node 1: Executive Dashboard (MacBook Pro)"
-        UI["&nbsp;&nbsp;&nbsp;Obsidian Glass UI<br/>(Local PWA)&nbsp;&nbsp;&nbsp;"]
-        Dev["&nbsp;&nbsp;&nbsp;Strategy Architecture&nbsp;&nbsp;&nbsp;"]
-        Browser["&nbsp;&nbsp;&nbsp;Google Chrome<br/>(60 FPS)&nbsp;&nbsp;&nbsp;"]
-    end
-
-    subgraph "Node 2: Sentinel Node (Always-On Laptop)"
-        Docker["&nbsp;&nbsp;&nbsp;Docker Engine<br/>(Containerized OS)&nbsp;&nbsp;&nbsp;"]
-        FastAPI["&nbsp;&nbsp;&nbsp;FastAPI Uvicorn&nbsp;&nbsp;&nbsp;"]
-        Ollama["&nbsp;&nbsp;&nbsp;Ollama Local Daemon<br/>(LLaMA 3.3 70B)&nbsp;&nbsp;&nbsp;"]
-        Cron["&nbsp;&nbsp;&nbsp;Background Daemon&nbsp;&nbsp;&nbsp;"]
-        Quant["&nbsp;&nbsp;&nbsp;15-Model Quant Engine&nbsp;&nbsp;&nbsp;"]
-        
-        Docker --> FastAPI
-        Docker --> Cron
-        Cron --> Quant
-        Quant -->|"&nbsp;&nbsp;&nbsp;Sentiment Intel&nbsp;&nbsp;&nbsp;"| Ollama
-    end
-
-    subgraph "Cloud Infrastructure"
-        DB[("&nbsp;&nbsp;&nbsp;Neon PostgreSQL<br/>(Serverless)&nbsp;&nbsp;&nbsp;")]
-        TG["&nbsp;&nbsp;&nbsp;Telegram API&nbsp;&nbsp;&nbsp;"]
-        Data["&nbsp;&nbsp;&nbsp;yfinance / FRED&nbsp;&nbsp;&nbsp;"]
-    end
-
-    Browser -.->|"&nbsp;&nbsp;&nbsp;WebSockets&nbsp;&nbsp;&nbsp;"| FastAPI
-    Quant -->|"&nbsp;&nbsp;&nbsp;Read Ledger&nbsp;&nbsp;&nbsp;"| DB
-    Quant -->|"&nbsp;&nbsp;&nbsp;Fetch OHLCV&nbsp;&nbsp;&nbsp;"| Data
-    Cron -->|"&nbsp;&nbsp;&nbsp;Dispatch Alerts&nbsp;&nbsp;&nbsp;"| TG
-    Dev -.->|"&nbsp;&nbsp;&nbsp;Git Push Deployment&nbsp;&nbsp;&nbsp;"| Docker
-
-    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
-    classDef highlight fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
-    classDef db fill:#0b101e,stroke:#ffffff,stroke-width:2px,color:#ffffff;
-    
-    class UI,Dev,Browser,Docker,FastAPI,Cron,TG,Data default;
-    class Quant,Ollama highlight;
-    class DB db;
-```
+<div align="center">
+  <img src=".github/assets/diagrams/architecture.png" alt="Dual-Node Hardware Architecture" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,229,255,0.15);" />
+</div>
 
 **Node 1 (Primary Executive Station - MacBook Pro):** The visualization and development terminal. The CEO interacts with the system here via the stunning Obsidian Glass UI. When the CEO leaves for the office and shuts this MacBook down, the trading system remains completely unaffected.
 **Node 2 (Sentinel Execution Node - Secondary Laptop):** The absolute core of the operation. This secondary laptop sits on a desk plugged in 24/7. It runs the `docker-compose` stack containing the FastAPI backend, the Cron daemons, the Machine Learning models, and the massive localized **Ollama (LLaMA 3.3 70B)** engine. Because Node 2 is "Always-On", the 8:00 AM pre-market scans and 3:45 PM execution cron-jobs trigger relentlessly without fail, entirely independent of the MacBook Pro.
@@ -181,52 +120,9 @@ graph TB
 
 At the heart of Agent Alpha lies a weighted voting ensemble that outputs a continuous directional bias. Rather than relying on a single point of failure, the engine synthesizes signals from 15 distinct, uncorrelated models across 4 unique matrices.
 
-```mermaid
-graph TD
-    subgraph Technical["Technical Matrix"]
-        M1["&nbsp;&nbsp;&nbsp;1. KAMA/EMA<br/>Divergence&nbsp;&nbsp;&nbsp;"]
-        M2["&nbsp;&nbsp;&nbsp;2. Regime-Adjusted<br/>RSI-14&nbsp;&nbsp;&nbsp;"]
-        M3["&nbsp;&nbsp;&nbsp;3. ATR Volatility<br/>Expansion&nbsp;&nbsp;&nbsp;"]
-        M4["&nbsp;&nbsp;&nbsp;4. Bollinger Squeeze&nbsp;&nbsp;&nbsp;"]
-    end
-    
-    subgraph Momentum["Momentum Matrix"]
-        M5["&nbsp;&nbsp;&nbsp;5. MACD Acceleration&nbsp;&nbsp;&nbsp;"]
-        M6["&nbsp;&nbsp;&nbsp;6. ROC-10 Velocity&nbsp;&nbsp;&nbsp;"]
-        M7["&nbsp;&nbsp;&nbsp;7. On-Balance<br/>Volume&nbsp;&nbsp;&nbsp;"]
-    end
-    
-    subgraph MachineLearning["Machine Learning Layer"]
-        M8["&nbsp;&nbsp;&nbsp;8. XGBoost Classifier&nbsp;&nbsp;&nbsp;"]
-        M9["&nbsp;&nbsp;&nbsp;9. LightGBM Trees&nbsp;&nbsp;&nbsp;"]
-        M10["&nbsp;&nbsp;&nbsp;10. Sequence<br/>Neural Net&nbsp;&nbsp;&nbsp;"]
-        M11["&nbsp;&nbsp;&nbsp;11. Short-Term MLP&nbsp;&nbsp;&nbsp;"]
-    end
-    
-    subgraph Microstructure["Microstructure & Flow"]
-        M12["&nbsp;&nbsp;&nbsp;12. Smart Money VPOC&nbsp;&nbsp;&nbsp;"]
-        M13["&nbsp;&nbsp;&nbsp;13. StatArb Pairs&nbsp;&nbsp;&nbsp;"]
-        M14["&nbsp;&nbsp;&nbsp;14. FII/DII Net Flow&nbsp;&nbsp;&nbsp;"]
-        M15["&nbsp;&nbsp;&nbsp;15. Options PCR&nbsp;&nbsp;&nbsp;"]
-    end
-    
-    Vote{"&nbsp;&nbsp;&nbsp;Dynamic Weighting<br/>& Voting Node&nbsp;&nbsp;&nbsp;"}
-    Output["&nbsp;&nbsp;&nbsp;Final Directional<br/>Bias Score: -1.0 to +1.0&nbsp;&nbsp;&nbsp;"]
-    
-    Technical --> Vote
-    Momentum --> Vote
-    MachineLearning --> Vote
-    Microstructure --> Vote
-    Vote --> Output
-
-    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
-    classDef highlight fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
-    classDef decision fill:#00ff88,stroke:#00ff88,stroke-width:2px,color:#000000;
-
-    class M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15 default;
-    class Vote highlight;
-    class Output decision;
-```
+<div align="center">
+  <img src=".github/assets/diagrams/ensemble.png" alt="15-Model Quantitative Ensemble Engine" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.15);" />
+</div>
 
 #### 📐 A. Technical Matrix (4 Models)
 <details>
@@ -305,27 +201,9 @@ The **Paper Trading Arena** is where models prove their worth. Rigorously stress
 
 Before a signal generated by the Ensemble hits the 10L Arena, it is subjected to a **Zero-Trust Veto**:
 
-```mermaid
-flowchart LR
-    Signal(["&nbsp;&nbsp;&nbsp;Ensemble Signal&nbsp;&nbsp;&nbsp;"]) --> Veto{"&nbsp;&nbsp;&nbsp;12-Rule Veto<br/>Firewall&nbsp;&nbsp;&nbsp;"}
-    Veto -->|"&nbsp;&nbsp;&nbsp;Pledging > 40%&nbsp;&nbsp;&nbsp;"| Block["&nbsp;&nbsp;&nbsp;STAND ASIDE&nbsp;&nbsp;&nbsp;"]
-    Veto -->|"&nbsp;&nbsp;&nbsp;VIX Spike&nbsp;&nbsp;&nbsp;"| Block
-    Veto -->|"&nbsp;&nbsp;&nbsp;Earnings in 3 Days&nbsp;&nbsp;&nbsp;"| Block
-    Veto -->|"&nbsp;&nbsp;&nbsp;FII Heavy Selling&nbsp;&nbsp;&nbsp;"| Block
-    Veto -->|"&nbsp;&nbsp;&nbsp;HMM Crisis State&nbsp;&nbsp;&nbsp;"| Block
-    Veto -->|"&nbsp;&nbsp;&nbsp;All Rules Pass&nbsp;&nbsp;&nbsp;"| Exec(["&nbsp;&nbsp;&nbsp;EXECUTE IN ARENA&nbsp;&nbsp;&nbsp;"])
-
-    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
-    classDef decision fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
-    classDef block fill:#2a0a0a,stroke:#ff003c,stroke-width:2px,color:#ffffff;
-    classDef exec fill:#00ff88,stroke:#00ff88,stroke-width:2px,color:#000000;
-    classDef signal fill:#111827,stroke:#ffffff,stroke-width:2px,color:#ffffff;
-
-    class Signal signal;
-    class Veto decision;
-    class Block block;
-    class Exec exec;
-```
+<div align="center">
+  <img src=".github/assets/diagrams/veto.png" alt="12-Rule Hard Veto Firewall" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(255,0,60,0.15);" />
+</div>
 
 ---
 
@@ -333,43 +211,9 @@ flowchart LR
 
 During major market drawdowns, Agent Alpha dynamically switches into the **Crisis Regime**. This protects capital using a Safe Haven strategy while strategically accumulating the broader market at a discount.
 
-```mermaid
-flowchart TD
-    Start(["&nbsp;&nbsp;&nbsp;Daily Execution Starts&nbsp;&nbsp;&nbsp;"]) --> Regime{"&nbsp;&nbsp;&nbsp;What Regime?&nbsp;&nbsp;&nbsp;"}
-    
-    Regime -->|"&nbsp;&nbsp;&nbsp;Uptrend&nbsp;&nbsp;&nbsp;"| Dir["&nbsp;&nbsp;&nbsp;Directional Logic&nbsp;&nbsp;&nbsp;"]
-    Regime -->|"&nbsp;&nbsp;&nbsp;Chop&nbsp;&nbsp;&nbsp;"| Arb["&nbsp;&nbsp;&nbsp;Stat-Arb Logic&nbsp;&nbsp;&nbsp;"]
-    Regime -->|"&nbsp;&nbsp;&nbsp;Crisis&nbsp;&nbsp;&nbsp;"| Safe["&nbsp;&nbsp;&nbsp;Safe Haven<br/>ETF Logic&nbsp;&nbsp;&nbsp;"]
-
-    Safe --> Split(( ))
-
-    Split --> Gold{"&nbsp;&nbsp;&nbsp;GOLDBEES<br/>Already Held?&nbsp;&nbsp;&nbsp;"}
-    Split --> Nifty{"&nbsp;&nbsp;&nbsp;NIFTYBEES<br/>Already Held?&nbsp;&nbsp;&nbsp;"}
-
-    Gold -->|"&nbsp;&nbsp;&nbsp;No&nbsp;&nbsp;&nbsp;"| BuyG["&nbsp;&nbsp;&nbsp;Buy GOLDBEES<br/>5% of Capital&nbsp;&nbsp;&nbsp;"]
-    Gold -->|"&nbsp;&nbsp;&nbsp;Yes&nbsp;&nbsp;&nbsp;"| SkipG["&nbsp;&nbsp;&nbsp;Skip - Already<br/>Accumulated&nbsp;&nbsp;&nbsp;"]
-
-    Nifty -->|"&nbsp;&nbsp;&nbsp;No&nbsp;&nbsp;&nbsp;"| BuyN["&nbsp;&nbsp;&nbsp;Buy NIFTYBEES<br/>5% of Capital&nbsp;&nbsp;&nbsp;"]
-    Nifty -->|"&nbsp;&nbsp;&nbsp;Yes&nbsp;&nbsp;&nbsp;"| SkipN["&nbsp;&nbsp;&nbsp;Skip - Already<br/>Accumulated&nbsp;&nbsp;&nbsp;"]
-
-    BuyG --> Log[("&nbsp;&nbsp;&nbsp;Log to DB<br/>& Telegram&nbsp;&nbsp;&nbsp;")]
-    SkipG --> Log
-    BuyN --> Log
-    SkipN --> Log
-
-    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
-    classDef decision fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
-    classDef action fill:#00ff88,stroke:#00ff88,stroke-width:2px,color:#000000;
-    classDef ignore fill:#2a2a0a,stroke:#ffcc00,stroke-width:2px,color:#ffffff;
-    classDef entry fill:#111827,stroke:#ffffff,stroke-width:2px,color:#ffffff;
-    classDef db fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
-
-    class Start entry;
-    class Regime,Gold,Nifty decision;
-    class BuyG,BuyN action;
-    class SkipG,SkipN ignore;
-    class Log db;
-```
+<div align="center">
+  <img src=".github/assets/diagrams/crisis.png" alt="Crisis Regime Strategy Execution" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.15);" />
+</div>
 
 ### Execution Logic
 

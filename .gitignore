@@ -35,3 +35,5 @@ Thumbs.db
 backend/debug_output.txt
 *.log
 sentinel_ip.txt
+node_modules/
+package-lock.json
