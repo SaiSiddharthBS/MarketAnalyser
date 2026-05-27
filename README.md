@@ -319,6 +319,71 @@ docker-compose up --build -d
 ```
 
 <br>
+---
+
+## 📸 System Gallery & Dashboards
+
+**1. Agent Alpha Main Terminal Dashboard**
+*Live streaming market analysis and overall portfolio standing within the Obsidian UI.*
+<img src="Screenshots/1.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**2. Execution Ledger & Position Sizing**
+*Real-time breakdown of capital allocation and Kelly Criterion margin utilization.*
+<img src="Screenshots/1.2.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**3. Hidden Markov Model Regime Classifier**
+*Dynamic 4-state probability matrix assessing overarching market risk.*
+<img src="Screenshots/2.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**4. 15-Model Ensemble Voting Interface**
+*Granular breakdown of technical, momentum, and machine learning predictions.*
+<img src="Screenshots/3.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**5. Machine Learning Predictors**
+*Out-of-sample directional probabilities and feature importance from XGBoost & LightGBM.*
+<img src="Screenshots/4.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**6. Statistical Arbitrage Cointegration Heatmap**
+*Z-score deviation tracking for advanced mean-reversion pairs trading.*
+<img src="Screenshots/5.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**7. Microstructure & Smart Money Flow**
+*Intraday VPOC migration and institutional volume orderblock analysis.*
+<img src="Screenshots/6.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**8. Options Open Interest (PCR) Dashboard**
+*Contrarian retail sentiment tracker derived from the live derivatives chain.*
+<img src="Screenshots/6.2.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**9. The 12-Rule Veto Firewall Activity Log**
+*Real-time risk mitigation blocking trades during severe market anomalies.*
+<img src="Screenshots/7.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**10. Correlation Matrix Safeguard**
+*Ensuring strict adherence to sector beta limits to prevent algorithmic overexposure.*
+<img src="Screenshots/7.2.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**11. Crisis Regime Action Protocol**
+*Active Safe Haven (Gold) and Index accumulation defensive parameters.*
+<img src="Screenshots/7.3.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**12. Database & Ledger Verification**
+*Remote Neon PostgreSQL status logs for the Paper Trading execution environment.*
+<img src="Screenshots/8.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**13. LLM Catalyst & News Sentiment Parser**
+*LLaMA 3.3 70B parsing live financial streams via local Ollama deployment.*
+<img src="Screenshots/8.2.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**14. Sentinel Docker Node Health**
+*Live metrics from the always-on execution server running the cron daemons.*
+<img src="Screenshots/9.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+**15. Telegram Sub-System Alert Channel**
+*Instant push notifications for every trade execution, signal drift, and system veto.*
+<img src="Screenshots/10.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
+<br>
 <div align="center">
   <i>"The future of finance is not predicted. It is computed."</i><br/>
   <b>— Agent Alpha</b>
