@@ -96,29 +96,30 @@ Agent Alpha is not confined to a single timeframe. The engine dynamically scales
 > 🌐 **[Launch Interactive Architecture Explorer →](https://SaiSiddharthBS.github.io/MarketAnalyser/architecture/interactive/)**
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0f172a', 'primaryTextColor': '#e2e8f0', 'primaryBorderColor': '#38bdf8', 'lineColor': '#475569', 'secondaryColor': '#1e293b', 'tertiaryColor': '#312e81'}}}%%
 mindmap
   root((Agent Alpha))
     Engine Core
-      15-Model Ensemble
-      XGBoost & LightGBM Classifiers
-      Statistical Arbitrage
+      [15-Model Ensemble]
+      [XGBoost & LightGBM Classifiers]
+      [Statistical Arbitrage]
     Risk Management
-      HMM Regime Classifier
-      12-Rule Veto Firewall
-      Sector Correlation Heatmap
-      ATR & Kelly Position Sizing
+      [HMM Regime Classifier]
+      [12-Rule Veto Firewall]
+      [Sector Correlation Heatmap]
+      [ATR & Kelly Position Sizing]
     Data & Infrastructure
-      Ollama Local Daemon
-      LLaMA 3.3 70B Versatile
-      yfinance & FRED APIs
-      Neon PostgreSQL
-      Docker Containerization
-      Decoupled Cron Daemons
+      [Ollama Local Daemon]
+      [LLaMA 3.3 70B Versatile]
+      [yfinance & FRED APIs]
+      [Neon PostgreSQL]
+      [Docker Containerization]
+      [Decoupled Cron Daemons]
     Execution & Reporting
-      Paper Trading Arena
-      ₹10L Starting Capital
-      Telegram Bot Alerts
-      Obsidian Glass UI
+      [Paper Trading Arena]
+      [₹10L Starting Capital]
+      [Telegram Bot Alerts]
+      [Obsidian Glass UI]
 ```
 
 ---
@@ -128,18 +129,19 @@ mindmap
 Agent Alpha operates on a resilient, distributed physical architecture split across two synchronized machines. This ensures absolute separation of heavy quantitative compute processes and the executive visualization/monitoring dashboard.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#e2e8f0', 'primaryBorderColor': '#38bdf8', 'lineColor': '#475569', 'secondaryColor': '#0f172a', 'tertiaryColor': '#1e293b'}}}%%
 graph TB
     subgraph "Node 1: Executive Dashboard (Primary MacBook Pro)"
         UI["Obsidian Glass UI (Local PWA)"]
         Dev["Codebase & Strategy Architecture"]
-        UI_Browser["Google Chrome / Safari<br/>(60 FPS Chart Rendering)"]
+        UI_Browser["Google Chrome / Safari (60 FPS)"]
     end
 
     subgraph "Node 2: The Sentinel Node (Secondary Always-On Laptop)"
         direction TB
         Docker["Docker Engine (Containerized OS)"]
         FastAPI["FastAPI Uvicorn Backend"]
-        Ollama["Ollama Local Daemon<br/>(LLaMA 3.3 70B)"]
+        Ollama["Ollama Local Daemon (LLaMA 3.3 70B)"]
         Cron["Background Scheduler Daemon"]
         Quant["15-Model Quant Engine"]
         
@@ -150,7 +152,7 @@ graph TB
     end
 
     subgraph "Cloud Infrastructure"
-        DB[("Neon PostgreSQL<br/>(Serverless Cluster)")]
+        DB[("Neon PostgreSQL (Serverless Cluster)")]
         TG["Telegram API"]
         Data["yfinance / FRED APIs"]
     end
@@ -160,6 +162,14 @@ graph TB
     Quant -->|Fetch OHLCV / Auto-Heal Cache| Data
     Cron -->|Dispatch Alerts| TG
     Dev -.->|Git Push Deployment| Docker
+
+    classDef default fill:#0f172a,stroke:#334155,stroke-width:2px,color:#e2e8f0;
+    classDef highlight fill:#312e81,stroke:#6366f1,stroke-width:2px,color:#e0e7ff;
+    classDef db fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#f5f3ff;
+    
+    class UI,Dev,UI_Browser,Docker,FastAPI,Cron,TG,Data default;
+    class Quant,Ollama highlight;
+    class DB db;
 ```
 
 **Node 1 (Primary Executive Station - MacBook Pro):** The visualization and development terminal. The CEO interacts with the system here via the stunning Obsidian Glass UI. When the CEO leaves for the office and shuts this MacBook down, the trading system remains completely unaffected.
@@ -174,6 +184,7 @@ graph TB
 At the heart of Agent Alpha lies a weighted voting ensemble that outputs a continuous directional bias. Rather than relying on a single point of failure, the engine synthesizes signals from 15 distinct, uncorrelated models across 4 unique matrices.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#e2e8f0', 'primaryBorderColor': '#38bdf8', 'lineColor': '#475569', 'secondaryColor': '#0f172a', 'tertiaryColor': '#1e293b'}}}%%
 graph TD
     subgraph Technical["Technical Matrix"]
         M1["1. KAMA/EMA Divergence"]
@@ -210,6 +221,15 @@ graph TD
     Microstructure --> Vote
     
     Vote --> Output["Final Directional Bias Score: -1.0 to +1.0"]
+
+    classDef default fill:#0f172a,stroke:#334155,stroke-width:2px,color:#e2e8f0;
+    classDef model fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+    classDef decision fill:#312e81,stroke:#6366f1,stroke-width:2px,color:#e0e7ff;
+    classDef result fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+
+    class M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15 model;
+    class Vote decision;
+    class Output result;
 ```
 
 #### 📐 A. Technical Matrix (4 Models)
@@ -290,14 +310,26 @@ The **Paper Trading Arena** is where models prove their worth. Rigorously stress
 Before a signal generated by the Ensemble hits the 10L Arena, it is subjected to a **Zero-Trust Veto**:
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#e2e8f0', 'primaryBorderColor': '#38bdf8', 'lineColor': '#475569', 'secondaryColor': '#0f172a', 'tertiaryColor': '#1e293b'}}}%%
 flowchart LR
-    Signal(Ensemble Signal) --> Veto{12-Rule Veto Firewall}
-    Veto -->|"Pledging > 40%"| Block(STAND ASIDE)
+    Signal(["Ensemble Signal"]) --> Veto{"12-Rule Veto Firewall"}
+    Veto -->|"Pledging > 40%"| Block["STAND ASIDE"]
     Veto -->|"VIX Spike"| Block
     Veto -->|"Earnings in 3 Days"| Block
     Veto -->|"FII Heavy Selling"| Block
     Veto -->|"HMM Crisis State"| Block
-    Veto -->|"All Rules Pass"| Exec(EXECUTE IN ARENA)
+    Veto -->|"All Rules Pass"| Exec(["EXECUTE IN ARENA"])
+
+    classDef default fill:#0f172a,stroke:#334155,stroke-width:2px,color:#e2e8f0;
+    classDef decision fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+    classDef block fill:#451a03,stroke:#ef4444,stroke-width:2px,color:#fef2f2;
+    classDef exec fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef signal fill:#312e81,stroke:#6366f1,stroke-width:2px,color:#e0e7ff;
+
+    class Signal signal;
+    class Veto decision;
+    class Block block;
+    class Exec exec;
 ```
 
 ---
@@ -307,7 +339,7 @@ flowchart LR
 During major market drawdowns, Agent Alpha dynamically switches into the **Crisis Regime**. This protects capital using a Safe Haven strategy while strategically accumulating the broader market at a discount.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#e2e8f0', 'primaryBorderColor': '#38bdf8', 'lineColor': '#475569', 'secondaryColor': '#0f172a', 'tertiaryColor': '#1e293b', 'fontFamily': 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#e2e8f0', 'primaryBorderColor': '#38bdf8', 'lineColor': '#475569', 'secondaryColor': '#0f172a', 'tertiaryColor': '#1e293b'}}}%%
 flowchart TD
     Start([Daily Execution Starts]) --> Regime{What Regime?}
     
@@ -317,16 +349,16 @@ flowchart TD
 
     Safe --> Split(( ))
 
-    Split --> Gold{GOLDBEES<br>already held?}
-    Split --> Nifty{NIFTYBEES<br>already held?}
+    Split --> Gold{"GOLDBEES Already Held?"}
+    Split --> Nifty{"NIFTYBEES Already Held?"}
 
-    Gold -->|No| BuyG[Buy GOLDBEES<br>5% of capital]
-    Gold -->|Yes| SkipG[Skip - already accumulated]
+    Gold -->|No| BuyG["Buy GOLDBEES 5% of Capital"]
+    Gold -->|Yes| SkipG["Skip - Already Accumulated"]
 
-    Nifty -->|No| BuyN[Buy NIFTYBEES<br>5% of capital]
-    Nifty -->|Yes| SkipN[Skip - already accumulated]
+    Nifty -->|No| BuyN["Buy NIFTYBEES 5% of Capital"]
+    Nifty -->|Yes| SkipN["Skip - Already Accumulated"]
 
-    BuyG --> Log[(Log to DB + Telegram)]
+    BuyG --> Log[("Log to DB & Telegram")]
     SkipG --> Log
     BuyN --> Log
     SkipN --> Log
