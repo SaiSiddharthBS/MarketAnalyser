@@ -110,7 +110,10 @@ def _prepare_query(query):
     """Convert SQLite syntax to Postgres syntax."""
     if not DATABASE_URL or not query:
         return query
-    query = query.replace("?", "%s")
+        
+    if "?" in query:
+        query = query.replace("%", "%%")
+        query = query.replace("?", "%s")
     # Convert INSERT OR REPLACE to Postgres ON CONFLICT
     if "INSERT OR REPLACE INTO price_cache" in query:
          query = query.replace("INSERT OR REPLACE INTO", "INSERT INTO") + " ON CONFLICT (symbol, date) DO UPDATE SET open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low, close=EXCLUDED.close, volume=EXCLUDED.volume"

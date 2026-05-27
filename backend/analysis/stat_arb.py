@@ -2,6 +2,12 @@ import pandas as pd
 import numpy as np
 import logging
 from typing import List, Dict
+try:
+    from statsmodels.tsa.stattools import coint
+    from statsmodels.tsa.vector_ar.vecm import coint_johansen
+except ImportError:
+    coint = None
+    coint_johansen = None
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +52,22 @@ def analyze_pairs(z_score_threshold: float = 2.0) -> List[Dict]:
             data = pd.concat([df1, df2], axis=1, join='inner')
             data.columns = [asset1, asset2]
             
+            # Cointegration check (Engle-Granger & Johansen)
+            if coint and coint_johansen:
+                try:
+                    score, pvalue, _ = coint(data[asset1], data[asset2])
+                    if pvalue > 0.05:
+                        logger.info(f"Pair {asset1}-{asset2} rejected (Engle-Granger). p-value {pvalue:.3f} > 0.05")
+                        continue
+                        
+                    jres = coint_johansen(data, det_order=0, k_ar_diff=1)
+                    if jres.lr1[0] < jres.cvt[0, 1]:
+                        logger.info(f"Pair {asset1}-{asset2} rejected (Johansen). Trace Stat {jres.lr1[0]:.2f} < {jres.cvt[0,1]:.2f}")
+                        continue
+                except Exception as e:
+                    logger.error(f"Cointegration test failed for {asset1}-{asset2}: {e}")
+                    continue
+            
             # Simple spread calculation: log price ratio
             data['spread'] = np.log(data[asset1]) - np.log(data[asset2])
             
@@ -67,7 +89,8 @@ def analyze_pairs(z_score_threshold: float = 2.0) -> List[Dict]:
                     "confidence": min(100, 50 + (current_z - 2) * 20),
                     "reason": f"StatArb: Overvalued vs {asset2.replace('.NS', '')} (Z: {current_z:.2f})",
                     "paired_with": asset2.replace(".NS", ""),
-                    "pair_z_score": current_z
+                    "pair_z_score": current_z,
+                    "coint_pvalue": pvalue if coint else 0
                 })
                 signals.append({
                     "symbol": asset2.replace(".NS", ""),
@@ -75,7 +98,8 @@ def analyze_pairs(z_score_threshold: float = 2.0) -> List[Dict]:
                     "confidence": min(100, 50 + (current_z - 2) * 20),
                     "reason": f"StatArb: Undervalued vs {asset1.replace('.NS', '')} (Z: {current_z:.2f})",
                     "paired_with": asset1.replace(".NS", ""),
-                    "pair_z_score": current_z
+                    "pair_z_score": current_z,
+                    "coint_pvalue": pvalue if coint else 0
                 })
             elif current_z < -z_score_threshold:
                 # Spread is too low -> asset1 is undervalued relative to asset2
@@ -86,7 +110,8 @@ def analyze_pairs(z_score_threshold: float = 2.0) -> List[Dict]:
                     "confidence": min(100, 50 + (abs(current_z) - 2) * 20),
                     "reason": f"StatArb: Undervalued vs {asset2.replace('.NS', '')} (Z: {current_z:.2f})",
                     "paired_with": asset2.replace(".NS", ""),
-                    "pair_z_score": current_z
+                    "pair_z_score": current_z,
+                    "coint_pvalue": pvalue if coint else 0
                 })
                 signals.append({
                     "symbol": asset2.replace(".NS", ""),
@@ -94,7 +119,8 @@ def analyze_pairs(z_score_threshold: float = 2.0) -> List[Dict]:
                     "confidence": min(100, 50 + (abs(current_z) - 2) * 20),
                     "reason": f"StatArb: Overvalued vs {asset1.replace('.NS', '')} (Z: {current_z:.2f})",
                     "paired_with": asset1.replace(".NS", ""),
-                    "pair_z_score": current_z
+                    "pair_z_score": current_z,
+                    "coint_pvalue": pvalue if coint else 0
                 })
                 
         except Exception as e:

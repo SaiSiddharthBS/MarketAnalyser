@@ -1,0 +1,44 @@
+graph TD
+    subgraph Technical["Technical Matrix"]
+        M1["1. KAMA/EMA Divergence"]
+        M2["2. Regime-Adjusted RSI-14"]
+        M3["3. ATR Volatility Expansion"]
+        M4["4. Bollinger Squeeze"]
+    end
+    
+    subgraph Momentum["Momentum Matrix"]
+        M5["5. MACD Acceleration"]
+        M6["6. ROC-10 Velocity"]
+        M7["7. On-Balance Volume"]
+    end
+    
+    subgraph MachineLearning["Machine Learning Layer"]
+        M8["8. XGBoost Classifier"]
+        M9["9. LightGBM Trees"]
+        M10["10. Sequence Neural Net"]
+        M11["11. Short-Term MLP"]
+    end
+    
+    subgraph Microstructure["Microstructure & Flow"]
+        M12["12. Smart Money VPOC"]
+        M13["13. StatArb Pairs"]
+        M14["14. FII/DII Net Flow"]
+        M15["15. Options PCR"]
+    end
+    
+    Vote{"Dynamic Weighting\n& Voting Node"}
+    Output["Final Directional Bias\nScore: -1.0 to +1.0"]
+    
+    Technical --> Vote
+    Momentum --> Vote
+    MachineLearning --> Vote
+    Microstructure --> Vote
+    Vote --> Output
+
+    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
+    classDef highlight fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
+    classDef decision fill:#00ff88,stroke:#00ff88,stroke-width:2px,color:#000000;
+
+    class M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15 default;
+    class Vote highlight;
+    class Output decision;

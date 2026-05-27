@@ -1264,45 +1264,53 @@ async function loadArenaTrading() {
         renderArenaHeatmap(data.equity_curve);
     }
     if (data.stats) renderArenaStats({ overall: data.stats });
-    renderArenaInstitutionalQuants(data);
+    await renderArenaInstitutionalQuants(data);
 }
 
-function renderArenaInstitutionalQuants(data) {
-    const statArbBody = document.getElementById('arena-statarb-body');
+async function renderArenaInstitutionalQuants(data) {
+    const statArbLiveBody = document.getElementById('arena-statarb-live-body');
     const riskParityVisual = document.getElementById('arena-risk-parity-visual');
 
-    if (statArbBody) {
-        // Look for open pairs in positions
-        const open = data.open_positions || [];
-        const hdfcPos = open.find(p => p.symbol === 'HDFCBANK.NS');
-        const iciciPos = open.find(p => p.symbol === 'ICICIBANK.NS');
-        
-        if (hdfcPos && iciciPos) {
-            statArbBody.innerHTML = `
-                <tr>
-                    <td><strong>HDFC vs ICICI</strong></td>
-                    <td style="color:var(--accent); font-weight:700;">2.41 σ</td>
-                    <td style="color:var(--green);">Active Arbitrage</td>
-                    <td><span class="signal-label signal-buy">CONVERGING</span></td>
-                </tr>
-            `;
-        } else {
-            // Simulated scanning state
-            statArbBody.innerHTML = `
-                <tr>
-                    <td>HDFCBANK.NS vs ICICIBANK.NS</td>
-                    <td style="font-family:var(--font-mono); color:var(--text-muted);">0.42 σ</td>
-                    <td><span style="opacity:0.6;">Scanning for divergence</span></td>
-                    <td><span class="signal-label signal-neutral">NEUTRAL</span></td>
-                </tr>
-                <tr>
-                    <td>TCS.NS vs INFY.NS</td>
-                    <td style="font-family:var(--font-mono); color:var(--text-muted);">-0.81 σ</td>
-                    <td><span style="opacity:0.6;">Scanning for divergence</span></td>
-                    <td><span class="signal-label signal-neutral">NEUTRAL</span></td>
-                </tr>
-            `;
+    if (statArbLiveBody) {
+        try {
+            const res = await fetch('/api/arena/statarb-live');
+            if (res.ok) {
+                const statData = await res.json();
+                if (statData.live_pairs && statData.live_pairs.length > 0) {
+                    statArbLiveBody.innerHTML = statData.live_pairs.map(p => `
+                        <tr>
+                            <td><strong>${p.asset1} vs ${p.asset2}</strong></td>
+                            <td style="color:var(--text-muted); font-family:var(--font-mono);">${p.entry_z.toFixed(2)} σ</td>
+                            <td style="color:${Math.abs(p.current_z) < 1.0 ? 'var(--green)' : 'var(--accent)'}; font-weight:700; font-family:var(--font-mono);">${p.current_z.toFixed(2)} σ</td>
+                            <td style="color:${(p.coint_pvalue || 0) > 0.05 ? 'var(--red)' : 'var(--green)'}; font-family:var(--font-mono);">
+                                p=${(p.coint_pvalue || 0).toFixed(3)} ${(p.coint_pvalue || 0) > 0.05 ? '⚠' : '✓'}
+                            </td>
+                            <td><span class="signal-label ${p.status.includes('BROKEN') ? 'signal-sell' : (p.status === 'CONVERGING' ? 'signal-buy' : 'signal-neutral')}">${p.status}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        } catch(e) {
+            console.error("Failed to load statarb-live:", e);
         }
+    }
+
+    const statArbBody = document.getElementById('arena-statarb-body');
+    if (statArbBody) {
+        statArbBody.innerHTML = `
+            <tr>
+                <td>HDFCBANK.NS vs ICICIBANK.NS</td>
+                <td style="font-family:var(--font-mono); color:var(--text-muted);">0.42 σ</td>
+                <td><span style="opacity:0.6;">Scanning for divergence</span></td>
+                <td><span class="signal-label signal-neutral">NEUTRAL</span></td>
+            </tr>
+            <tr>
+                <td>TCS.NS vs INFY.NS</td>
+                <td style="font-family:var(--font-mono); color:var(--text-muted);">-0.81 σ</td>
+                <td><span style="opacity:0.6;">Scanning for divergence</span></td>
+                <td><span class="signal-label signal-neutral">NEUTRAL</span></td>
+            </tr>
+        `;
     }
 
     if (riskParityVisual) {
@@ -1347,27 +1355,26 @@ function renderArenaPortfolio(p, closedTrades = []) {
     }
     if (posEl) posEl.textContent = `${p.open_positions || 0}/5`;
 
-    let totalProfit = 0;
-    let totalLoss = 0;
+    let realisedPnl = 0;
     if (closedTrades && closedTrades.length > 0) {
         closedTrades.forEach(t => {
             const pnl = t.net_pnl || 0;
-            if (pnl > 0) totalProfit += pnl;
-            if (pnl < 0) totalLoss += Math.abs(pnl);
+            realisedPnl += pnl;
         });
     }
 
-    // Add unrealized PnL from equity if no closed trades yet? 
-    // Actually, unrealized PnL is total_equity - cash - invested.
-    // Let's just use the absolute difference from 10L capital if closedTrades is empty.
-    const netEquityPnl = (p.total_equity || 1000000) - 1000000;
-    if (totalProfit === 0 && totalLoss === 0 && netEquityPnl !== 0) {
-        if (netEquityPnl > 0) totalProfit = netEquityPnl;
-        if (netEquityPnl < 0) totalLoss = Math.abs(netEquityPnl);
-    }
+    const unrealisedPnl = (p.total_equity || 1000000) - 1000000 - realisedPnl;
 
-    if (profitEl) profitEl.textContent = `₹${formatNumber(totalProfit)}`;
-    if (lossEl) lossEl.textContent = `-₹${formatNumber(totalLoss)}`;
+    if (profitEl) {
+        profitEl.textContent = `₹${formatNumber(Math.abs(unrealisedPnl))}`;
+        profitEl.className = 'card-value ' + (unrealisedPnl >= 0 ? 'positive' : 'negative');
+        if (unrealisedPnl < 0) profitEl.textContent = `-₹${formatNumber(Math.abs(unrealisedPnl))}`;
+    }
+    if (lossEl) {
+        lossEl.textContent = `₹${formatNumber(Math.abs(realisedPnl))}`;
+        lossEl.className = 'card-value ' + (realisedPnl >= 0 ? 'positive' : 'negative');
+        if (realisedPnl < 0) lossEl.textContent = `-₹${formatNumber(Math.abs(realisedPnl))}`;
+    }
 }
 
 function renderArenaTrades(data) {
@@ -1378,15 +1385,27 @@ function renderArenaTrades(data) {
         if (!data.open || data.open.length === 0) {
             openBody.innerHTML = '<tr><td colspan="5">No active positions.</td></tr>';
         } else {
-            openBody.innerHTML = data.open.map(p => `
+            openBody.innerHTML = data.open.map(p => {
+                let badge = "";
+                try {
+                    if (p.model_votes_json) {
+                        const votes = JSON.parse(p.model_votes_json);
+                        if (votes.instrument_type === "FUTURES") {
+                            badge = ` <span style="background: rgba(0,229,255,0.2); color: #00e5ff; padding: 2px 6px; border-radius: 4px; font-size: 0.7em; font-weight: bold;">FUT</span>`;
+                        }
+                    }
+                } catch(e) {}
+                
+                return `
                 <tr>
-                    <td><strong>${p.symbol}</strong></td>
+                    <td><strong>${p.symbol}</strong>${badge}</td>
                     <td>${p.quantity}</td>
                     <td>₹${formatNumber(p.entry_price)}</td>
                     <td>₹${formatNumber(p.target_price)}</td>
                     <td>₹${formatNumber(p.stop_loss)}</td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
         }
     }
 
@@ -2366,14 +2385,18 @@ async function loadWatchlist() {
             const data = await res.json();
             const t = data.technical;
             if (t) {
-                const pr = t.predicted_range || {};
+                const atr = (t.metrics && t.metrics.atr) ? t.metrics.atr : (t.entry * 0.02);
+                const prLow = data.recent_verification ? data.recent_verification.pred_low : (t.entry - atr);
+                const prHigh = data.recent_verification ? data.recent_verification.pred_high : (t.entry + atr);
+                const rvol = (t.metrics && t.metrics.rvol) ? t.metrics.rvol : '-';
+                
                 rows.push(`<tr style="cursor:pointer" onclick="analyseFromScreener('${sym}')">
                     <td><strong>${sym}</strong></td>
-                    <td>₹${formatNumber(t.price)}</td>
+                    <td>₹${formatNumber(t.entry)}</td>
                     <td>${t.score}</td>
                     <td>${(t.signal || '').replace(/_/g,' ')}</td>
-                    <td>${t.rvol || '-'}x</td>
-                    <td>₹${formatNumber(pr.low||0)} - ₹${formatNumber(pr.high||0)}</td>
+                    <td>${rvol}x</td>
+                    <td>₹${formatNumber(prLow)} - ₹${formatNumber(prHigh)}</td>
                     <td><button class="btn-small" onclick="event.stopPropagation();removeFromWatchlist('${sym}')">✕</button></td>
                 </tr>`);
             } else {

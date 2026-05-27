@@ -61,17 +61,14 @@
             <li><a href="#" class="nav-link" data-page="screener" id="nav-screener">
                 <i data-lucide="search" class="nav-icon"></i> Screener
             </a></li>
-            <li><a href="#" class="nav-link" data-page="signals" id="nav-signals">
-                <i data-lucide="crosshair" class="nav-icon"></i> Signals
+            <li><a href="#" class="nav-link" data-page="rotation" id="nav-rotation">
+                <i data-lucide="thermometer" class="nav-icon"></i> Sector
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="arena" id="nav-arena">
+                <i data-lucide="swords" class="nav-icon"></i> Arena
             </a></li>
             <li><a href="#" class="nav-link" data-page="analysis" id="nav-analysis">
                 <i data-lucide="line-chart" class="nav-icon"></i> Analysis
-            </a></li>
-            <li><a href="#" class="nav-link" data-page="rotation" id="nav-rotation">
-                <i data-lucide="thermometer" class="nav-icon"></i> Sectors
-            </a></li>
-            <li><a href="#" class="nav-link" data-page="news" id="nav-news">
-                <i data-lucide="newspaper" class="nav-icon"></i> News
             </a></li>
             <li><a href="#" class="nav-link" data-page="accuracy" id="nav-accuracy">
                 <i data-lucide="target" class="nav-icon"></i> Accuracy
@@ -82,8 +79,11 @@
             <li><a href="#" class="nav-link" data-page="watchlist" id="nav-watchlist">
                 <i data-lucide="eye" class="nav-icon"></i> Watchlist
             </a></li>
-            <li><a href="#" class="nav-link" data-page="arena" id="nav-arena">
-                <i data-lucide="swords" class="nav-icon"></i> Arena
+            <li><a href="#" class="nav-link" data-page="signals" id="nav-signals">
+                <i data-lucide="crosshair" class="nav-icon"></i> Signals
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="news" id="nav-news">
+                <i data-lucide="newspaper" class="nav-icon"></i> News
             </a></li>
         </ul>
         <div class="sidebar-footer">
@@ -400,11 +400,11 @@
                     <div class="card-value" id="arena-cash">₹0.00</div>
                 </div>
                 <div class="summary-card">
-                    <div class="card-label">Total Profit</div>
+                    <div class="card-label">Unrealised P&L</div>
                     <div class="card-value positive" id="arena-total-profit">₹0.00</div>
                 </div>
                 <div class="summary-card">
-                    <div class="card-label">Total Loss</div>
+                    <div class="card-label">Realised P&L</div>
                     <div class="card-value negative" id="arena-total-loss">₹0.00</div>
                 </div>
                 <div class="summary-card">
@@ -422,9 +422,19 @@
                 <!-- Stat Arb Pairs Tracking -->
                 <div class="glass-card" style="border-color: rgba(0, 229, 255, 0.3);">
                     <h3 style="color: var(--accent);">Stat-Arb Pairs Tracking (Z-Score)</h3>
-                    <div class="table-container">
+                    <div class="table-container" style="margin-bottom: 12px;">
+                        <h4 style="font-size: 0.8rem; color: #00e5ff; margin-bottom: 6px; font-weight: 600;">🟢 LIVE PAIRS (Exit at Z→0)</h4>
                         <table class="data-table">
-                            <thead><tr><th>Pair (Long vs Short)</th><th>Spread Z-Score</th><th>Status</th><th>Signal</th></tr></thead>
+                            <thead><tr><th>PAIR</th><th>Entry Z-Score</th><th>Current Z-Score</th><th>Cointegration</th><th>Status</th></tr></thead>
+                            <tbody id="arena-statarb-live-body">
+                                <tr><td colspan="5" style="color:var(--text-muted); font-size:0.85rem;">No active stat-arb positions.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-container">
+                        <h4 style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">🔍 SCANNING FOR DIVERGENCE</h4>
+                        <table class="data-table">
+                            <thead><tr><th>Pair</th><th>Spread Z-Score</th><th>Status</th><th>Signal</th></tr></thead>
                             <tbody id="arena-statarb-body">
                                 <tr><td colspan="4" class="loading-skeleton">Awaiting Pair Divergence...</td></tr>
                             </tbody>

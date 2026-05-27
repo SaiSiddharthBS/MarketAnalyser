@@ -806,8 +806,8 @@ def screen_stocks(symbols: list, top_n: int = 10, sector_yahoo_index: str = "^NS
     EXCLUDED_INSTRUMENTS = {
         # Liquid fund ETFs (cash parking, not tradeable)
         "LIQUIDBEES", "LIQUIDCASE", "LIQUIDETF", "LICNETFGSC",
-        # Other non-tradeable ETFs
-        "GOLDBEES", "NIFTYBEES", "BANKBEES", "JUNIORBEES",
+        # Other non-tradeable ETFs (GOLDBEES & NIFTYBEES removed — used in crisis regime)
+        "BANKBEES", "JUNIORBEES",
         "SETFNIF50", "ICICIGOLD",
     }
     symbols = [s for s in symbols if s not in EXCLUDED_INSTRUMENTS]

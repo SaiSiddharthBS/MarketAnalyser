@@ -1,0 +1,35 @@
+flowchart TD
+    Start(["Daily Execution Starts"]) --> Regime{"What Regime?"}
+    
+    Regime -->|"Uptrend"| Dir["Directional Logic"]
+    Regime -->|"Chop"| Arb["Stat-Arb Logic"]
+    Regime -->|"Crisis"| Safe["Safe Haven\nETF Logic"]
+
+    Safe --> Split(( ))
+
+    Split --> Gold{"GOLDBEES\nAlready Held?"}
+    Split --> Nifty{"NIFTYBEES\nAlready Held?"}
+
+    Gold -->|"No"| BuyG["Buy GOLDBEES\n5% of Capital"]
+    Gold -->|"Yes"| SkipG["Skip — Already\nAccumulated"]
+
+    Nifty -->|"No"| BuyN["Buy NIFTYBEES\n5% of Capital"]
+    Nifty -->|"Yes"| SkipN["Skip — Already\nAccumulated"]
+
+    BuyG --> Log[("Log to DB\n& Telegram")]
+    SkipG --> Log
+    BuyN --> Log
+    SkipN --> Log
+
+    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
+    classDef decision fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
+    classDef action fill:#00ff88,stroke:#00ff88,stroke-width:2px,color:#000000;
+    classDef ignore fill:#2a2a0a,stroke:#ffcc00,stroke-width:2px,color:#ffffff;
+    classDef entry fill:#111827,stroke:#ffffff,stroke-width:2px,color:#ffffff;
+    classDef db fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
+
+    class Start entry;
+    class Regime,Gold,Nifty decision;
+    class BuyG,BuyN action;
+    class SkipG,SkipN ignore;
+    class Log db;

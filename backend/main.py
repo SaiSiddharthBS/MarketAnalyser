@@ -1029,6 +1029,78 @@ def get_arena_status():
         "stats": stats
     }
 
+@app.get("/api/arena/statarb-live")
+def get_statarb_live():
+    import json
+    import pandas as pd
+    import numpy as np
+    from data.stock_fetcher import download_ohlcv
+    from analysis.stat_arb import KNOWN_PAIRS
+    
+    trades = get_arena_trades().get("open", [])
+    active_pairs = []
+    processed_pairs = set()
+    
+    for t in trades:
+        if t.get("trade_type") in ("PAIR_LONG", "PAIR_SHORT") or t.get("holding_class") == "ARBITRAGE":
+            votes = json.loads(t.get("model_votes_json") or "{}")
+            paired_with = votes.get("paired_with")
+            entry_z = votes.get("pair_z_score", 0.0)
+            
+            if paired_with:
+                symbol = t["symbol"]
+                asset1, asset2 = None, None
+                for k1, k2 in KNOWN_PAIRS:
+                    s1, s2 = k1.replace(".NS", ""), k2.replace(".NS", "")
+                    if (symbol == s1 and paired_with == s2) or (symbol == s2 and paired_with == s1):
+                        asset1, asset2 = s1, s2
+                        break
+                        
+                if asset1 and asset2 and (asset1, asset2) not in processed_pairs:
+                    processed_pairs.add((asset1, asset2))
+                    try:
+                        df1 = download_ohlcv(f"{asset1}.NS", period="6mo", interval="1d")['Close'].dropna()
+                        df2 = download_ohlcv(f"{asset2}.NS", period="6mo", interval="1d")['Close'].dropna()
+                        
+                        data = pd.concat([df1, df2], axis=1, join='inner')
+                        data.columns = ["A", "B"]
+                        
+                        data['spread'] = np.log(data["A"]) - np.log(data["B"])
+                        data['mean_spread'] = data['spread'].rolling(window=60).mean()
+                        data['std_spread'] = data['spread'].rolling(window=60).std()
+                        data['z_score'] = (data['spread'] - data['mean_spread']) / data['std_spread']
+                        
+                        current_z = float(data['z_score'].iloc[-1]) if not data.empty and not pd.isna(data['z_score'].iloc[-1]) else entry_z
+                        
+                        live_pvalue = 0.0
+                        try:
+                            from statsmodels.tsa.stattools import coint
+                            _, live_pvalue, _ = coint(data["A"], data["B"])
+                        except:
+                            pass
+                            
+                        if live_pvalue > 0.05:
+                            status = "COINTEGRATION BROKEN (p>0.05)"
+                        elif abs(current_z) < 0.5:
+                            status = "CONVERGING"
+                        elif abs(current_z) > 4.0:
+                            status = "DIVERGING (SL RISK)"
+                        else:
+                            status = "ACTIVE"
+                            
+                        active_pairs.append({
+                            "asset1": asset1,
+                            "asset2": asset2,
+                            "entry_z": entry_z,
+                            "current_z": current_z,
+                            "coint_pvalue": live_pvalue,
+                            "status": status
+                        })
+                    except Exception as e:
+                        logger.error(f"Error calculating live Z-score for {asset1}-{asset2}: {e}")
+                        
+    return {"live_pairs": active_pairs}
+
 @app.post("/api/arena/execute")
 async def trigger_arena_execute(background_tasks: BackgroundTasks):
     from arena.paper_trading import execute_daily_arena

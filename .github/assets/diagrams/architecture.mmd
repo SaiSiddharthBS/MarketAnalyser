@@ -1,0 +1,39 @@
+graph TB
+    subgraph Node1["Node 1: Executive Dashboard — MacBook Pro"]
+        UI["Obsidian Glass UI\n(Local PWA)"]
+        Dev["Strategy Architecture"]
+        Browser["Google Chrome\n(60 FPS)"]
+    end
+
+    subgraph Node2["Node 2: Sentinel Node — Always-On Laptop"]
+        Docker["Docker Engine\n(Containerized OS)"]
+        FastAPI["FastAPI Uvicorn"]
+        Ollama["Ollama Local Daemon\n(LLaMA 3.3 70B)"]
+        Cron["Background Daemon"]
+        Quant["15-Model Quant Engine"]
+        
+        Docker --> FastAPI
+        Docker --> Cron
+        Cron --> Quant
+        Quant -->|"Sentiment Intel"| Ollama
+    end
+
+    subgraph Cloud["Cloud Infrastructure"]
+        DB[("Neon PostgreSQL\n(Serverless)")]
+        TG["Telegram API"]
+        Data["yfinance / FRED"]
+    end
+
+    Browser -.->|"WebSockets"| FastAPI
+    Quant -->|"Read Ledger"| DB
+    Quant -->|"Fetch OHLCV"| Data
+    Cron -->|"Dispatch Alerts"| TG
+    Dev -.->|"Git Push Deploy"| Docker
+
+    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
+    classDef highlight fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
+    classDef db fill:#0b101e,stroke:#ffffff,stroke-width:2px,color:#ffffff;
+    
+    class UI,Dev,Browser,Docker,FastAPI,Cron,TG,Data default;
+    class Quant,Ollama highlight;
+    class DB db;

@@ -73,6 +73,20 @@ def is_market_open():
     
     return market_start <= now <= market_end
 
+def download_ohlcv_cached(symbol, period="1y", interval="1d"):
+    """Wrapper around download_ohlcv that caches the DataFrame to avoid API rate limits."""
+    cache_key = f"df_{symbol}_{period}_{interval}"
+    cached_df = cache.get(cache_key)
+    if cached_df is not None:
+        return cached_df
+        
+    df = download_ohlcv(symbol, period, interval)
+    if df is not None and not df.empty:
+        # Cache for 15 minutes during market hours, or 12 hours if closed
+        ttl = 15 * 60 if is_market_open() else 12 * 60 * 60
+        cache.set(cache_key, df, ttl=ttl)
+    return df
+
 def get_stock_data(symbol, period="1y", interval="1d", exchange="NS"):
     """Fetch OHLCV data for a stock with caching."""
     ticker = f"{symbol}.{exchange}" if exchange else symbol

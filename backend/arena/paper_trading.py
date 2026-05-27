@@ -15,9 +15,9 @@ from analysis.position_sizing import calculate_position_size
 from analysis.ensemble import get_ensemble_analysis
 from analysis.veto_engine import veto_engine
 from analysis.backtest_engine import backtester
-from data.stock_fetcher import download_ohlcv
+from data.stock_fetcher import download_ohlcv_cached as download_ohlcv
 from bot.daily_job import send_telegram_sync
-from config import NIFTY_50_SYMBOLS
+from config import NIFTY_50_SYMBOLS, SAFE_HAVEN_ETFS, SAFE_HAVEN_ALLOC_PCT
 from arena.execution_model import parse_execution_config, apply_execution_model
 from arena.multi_timeframe_portfolio import calculate_bucketed_position_size, BUCKETS
 
@@ -177,7 +177,7 @@ def execute_daily_arena():
             # ---------------------------------------------------
             
         if not exit_reason:
-            if trade_type in ("LONG", "PAIR_LONG"):
+            if trade_type == "LONG":
                 # SL Hit
                 if today_low <= sl:
                     exit_reason = "SL_HIT"
@@ -188,7 +188,7 @@ def execute_daily_arena():
                     exit_reason = "TARGET_HIT"
                     fill = apply_execution_model(qty, target, side="SELL", bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
                     exit_price = fill.fill_price
-            elif trade_type in ("SHORT", "PAIR_SHORT"):
+            elif trade_type == "SHORT":
                 # SL Hit for Short (Price goes UP to SL)
                 if today_high >= sl:
                     exit_reason = "SL_HIT"
@@ -207,10 +207,13 @@ def execute_daily_arena():
             
         max_hold_limit = expected_days + (2 if expected_days <= 5 else 5) # Buffer
         
-        # INTRADAY trades must be closed if they are held overnight
+        # INTRADAY trades must be closed if they are held overnight or it's past 15:15 IST
         holding_class = pos.get("holding_class", "SWING")
-        if holding_class == "INTRADAY" and days_held >= 1:
-            exit_reason = "EOD_TIMEOUT (Intraday carried over)"
+        now_time = datetime.now(IST).time()
+        is_eod = now_time.hour == 15 and now_time.minute >= 15
+        
+        if holding_class == "INTRADAY" and (days_held >= 1 or is_eod):
+            exit_reason = "EOD_TIMEOUT (Intraday closed)"
             side = "SELL" if trade_type == "LONG" else "BUY"
             fill = apply_execution_model(qty, today_open, side=side, bar_volume=float(today_data.get("Volume", 100000)), config=EXEC_CONFIG)
             exit_price = fill.fill_price
@@ -293,7 +296,99 @@ def execute_daily_arena():
         
         # Only block ALL buys during true systemic crisis (VIX >= 30)
         if regime == "crisis":
-            logger.info("Regime is CRISIS. Not opening new positions.")
+            logger.info("Regime is CRISIS. Activating Safe Haven ETF accumulation mode.")
+            
+            for etf_symbol in SAFE_HAVEN_ETFS:
+                # Skip if already holding this ETF
+                if etf_symbol in open_symbols:
+                    logger.info(f"Already holding {etf_symbol}. Skipping.")
+                    continue
+                
+                # Skip if we've already closed this ETF today (prevent re-buy loops)
+                today_str = get_current_date_ist()
+                today_closed = db.db_execute(
+                    "SELECT symbol FROM paper_trades WHERE status LIKE 'CLOSED_%' AND exit_date = ?",
+                    (today_str,)
+                )
+                today_closed_symbols = [p["symbol"] for p in today_closed] if today_closed else []
+                if etf_symbol in today_closed_symbols:
+                    logger.info(f"{etf_symbol} was closed today. Skipping re-entry.")
+                    continue
+                
+                # Download price data
+                ticker = f"{etf_symbol}.NS"
+                df_etf = download_ohlcv(ticker, period="5d", interval="1d")
+                if df_etf is None or df_etf.empty:
+                    logger.warning(f"No price data for {etf_symbol}. Skipping.")
+                    continue
+                
+                today_open = float(df_etf.iloc[-1]["Open"])
+                today_close = float(df_etf.iloc[-1]["Close"])
+                bar_volume = float(df_etf.iloc[-1].get("Volume", 50000))
+                
+                if today_open <= 0:
+                    continue
+                
+                # Calculate position size: SAFE_HAVEN_ALLOC_PCT of total capital
+                alloc_capital = INITIAL_CAPITAL * SAFE_HAVEN_ALLOC_PCT
+                qty = int(alloc_capital / today_open)
+                
+                if qty <= 0:
+                    logger.info(f"Calculated qty for {etf_symbol} is 0. Skipping.")
+                    continue
+                
+                # Apply execution model for realistic slippage
+                fill = apply_execution_model(
+                    qty, today_open, side="BUY",
+                    bar_volume=bar_volume, config=EXEC_CONFIG
+                )
+                
+                if fill.filled_quantity <= 0:
+                    logger.info(f"Execution model yielded 0 fill for {etf_symbol}. Skipping.")
+                    continue
+                
+                qty = fill.filled_quantity
+                entry_price = fill.fill_price
+                pos_value = qty * entry_price
+                fees = pos_value * (BROKERAGE_PCT + STT_PCT)
+                
+                # Check we have enough cash
+                if cash < (pos_value + fees):
+                    logger.info(f"Insufficient cash for {etf_symbol}. Need ₹{pos_value + fees:.0f}, have ₹{cash:.0f}.")
+                    continue
+                
+                # Set conservative SL/Target for safe-haven (wide stops — these are meant to be held)
+                sl = entry_price * 0.95       # 5% stop loss
+                target = entry_price * 1.10   # 10% target
+                
+                import json
+                db.db_execute("""
+                    INSERT INTO paper_trades (
+                        symbol, trade_type, signal_date, entry_date, entry_price, quantity,
+                        position_value, stop_loss, target_price, risk_reward_ratio, fees,
+                        regime_at_entry, ensemble_score, conviction, model_votes_json,
+                        holding_class, expected_days
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    etf_symbol, "LONG", today_str, today_str, float(entry_price), int(qty),
+                    float(pos_value), float(sl), float(target), 2.0, float(fees),
+                    "crisis", 70.0, "HIGH",
+                    json.dumps({"strategy": "SAFE_HAVEN_CRISIS", "instrument_type": "EQUITY"}),
+                    "POSITIONAL", 30
+                ))
+                
+                cash -= (pos_value + fees)
+                new_trades.append(etf_symbol)
+                
+                msg = (
+                    f"🏟️ *ARENA SAFE-HAVEN BUY: {etf_symbol}*\n"
+                    f"Strategy: Crisis Flight-to-Quality\n"
+                    f"Qty: {qty} @ ₹{entry_price:.2f}\n"
+                    f"Capital Deployed: ₹{pos_value:.0f} ({SAFE_HAVEN_ALLOC_PCT*100:.0f}%)\n"
+                    f"SL: ₹{sl:.2f} | Target: ₹{target:.2f}"
+                )
+                send_telegram_sync(msg)
+                logger.info(f"Safe-haven ETF {etf_symbol} accumulated: {qty} @ ₹{entry_price:.2f}")
         elif regime in ("high_vol_chop", "low_vol_chop"):
             # --- PHASE 4.2: STAT ARB / NON-DIRECTIONAL MODE ---
             logger.info(f"Regime is {regime.upper()}. Bypassing directional trades. Activating Stat-Arb Engine.")
@@ -328,6 +423,8 @@ def execute_daily_arena():
                 
                 p1_open = float(df1.iloc[-1]["Open"])
                 p2_open = float(df2.iloc[-1]["Open"])
+                
+                if p1_open == 0 or p2_open == 0: continue
                 
                 # Check Arbitrage bucket capacity (fake entry price = 1000 to just check capital)
                 sizing = calculate_bucketed_position_size(INITIAL_CAPITAL, "ARBITRAGE", 1000.0)
@@ -381,8 +478,8 @@ def execute_daily_arena():
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     sym1, trade_type1, get_current_date_ist(), today, float(entry_price1), float(qty1),
-                    float(pos_value1), float(entry_price1 * (0.9 if trade_type1=="PAIR_LONG" else 1.1)), float(entry_price1 * (1.1 if trade_type1=="PAIR_LONG" else 0.9)), 1.0, float(fees1), regime, float(leg1["confidence"]),
-                    "ULTRA", json.dumps({"paired_with": sym2, "pair_z_score": float(leg1["pair_z_score"])}), "ARBITRAGE", 5
+                    float(pos_value1), 0.0, 0.0, 1.0, float(fees1), regime, float(leg1["confidence"]),
+                    "ULTRA", json.dumps({"paired_with": sym2, "pair_z_score": float(leg1["pair_z_score"]), "instrument_type": "FUTURES" if trade_type1 == "PAIR_SHORT" else "EQUITY"}), "ARBITRAGE", 5
                 ))
                 
                 # Insert Leg 2
@@ -395,8 +492,8 @@ def execute_daily_arena():
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     sym2, trade_type2, get_current_date_ist(), today, float(entry_price2), float(qty2),
-                    float(pos_value2), float(entry_price2 * (0.9 if trade_type2=="PAIR_LONG" else 1.1)), float(entry_price2 * (1.1 if trade_type2=="PAIR_LONG" else 0.9)), 1.0, float(fees2), regime, float(leg2["confidence"]),
-                    "ULTRA", json.dumps({"paired_with": sym1, "pair_z_score": float(leg2["pair_z_score"])}), "ARBITRAGE", 5
+                    float(pos_value2), 0.0, 0.0, 1.0, float(fees2), regime, float(leg2["confidence"]),
+                    "ULTRA", json.dumps({"paired_with": sym1, "pair_z_score": float(leg2["pair_z_score"]), "instrument_type": "FUTURES" if trade_type2 == "PAIR_SHORT" else "EQUITY"}), "ARBITRAGE", 5
                 ))
                 
                 cash -= float(pos_value1 + fees1 + pos_value2 + fees2)
@@ -424,94 +521,102 @@ def execute_daily_arena():
             
             scored_stocks = []
             
+            today_str = get_current_date_ist()
+            today_closed = db.db_execute("SELECT symbol FROM paper_trades WHERE status LIKE 'CLOSED_%' AND exit_date = ?", (today_str,))
+            today_closed_symbols = [p["symbol"] for p in today_closed] if today_closed else []
+            
             for symbol in NIFTY_50_SYMBOLS:
-                if symbol in open_symbols: continue
-                ticker = f"{symbol}.NS"
-                df = download_ohlcv(ticker, period="6mo", interval="1d")
-                if df is None or len(df) < 50: continue
-                
-                # Use the 12-Model Ensemble instead of basic technicals
-                ensemble_analysis = get_ensemble_analysis(symbol, df, regime)
-                if not ensemble_analysis: continue
-                
-                tech_analysis = get_technical_analysis(symbol)
-                
-                confidence = ensemble_analysis.get("confidence", 0)
-                signal = ensemble_analysis.get("signal", "NEUTRAL")
-                
-                # EVENT DRIVEN VETO
-                from analysis.event_driven import scan_all_events
-                from analysis.news_sentiment_v2 import get_news_sentiment
-                from analysis.risk_parity import calculate_volatility_scalar, check_sector_concentration
-                import yfinance as yf
-                
-                events = scan_all_events(symbol)
-                news = get_news_sentiment(symbol)
-                
-                # Volatility and Sector
-                vol_scalar = calculate_volatility_scalar(f"{symbol}.NS", df)
-                sector = yf.Ticker(f"{symbol}.NS").info.get("sector", "Unknown")
-                
-                # Veto check
-                veto = veto_engine.check_all_vetoes(symbol, {}, {"regime_state": regime, "vix": regime_data.get("vix_level", 15)}, {})
-                
-                if not veto.get("vetoed") and events["earnings"].get("reporting_soon") and events["earnings"].get("days_until", 99) <= 3:
-                    veto = {"vetoed": True, "reason": "Earnings within 3 days"}
-                    logger.info(f"VETO: {symbol} rejected due to upcoming earnings.")
+                if symbol in open_symbols or symbol in today_closed_symbols: continue
+                try:
+                    ticker = f"{symbol}.NS"
+                    df = download_ohlcv(ticker, period="6mo", interval="1d")
+                    if df is None or len(df) < 50: continue
                     
-                if not veto.get("vetoed") and news.get("flag") == "BREAKING_NEGATIVE":
-                    veto = {"vetoed": True, "reason": "BREAKING_NEGATIVE news sentiment"}
-                    logger.info(f"VETO: {symbol} rejected due to breaking negative news.")
-                
-                # --- MODULE 6: PORTFOLIO CORRELATION MATRIX ---
-                # Reject if correlated > 0.65 with MORE THAN 2 existing positions
-                if not veto.get("vetoed") and len(op_histories) >= 2:
-                    high_corr_count = 0
-                    cand_returns = df["Close"].pct_change().dropna()
-                    for op_sym, op_ret in op_histories.items():
-                        try:
-                            # Align series
-                            aligned_cand, aligned_op = cand_returns.align(op_ret, join='inner')
-                            if len(aligned_cand) > 30:
-                                corr = aligned_cand.corr(aligned_op)
-                                if corr > 0.65: high_corr_count += 1
-                        except Exception:
-                            pass
-                    if high_corr_count > 2:
-                        logger.info(f"VETO: {symbol} rejected by Portfolio Correlation Filter (correlated with {high_corr_count} open positions).")
-                        veto = {"vetoed": True, "reason": f"Correlation > 0.65 with {high_corr_count} positions"}
-                # ----------------------------------------------
-                
-                # DEMO MODE: Temporarily allow soft-vetoes through if they have a good signal
-                if veto.get("vetoed") and confidence < 50:
-                    continue
+                    # Use the 12-Model Ensemble instead of basic technicals
+                    ensemble_analysis = get_ensemble_analysis(symbol, df, regime)
+                    if not ensemble_analysis: continue
                     
-                # Accept both LONG and SHORT signals (and NEUTRAL for demo if score > 50)
-                trade_type = None
-                if signal in ("BUY", "STRONG_BUY") or (signal == "NEUTRAL" and confidence > 55):
-                    trade_type = "LONG"
-                elif signal in ("SELL", "STRONG_SELL"):
-                    trade_type = "SHORT"
-                else:
-                    continue
-                
-                # Score must meet regime-adjusted minimum
-                if confidence < min_score:
-                    continue
+                    tech_analysis = get_technical_analysis(symbol)
                     
-                conviction = "ULTRA" if confidence >= 80 else ("HIGH" if confidence >= 65 else "MODERATE")
-                
-                scored_stocks.append({
-                    "symbol": symbol,
-                    "confidence": confidence,
-                    "conviction": conviction,
-                    "trade_type": trade_type,
-                    "tech": tech_analysis,
-                    "ensemble_analysis": ensemble_analysis,
-                    "regime_size_factor": regime_size_factor,
-                    "vol_scalar": vol_scalar,
-                    "sector": sector
-                })
+                    confidence = ensemble_analysis.get("confidence", 0)
+                    signal = ensemble_analysis.get("signal", "NEUTRAL")
+                    
+                    # EVENT DRIVEN VETO
+                    from analysis.event_driven import scan_all_events
+                    from analysis.news_sentiment_v2 import get_news_sentiment
+                    from analysis.risk_parity import calculate_volatility_scalar, check_sector_concentration
+                    import yfinance as yf
+                    
+                    events = scan_all_events(symbol)
+                    news = get_news_sentiment(symbol)
+                    
+                    # Volatility and Sector
+                    vol_scalar = calculate_volatility_scalar(f"{symbol}.NS", df)
+                    sector = yf.Ticker(f"{symbol}.NS").info.get("sector", "Unknown")
+                    
+                    # Veto check
+                    veto = veto_engine.check_all_vetoes(symbol, {}, {"regime_state": regime, "vix": regime_data.get("vix_level", 15)}, {})
+                    
+                    if not veto.get("vetoed") and events.get("earnings", {}).get("reporting_soon") and events.get("earnings", {}).get("days_until", 99) <= 3:
+                        veto = {"vetoed": True, "reason": "Earnings within 3 days"}
+                        logger.info(f"VETO: {symbol} rejected due to upcoming earnings.")
+                        
+                    if not veto.get("vetoed") and news.get("flag", "NONE") == "BREAKING_NEGATIVE":
+                        veto = {"vetoed": True, "reason": "BREAKING_NEGATIVE news sentiment"}
+                        logger.info(f"VETO: {symbol} rejected due to breaking negative news.")
+                    
+                    # --- MODULE 6: PORTFOLIO CORRELATION MATRIX ---
+                    # Reject if correlated > 0.65 with MORE THAN 2 existing positions
+                    if not veto.get("vetoed") and len(op_histories) >= 2:
+                        high_corr_count = 0
+                        cand_returns = df["Close"].pct_change().dropna()
+                        for op_sym, op_ret in op_histories.items():
+                            try:
+                                # Align series
+                                aligned_cand, aligned_op = cand_returns.align(op_ret, join='inner')
+                                if len(aligned_cand) > 30:
+                                    corr = aligned_cand.corr(aligned_op)
+                                    if corr > 0.65: high_corr_count += 1
+                            except Exception:
+                                pass
+                        if high_corr_count > 2:
+                            logger.info(f"VETO: {symbol} rejected by Portfolio Correlation Filter (correlated with {high_corr_count} open positions).")
+                            veto = {"vetoed": True, "reason": f"Correlation > 0.65 with {high_corr_count} positions"}
+                    # ----------------------------------------------
+                    
+                    # DEMO MODE: Temporarily allow soft-vetoes through if they have a good signal
+                    if veto.get("vetoed") and confidence < 50:
+                        continue
+                        
+                    # Accept both LONG and SHORT signals (and NEUTRAL for demo if score > 50)
+                    trade_type = None
+                    if signal in ("BUY", "STRONG_BUY") or (signal == "NEUTRAL" and confidence > 55):
+                        trade_type = "LONG"
+                    elif signal in ("SELL", "STRONG_SELL"):
+                        trade_type = "SHORT"
+                    else:
+                        continue
+                    
+                    # Score must meet regime-adjusted minimum
+                    if confidence < min_score:
+                        continue
+                        
+                    conviction = "ULTRA" if confidence >= 80 else ("HIGH" if confidence >= 65 else "MODERATE")
+                    
+                    scored_stocks.append({
+                        "symbol": symbol,
+                        "confidence": confidence,
+                        "conviction": conviction,
+                        "trade_type": trade_type,
+                        "tech": tech_analysis,
+                        "ensemble_analysis": ensemble_analysis,
+                        "regime_size_factor": regime_size_factor,
+                        "vol_scalar": vol_scalar,
+                        "sector": sector
+                    })
+                except Exception as e:
+                    logger.error(f"Error evaluating {symbol} for new trades: {e}")
+                    continue
                 
             # Sort by confidence
             scored_stocks.sort(key=lambda x: x["confidence"], reverse=True)
@@ -579,6 +684,11 @@ def execute_daily_arena():
                     sl = entry_price * (1.0 + sizing["stop_loss_dist_pct"])
                     target = entry_price * (1.0 - sizing["target_dist_pct"])
                 
+                instrument_type = "FUTURES" if (trade_type == "SHORT" and holding_class != "INTRADAY") else "EQUITY"
+                if instrument_type == "FUTURES":
+                    logger.info(f"Compliance: {symbol} overnight SHORT routed to F&O segment (FUTURES) to prevent auction penalty.")
+                import json
+                
                 # Store
                 db.db_execute("""
                     INSERT INTO paper_trades (
@@ -590,7 +700,7 @@ def execute_daily_arena():
                 """, (
                     symbol, trade_type, get_current_date_ist(), today, entry_price, qty,
                     pos_value, sl, target, 2.0, fees, regime, candidate["confidence"],
-                    candidate["conviction"], "{}", holding_class, expected_days
+                    candidate["conviction"], json.dumps({"instrument_type": instrument_type}), holding_class, expected_days
                 ))
                 
                 cash -= (pos_value + fees)
@@ -600,12 +710,16 @@ def execute_daily_arena():
                 send_telegram_sync(msg)
                 
     # 6. Snapshot portfolio equity
-    open_positions = db.db_execute("SELECT symbol, quantity FROM paper_trades WHERE status = 'OPEN'")
+    open_positions = db.db_execute("SELECT symbol, quantity, trade_type, entry_price FROM paper_trades WHERE status = 'OPEN'")
     holdings_value = 0.0
     for pos in open_positions:
         df = download_ohlcv(f"{pos['symbol']}.NS", period="5d", interval="1d")
         if df is not None and not df.empty:
-            holdings_value += float(df.iloc[-1]["Close"]) * pos["quantity"]
+            current_price = float(df.iloc[-1]["Close"])
+            if pos.get("trade_type") in ("SHORT", "PAIR_SHORT"):
+                holdings_value += (float(pos["entry_price"]) * 2 - current_price) * pos["quantity"]
+            else:
+                holdings_value += current_price * pos["quantity"]
             
     total_equity = cash + holdings_value
     cum_return_pct = ((total_equity / INITIAL_CAPITAL) - 1) * 100
@@ -628,34 +742,45 @@ def execute_daily_arena():
         if res: yesterday_eq = res[0]["total_equity"]
         
     daily_return = ((total_equity / yesterday_eq) - 1) * 100 if yesterday_eq > 0 else 0.0
-
+    previous_equity = INITIAL_CAPITAL
+    res = db.db_execute("SELECT total_equity FROM paper_portfolio ORDER BY date DESC LIMIT 1")
+    if res: previous_equity = res[0]["total_equity"]
+        
     # Calculate Nifty Benchmark
     nifty_return = 0.0
     nifty_df = download_ohlcv("^NSEI", period="1mo", interval="1d")
     if nifty_df is not None and not nifty_df.empty and len(nifty_df) >= 2:
         nifty_return = float(((nifty_df["Close"].iloc[-1] / nifty_df["Close"].iloc[-2]) - 1) * 100)
-
-    # Insert or update today's snapshot
-    if existing:
-        db.db_execute("""
-            UPDATE paper_portfolio 
-            SET cash=?, holdings_value=?, total_equity=?, open_positions=?, daily_return_pct=?, cumulative_return_pct=?, drawdown_from_peak_pct=?, benchmark_nifty_return_pct=?
-            WHERE date=?
-        """, (float(cash), float(holdings_value), float(total_equity), len(open_positions), float(daily_return), float(cum_return_pct), float(drawdown), float(nifty_return), today))
+        
+    if len(open_positions) == 0 and len(new_trades) == 0 and cash == INITIAL_CAPITAL:
+        daily_return = 0.0
+        cum_return_pct = 0.0
     else:
-        db.db_execute("""
-            INSERT INTO paper_portfolio (
-                date, cash, holdings_value, total_equity, open_positions, 
-                daily_return_pct, cumulative_return_pct, drawdown_from_peak_pct, 
-                benchmark_nifty_return_pct
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (today, float(cash), float(holdings_value), float(total_equity), len(open_positions), float(daily_return), float(cum_return_pct), float(drawdown), float(nifty_return)))
+        daily_return = ((total_equity - previous_equity) / previous_equity) * 100 if previous_equity > 0 else 0.0
+        cum_return_pct = ((total_equity - INITIAL_CAPITAL) / INITIAL_CAPITAL) * 100
+
+    db.db_execute("""
+        INSERT INTO paper_portfolio (
+            date, cash, holdings_value, total_equity, open_positions, 
+            daily_return_pct, cumulative_return_pct, drawdown_from_peak_pct, 
+            benchmark_nifty_return_pct
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT (date) DO UPDATE SET
+            cash = EXCLUDED.cash,
+            holdings_value = EXCLUDED.holdings_value,
+            total_equity = EXCLUDED.total_equity,
+            open_positions = EXCLUDED.open_positions,
+            daily_return_pct = EXCLUDED.daily_return_pct,
+            cumulative_return_pct = EXCLUDED.cumulative_return_pct,
+            drawdown_from_peak_pct = EXCLUDED.drawdown_from_peak_pct,
+            benchmark_nifty_return_pct = EXCLUDED.benchmark_nifty_return_pct
+    """, (today, float(cash), float(holdings_value), float(total_equity), len(open_positions), float(daily_return), float(cum_return_pct), float(drawdown), float(nifty_return)))
     
     logger.info(f"Arena daily execution complete. Equity: ₹{total_equity:.2f} ({cum_return_pct:.2f}%)")
     
     if len(new_trades) == 0 and len(closed_trades) == 0:
         if regime == "crisis":
-            msg = "🏟️ *ARENA UPDATE*\nRegime is CRISIS. Market volatility is too high.\nPreserving 100% Cash. No trades placed today."
+            msg = "🏟️ *ARENA UPDATE*\nRegime is CRISIS.\nSafe-haven ETFs already accumulated or insufficient signal.\nPreserving remaining cash."
         else:
             msg = f"🏟️ *ARENA UPDATE*\nScanned NIFTY 50.\nNo setups met the required conviction threshold for the current `{regime}` regime.\nPreserving Cash."
         send_telegram_sync(msg)

@@ -1,0 +1,19 @@
+flowchart LR
+    Signal(["Ensemble Signal"]) --> Veto{"12-Rule Veto\nFirewall"}
+    Veto -->|"Pledging > 40%"| Block["STAND ASIDE"]
+    Veto -->|"VIX Spike"| Block
+    Veto -->|"Earnings in 3 Days"| Block
+    Veto -->|"FII Heavy Selling"| Block
+    Veto -->|"HMM Crisis State"| Block
+    Veto -->|"All Rules Pass"| Exec(["EXECUTE IN ARENA"])
+
+    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
+    classDef decision fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
+    classDef block fill:#2a0a0a,stroke:#ff003c,stroke-width:2px,color:#ffffff;
+    classDef exec fill:#00ff88,stroke:#00ff88,stroke-width:2px,color:#000000;
+    classDef signal fill:#111827,stroke:#ffffff,stroke-width:2px,color:#ffffff;
+
+    class Signal signal;
+    class Veto decision;
+    class Block block;
+    class Exec exec;

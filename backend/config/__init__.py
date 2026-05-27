@@ -47,6 +47,10 @@ NIFTY_50_SYMBOLS = [
     "BAJAJ-AUTO", "HDFCLIFE", "SHRIRAMFIN", "LTIM", "ADANIENT",
 ]
 
+# ─── Safe Haven ETFs (Crisis Regime) ────────────────────────
+SAFE_HAVEN_ETFS = ["GOLDBEES", "NIFTYBEES"]
+SAFE_HAVEN_ALLOC_PCT = 0.05  # 5% of total capital per ETF
+
 # ─── Sector Indices ─────────────────────────────────────────────
 # Each sector has: name, yahoo_index (for sector strength calc), symbols
 

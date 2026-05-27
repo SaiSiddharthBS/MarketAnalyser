@@ -51,11 +51,12 @@ def main():
     schedule.every().day.at("08:30").do(run_overnight_intel)
     
     # 2. Live Arena polling every 15 minutes during market hours
-    # We will poll every 15 minutes. The execution engine itself handles state.
     def live_arena_wrapper():
         from data.stock_fetcher import is_market_open
-        # DEMO MODE: Removing is_market_open() check so it runs 24/7 for testing
-        run_daily_arena()
+        if is_market_open():
+            run_daily_arena()
+        else:
+            logger.info("Market Closed. Skipping 15-min Trade Discovery scan.")
 
     def live_sentinel():
         try:
@@ -66,6 +67,9 @@ def main():
 
     schedule.every(15).minutes.do(live_arena_wrapper)
     schedule.every(1).minute.do(live_sentinel)
+    
+    # 3. End of Day Snapshot and Intraday Closing
+    schedule.every().day.at("15:30").do(run_daily_arena)
     
     logger.info("Scheduled Tasks:")
     for job in schedule.get_jobs():
