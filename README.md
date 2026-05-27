@@ -342,6 +342,10 @@ docker-compose up --build -d
 *Instant push notifications for every trade execution, signal drift, and system veto.*
 <img src="Screenshots/10.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
+**16. Agent Alpha Daily Briefing Bot**
+*Comprehensive pre-market briefings delivering index sentiment, live portfolio updates, and top actionable AI stock targets directly to your phone.*
+<img src="Screenshots/11.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+
 <br>
 <div align="center">
   <i>"The future of finance is not predicted. It is computed."</i><br/>
