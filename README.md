@@ -344,7 +344,7 @@ docker-compose up --build -d
 
 **Telegram Channel**
 *Instant push notifications for every trade execution, signal drift, and system veto.*
-<img src="Screenshots/11.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
+<img src="Screenshots/11.png.png" width="100%" style="border-radius: 8px; margin-bottom: 20px;">
 
 <br>
 <div align="center">
