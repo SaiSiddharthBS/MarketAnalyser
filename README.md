@@ -96,29 +96,35 @@ Agent Alpha is not confined to a single timeframe. The engine dynamically scales
 > 🌐 **[Launch Interactive Architecture Explorer →](https://SaiSiddharthBS.github.io/MarketAnalyser/architecture/interactive/)**
 
 ```mermaid
-mindmap
-  root((Agent Alpha))
-    Engine Core
-      [15-Model Ensemble]
-      [XGBoost & LightGBM\nClassifiers]
-      [Statistical Arbitrage]
-    Risk Management
-      [HMM Regime\nClassifier]
-      [12-Rule Veto\nFirewall]
-      [Sector Correlation\nHeatmap]
-      [ATR & Kelly\nPosition Sizing]
-    Data & Infrastructure
-      [Ollama Local Daemon]
-      [LLaMA 3.3 70B\nVersatile]
-      [yfinance & FRED APIs]
-      [Neon PostgreSQL]
-      [Docker\nContainerization]
-      [Decoupled\nCron Daemons]
-    Execution & Reporting
-      [Paper Trading Arena]
-      [₹10L Starting\nCapital]
-      [Telegram Bot Alerts]
-      [Obsidian Glass UI]
+graph LR
+    Root(("Agent Alpha")) --> Core["Engine Core"]
+    Root --> Risk["Risk Management"]
+    Root --> Infra["Data & Infra"]
+    Root --> Exec["Execution"]
+
+    Core --> C1["15-Model Ensemble"]
+    Core --> C2["XGBoost & LightGBM"]
+    Core --> C3["Statistical Arbitrage"]
+
+    Risk --> R1["HMM Regime<br/>Classifier"]
+    Risk --> R2["12-Rule Veto<br/>Firewall"]
+    Risk --> R3["Correlation Heatmap"]
+    Risk --> R4["ATR & Kelly Sizing"]
+
+    Infra --> I1["Ollama Local Daemon"]
+    Infra --> I2["LLaMA 3.3 70B"]
+    Infra --> I3["Neon PostgreSQL"]
+    Infra --> I4["Dockerized Daemons"]
+
+    Exec --> E1["Paper Trading Arena"]
+    Exec --> E2["Telegram Alerts"]
+    Exec --> E3["Obsidian Glass UI"]
+
+    classDef default fill:#0b101e,stroke:#00ff88,stroke-width:2px,color:#ffffff;
+    classDef root fill:#00ff88,stroke:#00ff88,stroke-width:2px,color:#000000;
+    classDef cat fill:#111827,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
+    class Root root;
+    class Core,Risk,Infra,Exec cat;
 ```
 
 ---
@@ -129,19 +135,18 @@ Agent Alpha operates on a resilient, distributed physical architecture split acr
 
 ```mermaid
 graph TB
-    subgraph "Node 1: Executive Dashboard (Primary MacBook Pro)"
-        UI["Obsidian Glass UI\n(Local PWA)"]
-        Dev["Codebase & Strategy\nArchitecture"]
-        UI_Browser["Google Chrome / Safari\n(60 FPS)"]
+    subgraph "Node 1: Executive Dashboard (MacBook Pro)"
+        UI["Obsidian Glass UI<br/>(Local PWA)"]
+        Dev["Strategy Architecture"]
+        Browser["Google Chrome<br/>(60 FPS)"]
     end
 
-    subgraph "Node 2: The Sentinel Node (Secondary Always-On Laptop)"
-        direction TB
-        Docker["Docker Engine\n(Containerized OS)"]
-        FastAPI["FastAPI Uvicorn\nBackend"]
-        Ollama["Ollama Local Daemon\n(LLaMA 3.3 70B)"]
-        Cron["Background Scheduler\nDaemon"]
-        Quant["15-Model Quant\nEngine"]
+    subgraph "Node 2: Sentinel Node (Always-On Laptop)"
+        Docker["Docker Engine<br/>(Containerized OS)"]
+        FastAPI["FastAPI Uvicorn"]
+        Ollama["Ollama Local Daemon<br/>(LLaMA 3.3 70B)"]
+        Cron["Background Daemon"]
+        Quant["15-Model Quant Engine"]
         
         Docker --> FastAPI
         Docker --> Cron
@@ -150,22 +155,22 @@ graph TB
     end
 
     subgraph "Cloud Infrastructure"
-        DB[("Neon PostgreSQL\n(Serverless Cluster)")]
+        DB[("Neon PostgreSQL<br/>(Serverless)")]
         TG["Telegram API"]
-        Data["yfinance / FRED APIs"]
+        Data["yfinance / FRED"]
     end
 
-    UI_Browser -.->|Local Network REST / WebSockets| FastAPI
-    Quant -->|Write P&L / Read Ledger| DB
-    Quant -->|Fetch OHLCV / Auto-Heal Cache| Data
+    Browser -.->|WebSockets| FastAPI
+    Quant -->|Read Ledger| DB
+    Quant -->|Fetch OHLCV| Data
     Cron -->|Dispatch Alerts| TG
     Dev -.->|Git Push Deployment| Docker
 
-    classDef default fill:#111827,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
-    classDef highlight fill:#3b0764,stroke:#d946ef,stroke-width:2px,color:#fdf4ff;
-    classDef db fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
+    classDef highlight fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
+    classDef db fill:#0b101e,stroke:#ffffff,stroke-width:2px,color:#ffffff;
     
-    class UI,Dev,UI_Browser,Docker,FastAPI,Cron,TG,Data default;
+    class UI,Dev,Browser,Docker,FastAPI,Cron,TG,Data default;
     class Quant,Ollama highlight;
     class DB db;
 ```
@@ -184,49 +189,48 @@ At the heart of Agent Alpha lies a weighted voting ensemble that outputs a conti
 ```mermaid
 graph TD
     subgraph Technical["Technical Matrix"]
-        M1["1. KAMA/EMA\nDivergence"]
-        M2["2. Regime-Adjusted\nRSI-14"]
-        M3["3. ATR Volatility\nExpansion"]
+        M1["1. KAMA/EMA<br/>Divergence"]
+        M2["2. Regime-Adjusted<br/>RSI-14"]
+        M3["3. ATR Volatility<br/>Expansion"]
         M4["4. Bollinger Squeeze"]
     end
     
     subgraph Momentum["Momentum Matrix"]
         M5["5. MACD Acceleration"]
         M6["6. ROC-10 Velocity"]
-        M7["7. On-Balance\nVolume"]
+        M7["7. On-Balance<br/>Volume"]
     end
     
     subgraph MachineLearning["Machine Learning Layer"]
         M8["8. XGBoost Classifier"]
         M9["9. LightGBM Trees"]
-        M10["10. Sequence\nNeural Net"]
+        M10["10. Sequence<br/>Neural Net"]
         M11["11. Short-Term MLP"]
     end
     
     subgraph Microstructure["Microstructure & Flow"]
         M12["12. Smart Money VPOC"]
-        M13["13. StatArb Pairs\nZ-Score"]
+        M13["13. StatArb Pairs"]
         M14["14. FII/DII Net Flow"]
         M15["15. Options PCR"]
     end
     
-    Vote{"Dynamic Weighting\n& Voting Node"}
+    Vote{"Dynamic Weighting<br/>& Voting Node"}
+    Output["Final Directional<br/>Bias Score: -1.0 to +1.0"]
     
     Technical --> Vote
     Momentum --> Vote
     MachineLearning --> Vote
     Microstructure --> Vote
-    
-    Vote --> Output["Final Directional\nBias Score: -1.0 to +1.0"]
+    Vote --> Output
 
-    classDef default fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#e2e8f0;
-    classDef model fill:#1e1b4b,stroke:#8b5cf6,stroke-width:2px,color:#e0e7ff;
-    classDef decision fill:#4a044e,stroke:#f43f5e,stroke-width:2px,color:#ffe4e6;
-    classDef result fill:#14532d,stroke:#22c55e,stroke-width:2px,color:#f0fdf4;
+    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
+    classDef highlight fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
+    classDef decision fill:#00ff88,stroke:#00ff88,stroke-width:2px,color:#000000;
 
-    class M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15 model;
-    class Vote decision;
-    class Output result;
+    class M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15 default;
+    class Vote highlight;
+    class Output decision;
 ```
 
 #### 📐 A. Technical Matrix (4 Models)
@@ -308,7 +312,7 @@ Before a signal generated by the Ensemble hits the 10L Arena, it is subjected to
 
 ```mermaid
 flowchart LR
-    Signal(["Ensemble Signal"]) --> Veto{"12-Rule Veto\nFirewall"}
+    Signal(["Ensemble Signal"]) --> Veto{"12-Rule Veto<br/>Firewall"}
     Veto -->|"Pledging > 40%"| Block["STAND ASIDE"]
     Veto -->|"VIX Spike"| Block
     Veto -->|"Earnings in 3 Days"| Block
@@ -316,11 +320,11 @@ flowchart LR
     Veto -->|"HMM Crisis State"| Block
     Veto -->|"All Rules Pass"| Exec(["EXECUTE IN ARENA"])
 
-    classDef default fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
-    classDef decision fill:#312e81,stroke:#a855f7,stroke-width:2px,color:#f3e8ff;
-    classDef block fill:#7f1d1d,stroke:#ef4444,stroke-width:2px,color:#fef2f2;
-    classDef exec fill:#14532d,stroke:#22c55e,stroke-width:2px,color:#f0fdf4;
-    classDef signal fill:#831843,stroke:#f43f5e,stroke-width:2px,color:#fff1f2;
+    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
+    classDef decision fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
+    classDef block fill:#2a0a0a,stroke:#ff003c,stroke-width:2px,color:#ffffff;
+    classDef exec fill:#00ff88,stroke:#00ff88,stroke-width:2px,color:#000000;
+    classDef signal fill:#111827,stroke:#ffffff,stroke-width:2px,color:#ffffff;
 
     class Signal signal;
     class Veto decision;
@@ -340,30 +344,30 @@ flowchart TD
     
     Regime -->|Uptrend| Dir[Directional Logic]
     Regime -->|Chop| Arb[Stat-Arb Logic]
-    Regime -->|Crisis| Safe[Safe Haven\nETF Logic]
+    Regime -->|Crisis| Safe[Safe Haven<br/>ETF Logic]
 
     Safe --> Split(( ))
 
-    Split --> Gold{"GOLDBEES\nAlready Held?"}
-    Split --> Nifty{"NIFTYBEES\nAlready Held?"}
+    Split --> Gold{"GOLDBEES<br/>Already Held?"}
+    Split --> Nifty{"NIFTYBEES<br/>Already Held?"}
 
-    Gold -->|No| BuyG["Buy GOLDBEES\n5% of Capital"]
-    Gold -->|Yes| SkipG["Skip - Already\nAccumulated"]
+    Gold -->|No| BuyG["Buy GOLDBEES<br/>5% of Capital"]
+    Gold -->|Yes| SkipG["Skip - Already<br/>Accumulated"]
 
-    Nifty -->|No| BuyN["Buy NIFTYBEES\n5% of Capital"]
-    Nifty -->|Yes| SkipN["Skip - Already\nAccumulated"]
+    Nifty -->|No| BuyN["Buy NIFTYBEES<br/>5% of Capital"]
+    Nifty -->|Yes| SkipN["Skip - Already<br/>Accumulated"]
 
-    BuyG --> Log[("Log to DB\n& Telegram")]
+    BuyG --> Log[("Log to DB<br/>& Telegram")]
     SkipG --> Log
     BuyN --> Log
     SkipN --> Log
 
-    classDef default fill:#111827,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
-    classDef decision fill:#3b0764,stroke:#d946ef,stroke-width:2px,color:#fdf4ff;
-    classDef action fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
-    classDef ignore fill:#713f12,stroke:#eab308,stroke-width:2px,color:#fefce8;
-    classDef entry fill:#831843,stroke:#f43f5e,stroke-width:2px,color:#fff1f2,rx:20,ry:20;
-    classDef db fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#e0f2fe;
+    classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
+    classDef decision fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
+    classDef action fill:#00ff88,stroke:#00ff88,stroke-width:2px,color:#000000;
+    classDef ignore fill:#2a2a0a,stroke:#ffcc00,stroke-width:2px,color:#ffffff;
+    classDef entry fill:#111827,stroke:#ffffff,stroke-width:2px,color:#ffffff;
+    classDef db fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
 
     class Start entry;
     class Regime,Gold,Nifty decision;
