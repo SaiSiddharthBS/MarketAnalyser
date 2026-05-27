@@ -46,17 +46,6 @@ With **Zero-Trust Capital Preservation Architecture**, every signal must survive
 
 ---
 
-## 🚀 What's New in v4.0 (Spring 2026 Update)
-*Agent Alpha v4.0 introduces the most significant systemic overhauls since inception. The focus shifted heavily from local scripting to cloud-native resilience, extreme UI refinement, and autonomous mathematical stress-testing.*
-
-*   **Obsidian Glass UI Overhaul:** Upgraded the entire frontend from a standard dark theme to the "Obsidian Terminal" aesthetic. Features deep obsidian teal layers (`#051114`), glowing cyber-green borders (`#00FF88`), fluid Apple-esque spring micro-animations, and completely removed glitchy legacy CSS effects for a true institutional look.
-*   **Serverless Database Hardening (Neon PostgreSQL):** We completely ripped out local SQLite DB files (which were prone to Docker volume corruption) and integrated a fully cloud-native **Neon PostgreSQL** serverless instance (`backend/database.py`). Trades, system states, and the Paper Trading ledger are now permanently persisted and infinitely scalable.
-*   **Architecture & Documentation Explorer:** Deployed a fully interactive, React-based web terminal (`frontend/react_terminal`) allowing the CEO to click through the Agent Alpha architecture. Additionally, all core architecture diagrams in this repo have been locally pre-rendered via `puppeteer` into ultra-high-resolution PNGs to permanently solve GitHub Markdown rendering bugs.
-*   **Autonomous Test Suite Deployment:** The system is now backed by a rigorous suite of local unit tests (`test_db.py`, `test_prices.py`, `test_zscore.py`, `test_crisis.py`). These independently verify that statistical arbitrage cointegration logic, yfinance data retrieval, and emergency Crisis Regimes function flawlessly before live execution.
-*   **Sentinel Node Automation:** Implemented `deploy_to_dell.sh` for instant push-button deployment from the MacBook Pro to the Always-On Windows Sentinel node, wrapping the entire `docker-compose.yml` lifecycle.
-
----
-
 ## 🔥 Enterprise Feature Suite: UI vs. Autonomous Engine
 
 ### 🧠 Autonomous Execution & AI
