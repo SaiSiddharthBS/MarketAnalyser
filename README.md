@@ -25,6 +25,7 @@
 
 ## 📑 Table of Contents
 - [Executive Overview](#-executive-overview)
+- [What's New in v4.0 (Spring 2026 Update)](#-whats-new-in-v40-spring-2026-update)
 - [Enterprise Feature Suite](#-enterprise-feature-suite-ui-vs-autonomous-engine)
 - [Multi-Horizon Trading Expertise](#-multi-horizon-trading-expertise)
 - [Why Agent Alpha?](#-why-agent-alpha)
@@ -45,8 +46,18 @@ With **Zero-Trust Capital Preservation Architecture**, every signal must survive
 
 ---
 
+## 🚀 What's New in v4.0 (Spring 2026 Update)
+*Agent Alpha v4.0 introduces the most significant systemic overhauls since inception. The focus shifted heavily from local scripting to cloud-native resilience, extreme UI refinement, and autonomous mathematical stress-testing.*
+
+*   **Obsidian Glass UI Overhaul:** Upgraded the entire frontend from a standard dark theme to the "Obsidian Terminal" aesthetic. Features deep obsidian teal layers (`#051114`), glowing cyber-green borders (`#00FF88`), fluid Apple-esque spring micro-animations, and completely removed glitchy legacy CSS effects for a true institutional look.
+*   **Serverless Database Hardening (Neon PostgreSQL):** We completely ripped out local SQLite DB files (which were prone to Docker volume corruption) and integrated a fully cloud-native **Neon PostgreSQL** serverless instance (`backend/database.py`). Trades, system states, and the Paper Trading ledger are now permanently persisted and infinitely scalable.
+*   **Architecture & Documentation Explorer:** Deployed a fully interactive, React-based web terminal (`frontend/react_terminal`) allowing the CEO to click through the Agent Alpha architecture. Additionally, all core architecture diagrams in this repo have been locally pre-rendered via `puppeteer` into ultra-high-resolution PNGs to permanently solve GitHub Markdown rendering bugs.
+*   **Autonomous Test Suite Deployment:** The system is now backed by a rigorous suite of local unit tests (`test_db.py`, `test_prices.py`, `test_zscore.py`, `test_crisis.py`). These independently verify that statistical arbitrage cointegration logic, yfinance data retrieval, and emergency Crisis Regimes function flawlessly before live execution.
+*   **Sentinel Node Automation:** Implemented `deploy_to_dell.sh` for instant push-button deployment from the MacBook Pro to the Always-On Windows Sentinel node, wrapping the entire `docker-compose.yml` lifecycle.
+
+---
+
 ## 🔥 Enterprise Feature Suite: UI vs. Autonomous Engine
-*While others build dashboards to look at the market, Agent Alpha was built to conquer it.*
 
 ### 🧠 Autonomous Execution & AI
 *   **Zero-Latency Signal Generation:** Engine processes OHLCV ticks, calculates 15 model vectors, and generates a unified bias in `<400ms`.
@@ -67,7 +78,7 @@ With **Zero-Trust Capital Preservation Architecture**, every signal must survive
 
 ## ⏱️ Multi-Horizon Trading Expertise
 
-Agent Alpha is not confined to a single timeframe. The engine dynamically scales its analysis across three distinct temporal horizons, ensuring alpha extraction regardless of market speed.
+Agent Alpha dynamically scales its analysis across three distinct temporal horizons, ensuring alpha extraction regardless of market speed.
 
 1. **Intraday Microstructure (High-Frequency Context):**
    Scans the first 45 minutes of the trading session for Smart Money block orders and Volume Point of Control (VPOC) migrations to gauge institutional sentiment before executing swing trades.
@@ -86,14 +97,15 @@ Agent Alpha is not confined to a single timeframe. The engine dynamically scales
 | **Regime Awareness** | None (trades blindly in all conditions) | 4-state Hidden Markov Model |
 | **Risk Firewall** | Basic static stop-loss | 12-rule zero-trust veto |
 | **Position Sizing** | Fixed lots / constant capital | ATR + Kelly Criterion scaling |
+| **Database Architecture**| Local JSON / SQLite | Neon PostgreSQL Serverless DB |
 | **AI Integration** | Cloud API calls (OpenAI) | Local LLaMA 3.3 70B (zero data leakage) |
-| **Infrastructure** | Single python script | Dual-node Docker + Neon Postgres |
+| **Infrastructure** | Single python script | Dual-node Docker cluster + shell scripts |
 
 ---
 
 ## 🚀 The Agent Alpha Ecosystem Mindmap
 
-> 🌐 **[Launch Interactive Architecture Explorer →](https://SaiSiddharthBS.github.io/MarketAnalyser/architecture/interactive/)**
+> 🌐 **[Launch Interactive Architecture Explorer →](https://SaiSiddharthBS.github.io/MarketAnalyser/react_terminal/index.html)**
 
 <div align="center">
   <img src=".github/assets/diagrams/mindmap.png" alt="Agent Alpha Ecosystem Mindmap" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.15);" />
@@ -103,14 +115,14 @@ Agent Alpha is not confined to a single timeframe. The engine dynamically scales
 
 ## 🏗️ Hardware Architecture: The Dual-Node Setup
 
-Agent Alpha operates on a resilient, distributed physical architecture split across two synchronized machines. This ensures absolute separation of heavy quantitative compute processes and the executive visualization/monitoring dashboard.
+Agent Alpha operates on a resilient, distributed physical architecture split across two synchronized machines. This ensures absolute separation of heavy quantitative compute processes and the executive visualization dashboard.
 
 <div align="center">
   <img src=".github/assets/diagrams/architecture.png" alt="Dual-Node Hardware Architecture" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,229,255,0.15);" />
 </div>
 
-**Node 1 (Primary Executive Station - MacBook Pro):** The visualization and development terminal. The CEO interacts with the system here via the stunning Obsidian Glass UI. When the CEO leaves for the office and shuts this MacBook down, the trading system remains completely unaffected.
-**Node 2 (Sentinel Execution Node - Secondary Laptop):** The absolute core of the operation. This secondary laptop sits on a desk plugged in 24/7. It runs the `docker-compose` stack containing the FastAPI backend, the Cron daemons, the Machine Learning models, and the massive localized **Ollama (LLaMA 3.3 70B)** engine. Because Node 2 is "Always-On", the 8:00 AM pre-market scans and 3:45 PM execution cron-jobs trigger relentlessly without fail, entirely independent of the MacBook Pro.
+**Node 1 (Primary Executive Station - MacBook Pro):** The visualization and development terminal. The CEO interacts with the system here via the stunning Obsidian Glass UI. Development, testing, and UI overhauls are tested natively here.
+**Node 2 (Sentinel Execution Node - Always-On Windows):** The absolute core of the operation. This secondary node runs the `docker-compose` stack containing the FastAPI backend, Neon DB links, Cron daemons, ML models, and the localized **Ollama (LLaMA 3.3 70B)** engine. Because Node 2 is "Always-On", the 8:00 AM pre-market scans and 3:45 PM execution cron-jobs trigger relentlessly without fail. Deployment from MacBook to Node 2 is handled via our custom `deploy_to_dell.sh` CI/CD script.
 
 ---
 
@@ -154,7 +166,7 @@ At the heart of Agent Alpha lies a weighted voting ensemble that outputs a conti
 <details>
 <summary><b>Click to expand Microstructure Models</b></summary>
 12. **Smart Money / VPOC:** Scans intraday tape for high-density institutional accumulation (Demand Blocks) at the Volume Point of Control.
-13. **StatArb Pairs Trading (Z-Score):** Monitors highly cointegrated sector pairs (e.g., TCS vs INFY) and triggers mean-reversion signals when the spread exceeds $\pm2$ standard deviations.
+13. **StatArb Pairs Trading (Z-Score):** The `stat_arb.py` engine monitors highly cointegrated sector pairs (e.g., TCS vs INFY). Using verified rolling unit root testing, it triggers mean-reversion signals when the spread ratio deviates by more than $\pm2$ standard deviations from the historical mean.
 14. **Institutional Flow (FII/DII):** Tracks net daily capital injection/extraction by Foreign and Domestic Institutional Investors into the Indian cash market.
 15. **Options Put-Call Ratio (PCR):** Analyzes open interest across the derivatives chain to detect contrarian retail sentiment extremes.
 </details>
@@ -163,35 +175,34 @@ At the heart of Agent Alpha lies a weighted voting ensemble that outputs a conti
 
 ### 2. Walk-Forward Optimization (WFO) Backtesting Logic
 
-Agent Alpha’s Machine Learning classifiers were explicitly engineered to prevent "curve-fitting" and overfitting, utilizing a strict **Walk-Forward Optimization** protocol rather than a standard static backtest.
+Agent Alpha’s Machine Learning classifiers were explicitly engineered to prevent "curve-fitting" and overfitting, utilizing a strict **Walk-Forward Optimization** protocol.
 *   **The Problem with Static Data:** Traditional algorithms train on a random 80/20 split, failing to account for evolving market regimes.
-*   **The WFO Solution:** Agent Alpha models are trained sequentially. A model is trained on the 2018-2022 window, then tested strictly on unseen 2023 data. The engine then rolls forward, re-training on 2019-2023, and testing on 2024. This simulates genuine "out-of-sample" predictive logic, ensuring the XGBoost and LightGBM models understand shifting macro-dynamics before they are deployed to the live Arena.
+*   **The WFO Solution:** Agent Alpha models are trained sequentially. A model is trained on the 2018-2022 window, then tested strictly on unseen 2023 data. The engine then rolls forward, re-training on 2019-2023, and testing on 2024. 
 
 ---
 
 ### 3. Risk Heatmap & Sector Correlation Matrix
 
-Capital preservation relies heavily on preventing sector overexposure. 
-Agent Alpha continuously calculates a dynamic **Pearson Correlation Matrix** across the active portfolio. 
-*   **The Overexposure Veto:** If the system attempts to buy 5 different highly correlated IT stocks (e.g., TCS, INFY, HCLTECH), the Correlation Matrix flags the beta-cluster.
-*   **Dynamic Trimming:** The system will execute the highest-conviction signal in the cluster and automatically veto the redundant, correlated trades. This forces capital to be deployed across orthogonal (uncorrelated) vectors, actively dampening portfolio variance and shielding the 10L capital pool from localized sector collapses.
+Capital preservation relies heavily on preventing sector overexposure. Agent Alpha continuously calculates a dynamic **Pearson Correlation Matrix** across the active portfolio. 
+*   **The Overexposure Veto:** If the system attempts to buy 5 different highly correlated IT stocks, the Correlation Matrix flags the beta-cluster.
+*   **Dynamic Trimming:** The system will execute the highest-conviction signal in the cluster and automatically veto the redundant, correlated trades.
 
 ---
 
-### 4. The "Self-Healing" Data Pipeline
+### 4. The "Self-Healing" Data Pipeline & Test Suite
 
-Data is the lifeblood of a quant engine. External APIs (`yfinance`, FRED) are inherently unstable, often suffering rate limits, timeouts, or corrupted OHLCV prints. Agent Alpha employs a **Self-Healing Data Pipeline**:
-*   **Exponential Backoff Retries:** If the yfinance server drops the connection, the cron engine automatically halts, waits, and retries the fetch with an exponential backoff.
-*   **SQLite Fallback Cache:** If an API goes completely dark, the engine falls back to the local SQLite database snapshot from the previous close, preventing the ML ensemble from executing on NULL vectors.
-*   **Anomaly Detection:** Any sudden 20%+ unverified spike in a single 15-minute candle is quarantined by the data validator as a "Bad Tick" until cross-verified, preventing catastrophic execution errors.
+External APIs (`yfinance`, FRED) are inherently unstable. Agent Alpha is built with a resilient pipeline heavily scrutinized by our automated testing suite:
+*   **Exponential Backoff Retries:** Managed by `stock_fetcher.py`. If a server drops the connection, the cron engine automatically halts, waits, and retries the fetch.
+*   **Database Fallbacks:** Validated by `test_db.py`. If an API goes dark, the engine falls back to historical records to prevent the ML ensemble from receiving NULL vectors.
+*   **Z-Score Validations:** `test_zscore.py` routinely verifies the standard deviation math for statistical arbitrage pairs.
 
 ---
 
 ### 5. The Paper Trading Arena (The 10L Crucible)
 
-The **Paper Trading Arena** is where models prove their worth. Rigorously stress-tested, the Arena operates with a strict **₹10 Lakh (`₹1,000,000`) Base Capital**.
+The **Paper Trading Arena** is where models prove their worth. It operates with a strict **₹10 Lakh (`₹1,000,000`) Base Capital**.
 
-*   **Real-time Ledger:** Deducts margin, tracks open P&L, and accounts for brokerage and slippage. We rigidly reset the capital logic to 10L to preserve mathematical integrity and prevent long/short miscalculations.
+*   **Cloud-Native Serverless Ledger:** All simulated trades, slippage calculations, open P&L, and margin utilizations are instantly logged and retrieved via our remote **Neon PostgreSQL** server, preventing localized file lock issues during heavy cron executions.
 *   **Dynamic Margin Calculation:** Ensures that the 10L baseline is protected, utilizing Kelly Criterion to size bets appropriately without blowing up the account.
 *   **Weekend Staleness Architecture:** Upgraded to natively handle 96-hour data staleness thresholds to gracefully maneuver over weekends without triggering false "stale data" vetos.
 
@@ -209,7 +220,7 @@ Before a signal generated by the Ensemble hits the 10L Arena, it is subjected to
 
 ## 🚨 Crisis Regime Strategy Execution
 
-During major market drawdowns, Agent Alpha dynamically switches into the **Crisis Regime**. This protects capital using a Safe Haven strategy while strategically accumulating the broader market at a discount.
+During major market drawdowns, Agent Alpha dynamically switches into the **Crisis Regime**. This protects capital using a Safe Haven strategy while strategically accumulating the broader market at a discount. Validated completely via `test_crisis.py`.
 
 <div align="center">
   <img src=".github/assets/diagrams/crisis.png" alt="Crisis Regime Strategy Execution" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.15);" />
@@ -266,8 +277,6 @@ $$ K_{\text{final}} = K_{\text{raw}} \times M_{\text{regime}} \times (1 + B_{\te
 
 ## ⚙️ System Requirements & Software Dependencies
 
-Because Agent Alpha utilizes localized LLMs and heavy quantitative matrix multiplications, it requires a robust environment to run optimally.
-
 ### Hardware Requirements (Sentinel Node)
 *   **CPU:** 8-Core Processor (Apple Silicon M1/M2/M3, Intel Core i7, or AMD Ryzen 7)
 *   **RAM:** 16GB Minimum (32GB+ Highly Recommended for LLaMA 3.3 70B execution in memory)
@@ -278,7 +287,7 @@ Because Agent Alpha utilizes localized LLMs and heavy quantitative matrix multip
 *   **Docker & Docker Compose:** Containerization and orchestrating the backend/cron stack.
 *   **Python 3.10+:** The core runtime for the quantitative engine.
 *   **Ollama:** Must be installed locally or accessible via IP to serve the `llama3.3:70b-versatile` model.
-*   **Neon Serverless PostgreSQL:** For stateless ledger storage.
+*   **Neon Serverless PostgreSQL:** For stateless ledger storage (`backend/database.py`).
 *   **Core Python Libraries:** `fastapi`, `xgboost`, `lightgbm`, `pandas-ta`, `statsmodels`, `yfinance`.
 
 ---
@@ -288,9 +297,9 @@ Because Agent Alpha utilizes localized LLMs and heavy quantitative matrix multip
 Agent Alpha relies on a pristine, containerized deployment matrix to guarantee environment parity between the development Node and the Sentinel execution Node.
 
 ### Architecture Highlights:
-*   **`docker-compose.yml` orchestration:** The backend FastAPI server, the cron scheduler, and the Python execution environments are wrapped into lightweight Docker containers.
-*   **Stateless Compute:** All persistent state (Paper Arena Ledgers, Historical P&L) is pushed to **Neon Serverless PostgreSQL**. If a Docker container goes down, it can be instantaneously rebuilt without losing a single cent of paper trading data.
-*   **Dependency Locking:** `requirements.txt` maps explicitly verified library versions to prevent `yfinance` or `xgboost` upstream breaks from crashing the engine.
+*   **`docker-compose.yml` orchestration:** The backend FastAPI server, the cron scheduler, and the Python execution environments are wrapped into lightweight Docker containers with appropriately routed network ports (avoiding native Windows port clashing).
+*   **Stateless Compute:** All persistent state is pushed to **Neon PostgreSQL**. If a Docker container goes down, it can be instantaneously rebuilt without losing a single cent of paper trading data.
+*   **Deployment CI/CD (`deploy_to_dell.sh`):** A bash script specifically engineered to bypass Windows environment bugs by gracefully executing git pulls and docker container restarts on the remote Sentinel.
 
 ### Local Ignition Commands
 ```bash
