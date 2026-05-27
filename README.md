@@ -280,7 +280,7 @@ docker-compose up --build -d
 
 ---
 
-## 📸 System Gallery & Dashboards
+## 📸 System Gallery
 
 **1. Agent Alpha Main Terminal Dashboard**
 *Live streaming market analysis and overall portfolio standing within the Obsidian UI.*
