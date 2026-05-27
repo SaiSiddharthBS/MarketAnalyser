@@ -98,28 +98,28 @@ Agent Alpha is not confined to a single timeframe. The engine dynamically scales
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0b101e', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#00ff88', 'lineColor': '#00e5ff', 'secondaryColor': '#111827', 'tertiaryColor': '#111827'}}}%%
 mindmap
-  root(("`**Agent Alpha**`"))
-    ("`**Engine Core**`")
-      ["`15-Model Ensemble`"]
-      ["`XGBoost & LightGBM<br/>Classifiers`"]
-      ["`Statistical Arbitrage`"]
-    ("`**Risk Management**`")
-      ["`HMM Regime<br/>Classifier`"]
-      ["`12-Rule Veto<br/>Firewall`"]
-      ["`Sector Correlation<br/>Heatmap`"]
-      ["`ATR & Kelly<br/>Position Sizing`"]
-    ("`**Data & Infra**`")
-      ["`Ollama Local Daemon`"]
-      ["`LLaMA 3.3 70B<br/>Versatile`"]
-      ["`yfinance & FRED APIs`"]
-      ["`Neon PostgreSQL`"]
-      ["`Docker<br/>Containerization`"]
-      ["`Decoupled<br/>Cron Daemons`"]
-    ("`**Execution**`")
-      ["`Paper Trading Arena`"]
-      ["`₹10L Starting<br/>Capital`"]
-      ["`Telegram Bot Alerts`"]
-      ["`Obsidian Glass UI`"]
+  root(("&nbsp;&nbsp;&nbsp;Agent Alpha&nbsp;&nbsp;&nbsp;"))
+    ("&nbsp;&nbsp;&nbsp;Engine Core&nbsp;&nbsp;&nbsp;")
+      ["&nbsp;&nbsp;&nbsp;15-Model Ensemble&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;XGBoost & LightGBM<br/>Classifiers&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;Statistical Arbitrage&nbsp;&nbsp;&nbsp;"]
+    ("&nbsp;&nbsp;&nbsp;Risk Management&nbsp;&nbsp;&nbsp;")
+      ["&nbsp;&nbsp;&nbsp;HMM Regime<br/>Classifier&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;12-Rule Veto<br/>Firewall&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;Sector Correlation<br/>Heatmap&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;ATR & Kelly<br/>Position Sizing&nbsp;&nbsp;&nbsp;"]
+    ("&nbsp;&nbsp;&nbsp;Data & Infra&nbsp;&nbsp;&nbsp;")
+      ["&nbsp;&nbsp;&nbsp;Ollama Local Daemon&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;LLaMA 3.3 70B<br/>Versatile&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;yfinance & FRED APIs&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;Neon PostgreSQL&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;Docker<br/>Containerization&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;Decoupled<br/>Cron Daemons&nbsp;&nbsp;&nbsp;"]
+    ("&nbsp;&nbsp;&nbsp;Execution&nbsp;&nbsp;&nbsp;")
+      ["&nbsp;&nbsp;&nbsp;Paper Trading Arena&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;₹10L Starting<br/>Capital&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;Telegram Bot Alerts&nbsp;&nbsp;&nbsp;"]
+      ["&nbsp;&nbsp;&nbsp;Obsidian Glass UI&nbsp;&nbsp;&nbsp;"]
 ```
 
 ---
@@ -130,36 +130,36 @@ Agent Alpha operates on a resilient, distributed physical architecture split acr
 
 ```mermaid
 graph TB
-    subgraph "`Node 1: Executive Dashboard (MacBook Pro)`"
-        UI["`Obsidian Glass UI<br/>(Local PWA)`"]
-        Dev["`Strategy Architecture`"]
-        Browser["`Google Chrome<br/>(60 FPS)`"]
+    subgraph "Node 1: Executive Dashboard (MacBook Pro)"
+        UI["&nbsp;&nbsp;&nbsp;Obsidian Glass UI<br/>(Local PWA)&nbsp;&nbsp;&nbsp;"]
+        Dev["&nbsp;&nbsp;&nbsp;Strategy Architecture&nbsp;&nbsp;&nbsp;"]
+        Browser["&nbsp;&nbsp;&nbsp;Google Chrome<br/>(60 FPS)&nbsp;&nbsp;&nbsp;"]
     end
 
-    subgraph "`Node 2: Sentinel Node (Always-On Laptop)`"
-        Docker["`Docker Engine<br/>(Containerized OS)`"]
-        FastAPI["`FastAPI Uvicorn`"]
-        Ollama["`Ollama Local Daemon<br/>(LLaMA 3.3 70B)`"]
-        Cron["`Background Daemon`"]
-        Quant["`15-Model Quant Engine`"]
+    subgraph "Node 2: Sentinel Node (Always-On Laptop)"
+        Docker["&nbsp;&nbsp;&nbsp;Docker Engine<br/>(Containerized OS)&nbsp;&nbsp;&nbsp;"]
+        FastAPI["&nbsp;&nbsp;&nbsp;FastAPI Uvicorn&nbsp;&nbsp;&nbsp;"]
+        Ollama["&nbsp;&nbsp;&nbsp;Ollama Local Daemon<br/>(LLaMA 3.3 70B)&nbsp;&nbsp;&nbsp;"]
+        Cron["&nbsp;&nbsp;&nbsp;Background Daemon&nbsp;&nbsp;&nbsp;"]
+        Quant["&nbsp;&nbsp;&nbsp;15-Model Quant Engine&nbsp;&nbsp;&nbsp;"]
         
         Docker --> FastAPI
         Docker --> Cron
         Cron --> Quant
-        Quant -->|"`Sentiment Intel`"| Ollama
+        Quant -->|"&nbsp;&nbsp;&nbsp;Sentiment Intel&nbsp;&nbsp;&nbsp;"| Ollama
     end
 
-    subgraph "`Cloud Infrastructure`"
-        DB[("`Neon PostgreSQL<br/>(Serverless)`")]
-        TG["`Telegram API`"]
-        Data["`yfinance / FRED`"]
+    subgraph "Cloud Infrastructure"
+        DB[("&nbsp;&nbsp;&nbsp;Neon PostgreSQL<br/>(Serverless)&nbsp;&nbsp;&nbsp;")]
+        TG["&nbsp;&nbsp;&nbsp;Telegram API&nbsp;&nbsp;&nbsp;"]
+        Data["&nbsp;&nbsp;&nbsp;yfinance / FRED&nbsp;&nbsp;&nbsp;"]
     end
 
-    Browser -.->|"`WebSockets`"| FastAPI
-    Quant -->|"`Read Ledger`"| DB
-    Quant -->|"`Fetch OHLCV`"| Data
-    Cron -->|"`Dispatch Alerts`"| TG
-    Dev -.->|"`Git Push Deployment`"| Docker
+    Browser -.->|"&nbsp;&nbsp;&nbsp;WebSockets&nbsp;&nbsp;&nbsp;"| FastAPI
+    Quant -->|"&nbsp;&nbsp;&nbsp;Read Ledger&nbsp;&nbsp;&nbsp;"| DB
+    Quant -->|"&nbsp;&nbsp;&nbsp;Fetch OHLCV&nbsp;&nbsp;&nbsp;"| Data
+    Cron -->|"&nbsp;&nbsp;&nbsp;Dispatch Alerts&nbsp;&nbsp;&nbsp;"| TG
+    Dev -.->|"&nbsp;&nbsp;&nbsp;Git Push Deployment&nbsp;&nbsp;&nbsp;"| Docker
 
     classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
     classDef highlight fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
@@ -183,35 +183,35 @@ At the heart of Agent Alpha lies a weighted voting ensemble that outputs a conti
 
 ```mermaid
 graph TD
-    subgraph Technical["`Technical Matrix`"]
-        M1["`1. KAMA/EMA<br/>Divergence`"]
-        M2["`2. Regime-Adjusted<br/>RSI-14`"]
-        M3["`3. ATR Volatility<br/>Expansion`"]
-        M4["`4. Bollinger Squeeze`"]
+    subgraph Technical["Technical Matrix"]
+        M1["&nbsp;&nbsp;&nbsp;1. KAMA/EMA<br/>Divergence&nbsp;&nbsp;&nbsp;"]
+        M2["&nbsp;&nbsp;&nbsp;2. Regime-Adjusted<br/>RSI-14&nbsp;&nbsp;&nbsp;"]
+        M3["&nbsp;&nbsp;&nbsp;3. ATR Volatility<br/>Expansion&nbsp;&nbsp;&nbsp;"]
+        M4["&nbsp;&nbsp;&nbsp;4. Bollinger Squeeze&nbsp;&nbsp;&nbsp;"]
     end
     
-    subgraph Momentum["`Momentum Matrix`"]
-        M5["`5. MACD Acceleration`"]
-        M6["`6. ROC-10 Velocity`"]
-        M7["`7. On-Balance<br/>Volume`"]
+    subgraph Momentum["Momentum Matrix"]
+        M5["&nbsp;&nbsp;&nbsp;5. MACD Acceleration&nbsp;&nbsp;&nbsp;"]
+        M6["&nbsp;&nbsp;&nbsp;6. ROC-10 Velocity&nbsp;&nbsp;&nbsp;"]
+        M7["&nbsp;&nbsp;&nbsp;7. On-Balance<br/>Volume&nbsp;&nbsp;&nbsp;"]
     end
     
-    subgraph MachineLearning["`Machine Learning Layer`"]
-        M8["`8. XGBoost Classifier`"]
-        M9["`9. LightGBM Trees`"]
-        M10["`10. Sequence<br/>Neural Net`"]
-        M11["`11. Short-Term MLP`"]
+    subgraph MachineLearning["Machine Learning Layer"]
+        M8["&nbsp;&nbsp;&nbsp;8. XGBoost Classifier&nbsp;&nbsp;&nbsp;"]
+        M9["&nbsp;&nbsp;&nbsp;9. LightGBM Trees&nbsp;&nbsp;&nbsp;"]
+        M10["&nbsp;&nbsp;&nbsp;10. Sequence<br/>Neural Net&nbsp;&nbsp;&nbsp;"]
+        M11["&nbsp;&nbsp;&nbsp;11. Short-Term MLP&nbsp;&nbsp;&nbsp;"]
     end
     
-    subgraph Microstructure["`Microstructure & Flow`"]
-        M12["`12. Smart Money VPOC`"]
-        M13["`13. StatArb Pairs`"]
-        M14["`14. FII/DII Net Flow`"]
-        M15["`15. Options PCR`"]
+    subgraph Microstructure["Microstructure & Flow"]
+        M12["&nbsp;&nbsp;&nbsp;12. Smart Money VPOC&nbsp;&nbsp;&nbsp;"]
+        M13["&nbsp;&nbsp;&nbsp;13. StatArb Pairs&nbsp;&nbsp;&nbsp;"]
+        M14["&nbsp;&nbsp;&nbsp;14. FII/DII Net Flow&nbsp;&nbsp;&nbsp;"]
+        M15["&nbsp;&nbsp;&nbsp;15. Options PCR&nbsp;&nbsp;&nbsp;"]
     end
     
-    Vote{"`Dynamic Weighting<br/>& Voting Node`"}
-    Output["`Final Directional<br/>Bias Score: -1.0 to +1.0`"]
+    Vote{"&nbsp;&nbsp;&nbsp;Dynamic Weighting<br/>& Voting Node&nbsp;&nbsp;&nbsp;"}
+    Output["&nbsp;&nbsp;&nbsp;Final Directional<br/>Bias Score: -1.0 to +1.0&nbsp;&nbsp;&nbsp;"]
     
     Technical --> Vote
     Momentum --> Vote
@@ -307,13 +307,13 @@ Before a signal generated by the Ensemble hits the 10L Arena, it is subjected to
 
 ```mermaid
 flowchart LR
-    Signal(["`Ensemble Signal`"]) --> Veto{"`12-Rule Veto<br/>Firewall`"}
-    Veto -->|"`Pledging > 40%`"| Block["`STAND ASIDE`"]
-    Veto -->|"`VIX Spike`"| Block
-    Veto -->|"`Earnings in 3 Days`"| Block
-    Veto -->|"`FII Heavy Selling`"| Block
-    Veto -->|"`HMM Crisis State`"| Block
-    Veto -->|"`All Rules Pass`"| Exec(["`EXECUTE IN ARENA`"])
+    Signal(["&nbsp;&nbsp;&nbsp;Ensemble Signal&nbsp;&nbsp;&nbsp;"]) --> Veto{"&nbsp;&nbsp;&nbsp;12-Rule Veto<br/>Firewall&nbsp;&nbsp;&nbsp;"}
+    Veto -->|"&nbsp;&nbsp;&nbsp;Pledging > 40%&nbsp;&nbsp;&nbsp;"| Block["&nbsp;&nbsp;&nbsp;STAND ASIDE&nbsp;&nbsp;&nbsp;"]
+    Veto -->|"&nbsp;&nbsp;&nbsp;VIX Spike&nbsp;&nbsp;&nbsp;"| Block
+    Veto -->|"&nbsp;&nbsp;&nbsp;Earnings in 3 Days&nbsp;&nbsp;&nbsp;"| Block
+    Veto -->|"&nbsp;&nbsp;&nbsp;FII Heavy Selling&nbsp;&nbsp;&nbsp;"| Block
+    Veto -->|"&nbsp;&nbsp;&nbsp;HMM Crisis State&nbsp;&nbsp;&nbsp;"| Block
+    Veto -->|"&nbsp;&nbsp;&nbsp;All Rules Pass&nbsp;&nbsp;&nbsp;"| Exec(["&nbsp;&nbsp;&nbsp;EXECUTE IN ARENA&nbsp;&nbsp;&nbsp;"])
 
     classDef default fill:#0b101e,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
     classDef decision fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
@@ -335,24 +335,24 @@ During major market drawdowns, Agent Alpha dynamically switches into the **Crisi
 
 ```mermaid
 flowchart TD
-    Start(["`Daily Execution Starts`"]) --> Regime{"`What Regime?`"}
+    Start(["&nbsp;&nbsp;&nbsp;Daily Execution Starts&nbsp;&nbsp;&nbsp;"]) --> Regime{"&nbsp;&nbsp;&nbsp;What Regime?&nbsp;&nbsp;&nbsp;"}
     
-    Regime -->|"`Uptrend`"| Dir["`Directional Logic`"]
-    Regime -->|"`Chop`"| Arb["`Stat-Arb Logic`"]
-    Regime -->|"`Crisis`"| Safe["`Safe Haven<br/>ETF Logic`"]
+    Regime -->|"&nbsp;&nbsp;&nbsp;Uptrend&nbsp;&nbsp;&nbsp;"| Dir["&nbsp;&nbsp;&nbsp;Directional Logic&nbsp;&nbsp;&nbsp;"]
+    Regime -->|"&nbsp;&nbsp;&nbsp;Chop&nbsp;&nbsp;&nbsp;"| Arb["&nbsp;&nbsp;&nbsp;Stat-Arb Logic&nbsp;&nbsp;&nbsp;"]
+    Regime -->|"&nbsp;&nbsp;&nbsp;Crisis&nbsp;&nbsp;&nbsp;"| Safe["&nbsp;&nbsp;&nbsp;Safe Haven<br/>ETF Logic&nbsp;&nbsp;&nbsp;"]
 
     Safe --> Split(( ))
 
-    Split --> Gold{"`GOLDBEES<br/>Already Held?`"}
-    Split --> Nifty{"`NIFTYBEES<br/>Already Held?`"}
+    Split --> Gold{"&nbsp;&nbsp;&nbsp;GOLDBEES<br/>Already Held?&nbsp;&nbsp;&nbsp;"}
+    Split --> Nifty{"&nbsp;&nbsp;&nbsp;NIFTYBEES<br/>Already Held?&nbsp;&nbsp;&nbsp;"}
 
-    Gold -->|"`No`"| BuyG["`Buy GOLDBEES<br/>5% of Capital`"]
-    Gold -->|"`Yes`"| SkipG["`Skip - Already<br/>Accumulated`"]
+    Gold -->|"&nbsp;&nbsp;&nbsp;No&nbsp;&nbsp;&nbsp;"| BuyG["&nbsp;&nbsp;&nbsp;Buy GOLDBEES<br/>5% of Capital&nbsp;&nbsp;&nbsp;"]
+    Gold -->|"&nbsp;&nbsp;&nbsp;Yes&nbsp;&nbsp;&nbsp;"| SkipG["&nbsp;&nbsp;&nbsp;Skip - Already<br/>Accumulated&nbsp;&nbsp;&nbsp;"]
 
-    Nifty -->|"`No`"| BuyN["`Buy NIFTYBEES<br/>5% of Capital`"]
-    Nifty -->|"`Yes`"| SkipN["`Skip - Already<br/>Accumulated`"]
+    Nifty -->|"&nbsp;&nbsp;&nbsp;No&nbsp;&nbsp;&nbsp;"| BuyN["&nbsp;&nbsp;&nbsp;Buy NIFTYBEES<br/>5% of Capital&nbsp;&nbsp;&nbsp;"]
+    Nifty -->|"&nbsp;&nbsp;&nbsp;Yes&nbsp;&nbsp;&nbsp;"| SkipN["&nbsp;&nbsp;&nbsp;Skip - Already<br/>Accumulated&nbsp;&nbsp;&nbsp;"]
 
-    BuyG --> Log[("`Log to DB<br/>& Telegram`")]
+    BuyG --> Log[("&nbsp;&nbsp;&nbsp;Log to DB<br/>& Telegram&nbsp;&nbsp;&nbsp;")]
     SkipG --> Log
     BuyN --> Log
     SkipN --> Log
