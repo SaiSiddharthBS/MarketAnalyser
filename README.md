@@ -25,7 +25,6 @@
 
 ## 📑 Table of Contents
 - [Executive Overview](#-executive-overview)
-- [What's New in v4.0 (Spring 2026 Update)](#-whats-new-in-v40-spring-2026-update)
 - [Enterprise Feature Suite](#-enterprise-feature-suite-ui-vs-autonomous-engine)
 - [Multi-Horizon Trading Expertise](#-multi-horizon-trading-expertise)
 - [Why Agent Alpha?](#-why-agent-alpha)
