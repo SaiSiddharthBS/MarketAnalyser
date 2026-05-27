@@ -302,6 +302,70 @@ flowchart LR
 
 ---
 
+## 🚨 Crisis Regime Strategy Execution
+
+During major market drawdowns, Agent Alpha dynamically switches into the **Crisis Regime**. This protects capital using a Safe Haven strategy while strategically accumulating the broader market at a discount.
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a1a2e', 'primaryTextColor': '#e2e8f0', 'primaryBorderColor': '#38bdf8', 'lineColor': '#475569', 'secondaryColor': '#0f172a', 'tertiaryColor': '#1e293b', 'fontFamily': 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'}}}%%
+flowchart TD
+    Start([Daily Execution Starts]) --> Regime{What Regime?}
+    
+    Regime -->|Uptrend| Dir[Directional Logic]
+    Regime -->|Chop| Arb[Stat-Arb Logic]
+    Regime -->|Crisis| Safe[Safe Haven ETF Logic]
+
+    Safe --> Split(( ))
+
+    Split --> Gold{GOLDBEES<br>already held?}
+    Split --> Nifty{NIFTYBEES<br>already held?}
+
+    Gold -->|No| BuyG[Buy GOLDBEES<br>5% of capital]
+    Gold -->|Yes| SkipG[Skip - already accumulated]
+
+    Nifty -->|No| BuyN[Buy NIFTYBEES<br>5% of capital]
+    Nifty -->|Yes| SkipN[Skip - already accumulated]
+
+    BuyG --> Log[(Log to DB + Telegram)]
+    SkipG --> Log
+    BuyN --> Log
+    SkipN --> Log
+
+    classDef default fill:#0f172a,stroke:#334155,stroke-width:2px,color:#e2e8f0;
+    classDef decision fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+    classDef action fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef ignore fill:#451a03,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
+    classDef entry fill:#312e81,stroke:#6366f1,stroke-width:2px,color:#e0e7ff,rx:20,ry:20;
+    classDef db fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#f5f3ff;
+
+    class Start entry;
+    class Regime,Gold,Nifty decision;
+    class BuyG,BuyN action;
+    class SkipG,SkipN ignore;
+    class Log db;
+```
+
+### Execution Logic
+
+The conceptual diagram above translates to the following execution logic in our autonomous engine:
+
+```python
+# 🚨 CRISIS REGIME ACTIVATED
+if market_regime == "CRISIS":
+    
+    # 🟡 Safe Haven: GOLD (5% allocation)
+    if not portfolio.holds_asset("GOLDBEES"):
+        execute_buy(symbol="GOLDBEES", allocation_pct=0.05)
+        log_to_db_and_telegram("GOLDBEES: Safe haven activated")
+        
+    # 🔵 Value Accumulation: NIFTY 50 (5% allocation)
+    if not portfolio.holds_asset("NIFTYBEES"):
+        execute_buy(symbol="NIFTYBEES", allocation_pct=0.05)
+        log_to_db_and_telegram("NIFTYBEES: Market accumulation activated")
+```
+
+---
+
 ## 🧮 Mathematical Models & Algorithmic Foundations
 
 Agent Alpha relies on rigorous mathematical foundations for regime classification, volatility scaling, and position sizing.
