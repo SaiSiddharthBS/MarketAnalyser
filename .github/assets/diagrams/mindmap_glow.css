@@ -1,0 +1,66 @@
+/* Custom CSS for Glowing Glassmorphic Mindmap */
+
+/* Base SVG Background: Deep Obsidian with Radial Glows */
+svg {
+    background: radial-gradient(circle at 50% 50%, rgba(0, 255, 136, 0.18) 0%, rgba(5, 17, 20, 0.9) 35%),
+                radial-gradient(circle at 85% 15%, rgba(245, 158, 11, 0.12) 0%, transparent 40%),
+                #051114 !important;
+}
+
+/* Base Node Glows */
+.mindmap-node rect, 
+.mindmap-node circle, 
+.mindmap-node polygon {
+    transition: all 0.3s ease;
+}
+
+/* Target Elements with Cyan Borders (Leaf Nodes & Edges) */
+[stroke="#00e5ff"] {
+    filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.25));
+    stroke-width: 1.5px !important;
+}
+
+/* Target Elements with Green Borders (Root & Branch Nodes) */
+[stroke="#00ff88"] {
+    filter: drop-shadow(0 0 25px rgba(0, 255, 136, 0.5));
+    stroke-width: 2.5px !important;
+}
+
+/* Edge Paths - Glowing connections */
+path.mindmap-edge {
+    filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.5));
+    stroke-width: 2.5px !important;
+    opacity: 0.9;
+}
+
+/* Text Styling - Make it crisp and slightly glowing */
+foreignObject div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #ffffff !important;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+    font-size: 16px;
+}
+
+/* Specific Root Node Styling */
+.mindmap-node.section-root circle {
+    fill: rgba(0, 255, 136, 0.15) !important;
+    filter: drop-shadow(0 0 40px rgba(0, 255, 136, 0.7));
+}
+
+/* Branch Nodes (Level 1) */
+.mindmap-node.section-root ~ .mindmap-node rect {
+    fill: rgba(16, 32, 38, 0.8) !important;
+    rx: 8px !important; /* Rounded corners */
+    ry: 8px !important;
+}
+
+/* Leaf Nodes (Level 2) */
+.mindmap-node.section-root ~ .mindmap-node ~ .mindmap-node rect {
+    fill: rgba(16, 32, 38, 0.5) !important;
+    rx: 6px !important;
+    ry: 6px !important;
+}
