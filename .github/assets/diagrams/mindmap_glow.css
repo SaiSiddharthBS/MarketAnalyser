@@ -7,30 +7,27 @@ svg {
                 #051114 !important;
 }
 
-/* Base Node Glows */
+/* Base Node Animation */
 .mindmap-node rect, 
 .mindmap-node circle, 
 .mindmap-node polygon {
     transition: all 0.3s ease;
 }
 
-/* Target Elements with Cyan Borders (Leaf Nodes & Edges) */
-[stroke="#00e5ff"] {
-    filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.25));
-    stroke-width: 1.5px !important;
-}
-
-/* Target Elements with Green Borders (Root & Branch Nodes) */
-[stroke="#00ff88"] {
-    filter: drop-shadow(0 0 25px rgba(0, 255, 136, 0.5));
-    stroke-width: 2.5px !important;
-}
-
 /* Edge Paths - Glowing connections */
 path.mindmap-edge {
-    filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.5));
-    stroke-width: 2.5px !important;
-    opacity: 0.9;
+    stroke: #00e5ff !important;
+    filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.8));
+    stroke-width: 4px !important;
+    opacity: 1 !important;
+}
+
+/* First level edges connecting root to branches */
+/* In mermaid, path elements don't strictly have hierarchy classes, so we rely on global edge style, 
+   but we can make it a bit greener/cyan mix */
+path.mindmap-edge {
+    stroke: #00ff88 !important;
+    filter: drop-shadow(0 0 12px rgba(0, 255, 136, 0.6));
 }
 
 /* Text Styling - Make it crisp and slightly glowing */
@@ -47,20 +44,28 @@ foreignObject div {
 
 /* Specific Root Node Styling */
 .mindmap-node.section-root circle {
-    fill: rgba(0, 255, 136, 0.15) !important;
-    filter: drop-shadow(0 0 40px rgba(0, 255, 136, 0.7));
+    fill: #06402b !important; /* Solid dark green so lines don't show through */
+    stroke: #00ff88 !important;
+    stroke-width: 3px !important;
+    filter: drop-shadow(0 0 40px rgba(0, 255, 136, 0.8));
 }
 
 /* Branch Nodes (Level 1) */
 .mindmap-node.section-root ~ .mindmap-node rect {
     fill: rgba(16, 32, 38, 0.8) !important;
+    stroke: #00ff88 !important;
+    stroke-width: 2.5px !important;
+    filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.5));
     rx: 8px !important; /* Rounded corners */
     ry: 8px !important;
 }
 
 /* Leaf Nodes (Level 2) */
 .mindmap-node.section-root ~ .mindmap-node ~ .mindmap-node rect {
-    fill: rgba(16, 32, 38, 0.5) !important;
+    fill: rgba(16, 32, 38, 0.6) !important;
+    stroke: #00e5ff !important;
+    stroke-width: 1.5px !important;
+    filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.4));
     rx: 6px !important;
     ry: 6px !important;
 }
