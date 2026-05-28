@@ -92,7 +92,7 @@ Agent Alpha dynamically scales its analysis across three distinct temporal horiz
 ## The Agent Alpha Ecosystem Mindmap
 
 <div align="center">
-  <img src=".github/assets/diagrams/mindmap_glowing.png" alt="Agent Alpha Ecosystem Mindmap" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.15);" />
+  <img src=".github/assets/diagrams/mindmap_glowing.png?v=2" alt="Agent Alpha Ecosystem Mindmap" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,255,136,0.15);" />
 </div>
 
 ---
@@ -102,7 +102,7 @@ Agent Alpha dynamically scales its analysis across three distinct temporal horiz
 Agent Alpha operates on a resilient, distributed physical architecture split across two synchronized machines. This ensures absolute separation of heavy quantitative compute processes and the executive visualization dashboard.
 
 <div align="center">
-  <img src=".github/assets/diagrams/architecture.png" alt="Dual-Node Hardware Architecture" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,229,255,0.15);" />
+  <img src=".github/assets/diagrams/architecture.png?v=2" alt="Dual-Node Hardware Architecture" width="100%" style="border-radius: 12px; box-shadow: 0 4px 30px rgba(0,229,255,0.15);" />
 </div>
 
 **Node 1 (Primary Executive Station - MacBook Pro):** The visualization and development terminal. The CEO interacts with the system here via the stunning Obsidian Glass UI and macOS Menubar app. Development, testing, and UI overhauls are built natively here.
