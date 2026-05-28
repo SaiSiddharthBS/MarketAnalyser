@@ -55,8 +55,9 @@ With our **Zero-Trust Capital Preservation Architecture**, every signal must sur
 *   **Dynamic Correlation Heatmap:** Actively calculates Pearson correlation across the portfolio to prevent localized sector beta-collapse.
 
 ### The Command & Control Interfaces
-*   **The Obsidian Glass Executive PWA:** A gorgeous, hardware-accelerated dashboard featuring 60FPS WebSockets for live execution LED pulses, real-time P&L tickers, and portfolio drawdown metrics streamed directly from the Python backend.
-*   **Interactive Telegram Sub-System:** We moved far beyond basic push notifications. The `bot` directory houses a fully interactive, two-way Telegram command center. You receive live execution alerts, but you can also text `/status`, `/holdings`, and `/stop` to remotely monitor or kill the engine directly from your phone while on the move.
+*   **Native macOS Desktop Application:** The entire Obsidian Glass PWA is wrapped into a fully standalone, hardware-accelerated **Electron** application (`frontend/main.js`). Built using **Node.js + Chromium**, it completely bypasses browser CORS and memory restrictions, offering native window management, localized caching, and a dedicated dock icon for the CEO.
+*   **macOS Menubar Utility:** A lightweight native dropdown utility (`backend/menubar_app.py`) allowing instant starting, stopping, and quick-glance P&L monitoring directly from the Mac's top status bar. It is built purely in **Python** using **rumps** (macOS status bar API) and utilizes **asyncio + websockets** for zero-latency telemetry streaming directly from the Windows Sentinel node. It also features native macOS `launchctl` integration for automatic boot-on-login.
+*   **Interactive Telegram Sub-System:** A fully interactive, two-way mobile command center. You receive live execution alerts, but can also text `/status`, `/holdings`, and `/stop` to remotely command the execution engine while on the move.
 
 ---
 
