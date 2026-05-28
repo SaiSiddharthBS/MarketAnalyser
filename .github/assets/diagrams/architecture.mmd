@@ -1,9 +1,8 @@
 graph TB
     subgraph Node1["Node 1: Executive Dashboard — MacBook Pro"]
         UI["Obsidian Glass UI\n(Local PWA)"]
-        MacApp["Native macOS App\n(Electron Desktop)"]
-        Menubar["Menubar Utility\n(Python/Rumps)"]
         Dev["Strategy Architecture"]
+        Browser["Google Chrome\n(60 FPS)"]
     end
 
     subgraph Node2["Node 2: Sentinel Node — Always-On Laptop"]
@@ -25,9 +24,7 @@ graph TB
         Data["yfinance / FRED"]
     end
 
-    UI -.->|"WebSockets"| FastAPI
-    MacApp -.->|"WebSockets"| FastAPI
-    Menubar -.->|"Async WebSockets"| FastAPI
+    Browser -.->|"WebSockets"| FastAPI
     Quant -->|"Read Ledger"| DB
     Quant -->|"Fetch OHLCV"| Data
     Cron -->|"Dispatch Alerts"| TG
@@ -37,6 +34,6 @@ graph TB
     classDef highlight fill:#111827,stroke:#00ff88,stroke-width:2px,color:#ffffff;
     classDef db fill:#0b101e,stroke:#ffffff,stroke-width:2px,color:#ffffff;
     
-    class UI,Dev,MacApp,Menubar,Docker,FastAPI,Cron,TG,Data default;
+    class UI,Dev,Browser,Docker,FastAPI,Cron,TG,Data default;
     class Quant,Ollama highlight;
     class DB db;
